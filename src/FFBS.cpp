@@ -20,9 +20,10 @@ using namespace Rcpp;
 //' @useDynLib ideq
 //' @importFrom Rcpp sourceCpp
 // [[Rcpp::export]]
-arma::mat FFBS(arma::mat Y, arma::mat F_, arma::mat V,
+arma::cube FFBS(arma::mat Y, arma::mat F_, arma::mat V,
                arma::mat G, arma::mat W,
-               arma::colvec m_0, arma::mat C_0) {
+               arma::colvec m_0, arma::mat C_0,
+               const int n_samples) {
   // This is for known m_0 and C_0
   Rcout << "chkpt 1" << std::endl;
 
@@ -34,8 +35,8 @@ arma::mat FFBS(arma::mat Y, arma::mat F_, arma::mat V,
   Rcout << "chkpt 2" << std::endl;
 
   // Kalman Filter
-  arma::mat a(p, T - 1);
-  arma::cube R(p, p, T - 1);
+  arma::mat a(p, T);
+  arma::cube R(p, p, T);
   arma::mat m(p, T + 1);
   arma::cube C(p, p, T + 1);
   m.col(0) = m_0;
@@ -47,35 +48,43 @@ arma::mat FFBS(arma::mat Y, arma::mat F_, arma::mat V,
   // Begin sampling
   arma::colvec h_t(p);
   arma::mat H_t(p, p);
-  arma::mat theta(p, T);
+  arma::cube theta(p, T + 1, n_samples);
   Rcout << "chkpt 5" << std::endl;
-  h_t = m.col(T);
-  H_t = C.slice(T);
-  Rcout << "chkpt 6" << std::endl;
 
-  theta.col(T) = mvnorm(h_t, H_t); // draw theta_T
-  Rcout << "chkpt 7" << std::endl;
-  // Draw values for theta_{T-1} down to theta_0
-  for (int t = T-1; t >= 0; t--) {
-    // Mean and variance of theta_t
-    h_t = m.col(t) + C.slice(t) * G.t() *
-      solve(R.slice(t), (theta.col(t) - a.col(t)));
-    Rcout << "chkpt 8" << std::endl;
+  for (int s = 0; s < n_samples; s++) {
+    theta.slice(s).col(T) = mvnorm(m.col(T), C.slice(T)); // draw theta_T
+    Rcout << "chkpt 7" << std::endl;
+    // Draw values for theta_{T-1} down to theta_0
+    for (int t = T-1; t >= 0; t--) {
+      // Mean and variance of theta_t
+      h_t = m.col(t) + C.slice(t) * G.t() *
+        solve(R.slice(t), (theta.slice(s).col(t + 1) - a.col(t)));
+      Rcout << "chkpt 8" << std::endl;
 
-    H_t = C.slice(t) - C.slice(t) * G.t() *
-      solve(R.slice(t), G) * C.slice(t);
-    Rcout << "chkpt 9" << std::endl;
-    // Draw value for theta_t
-    theta.col(t) = mvnorm(h_t, H_t);
-    Rcout << "chkpt 10" << std::endl;
+      H_t = C.slice(t) - C.slice(t) * G.t() *
+        solve(R.slice(t), G) * C.slice(t);
+      Rcout << "chkpt 9" << std::endl;
+      // Draw value for theta_t
+      theta.slice(s).col(t) = mvnorm(h_t, H_t);
+      Rcout << "chkpt 10, t = " << t << std::endl;
+      Rcout << "h_t = " << h_t << std::endl;
+      Rcout << "H_t = " << H_t << std::endl;
+    }
   }
-
   return theta;
 }
 
 // The below R code is for testing
 // Simply reload (Ctrl + Shift + L) and create documentation (Ctrl + Shift + D)
 /*** R
+# Test mvnorm
+sig <- matrix(c(2, 1, 1,
+                1, 5, 1,
+                1, 1, 200), ncol = 3)
+xs <- matrix(NA, nrow = 3, ncol = 100000)
+for (i in 1: 100000) xs[, i] <- mvnorm(rep(1, 3), sig)
+cov(t(xs))
+
 j <- 3
 p <- 2
 T_ <- 5 # T_ = T
@@ -91,9 +100,8 @@ W <- diag(c(0.1, 0.1))
 m_0 <- c(0.3, 0.8)
 C_0 <- diag(c(0.1, 0.1))
 
-a <- FFBS(Y, F_, V, G, W, m_0, C_0)
-a[[1]] # each column is m_t
-a[[2]] # each slice is C_t
+a <- FFBS(Y, F_, V, G, W, m_0, C_0, 100)
+a
 
 ? FFBS
 */

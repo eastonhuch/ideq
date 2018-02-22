@@ -30,15 +30,15 @@ void CheckDims(arma::mat & Y, arma::mat & F, arma::mat & V,
   return;
 };
 
-
+// [[Rcpp::export]]
 arma::colvec mvnorm(arma::colvec M, arma::mat C) {
   int n = M.n_elem;
   arma::colvec z(n);
-  for (int i =0; i < n; i++) {
-    z.at(i) = R::rnorm(0, 1);
+  for (int i = 0; i < n; i++) {
+    z.at(i) = R::rnorm(0.0, 1.0);
   }
   arma::colvec x = M + arma::chol(C).t() * z;
-  return M;
+  return x;
 };
 
 
@@ -57,6 +57,7 @@ void Kalman(arma::mat & Y, arma::mat & F, arma::mat & V,
     // One step ahead predictive distribution of theta
     Rcout << "K2a" << std::endl;
     a.col(t - 1) = G * m.col(t - 1);
+    Rcout << "K2b" << std::endl;
     R.slice(t - 1) = G * C.slice(t - 1) * G.t() + W;
     Rcout << "K3" << std::endl;
 

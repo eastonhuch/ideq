@@ -7,8 +7,8 @@
 using namespace Rcpp;
 
 // FFBS
-arma::mat FFBS(arma::mat Y, arma::mat F_, arma::mat V, arma::mat G, arma::mat W, arma::colvec m_0, arma::mat C_0);
-RcppExport SEXP _ideq_FFBS(SEXP YSEXP, SEXP F_SEXP, SEXP VSEXP, SEXP GSEXP, SEXP WSEXP, SEXP m_0SEXP, SEXP C_0SEXP) {
+arma::cube FFBS(arma::mat Y, arma::mat F_, arma::mat V, arma::mat G, arma::mat W, arma::colvec m_0, arma::mat C_0, const int n_samples);
+RcppExport SEXP _ideq_FFBS(SEXP YSEXP, SEXP F_SEXP, SEXP VSEXP, SEXP GSEXP, SEXP WSEXP, SEXP m_0SEXP, SEXP C_0SEXP, SEXP n_samplesSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -19,13 +19,27 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< arma::mat >::type W(WSEXP);
     Rcpp::traits::input_parameter< arma::colvec >::type m_0(m_0SEXP);
     Rcpp::traits::input_parameter< arma::mat >::type C_0(C_0SEXP);
-    rcpp_result_gen = Rcpp::wrap(FFBS(Y, F_, V, G, W, m_0, C_0));
+    Rcpp::traits::input_parameter< const int >::type n_samples(n_samplesSEXP);
+    rcpp_result_gen = Rcpp::wrap(FFBS(Y, F_, V, G, W, m_0, C_0, n_samples));
+    return rcpp_result_gen;
+END_RCPP
+}
+// mvnorm
+arma::colvec mvnorm(arma::colvec M, arma::mat C);
+RcppExport SEXP _ideq_mvnorm(SEXP MSEXP, SEXP CSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< arma::colvec >::type M(MSEXP);
+    Rcpp::traits::input_parameter< arma::mat >::type C(CSEXP);
+    rcpp_result_gen = Rcpp::wrap(mvnorm(M, C));
     return rcpp_result_gen;
 END_RCPP
 }
 
 static const R_CallMethodDef CallEntries[] = {
-    {"_ideq_FFBS", (DL_FUNC) &_ideq_FFBS, 7},
+    {"_ideq_FFBS", (DL_FUNC) &_ideq_FFBS, 8},
+    {"_ideq_mvnorm", (DL_FUNC) &_ideq_mvnorm, 2},
     {NULL, NULL, 0}
 };
 

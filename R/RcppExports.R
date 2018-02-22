@@ -17,7 +17,11 @@
 #' # Duhh...nothing yet
 #' @useDynLib ideq
 #' @importFrom Rcpp sourceCpp
-FFBS <- function(Y, F_, V, G, W, m_0, C_0) {
-    .Call('_ideq_FFBS', PACKAGE = 'ideq', Y, F_, V, G, W, m_0, C_0)
+FFBS <- function(Y, F_, V, G, W, m_0, C_0, n_samples) {
+    .Call('_ideq_FFBS', PACKAGE = 'ideq', Y, F_, V, G, W, m_0, C_0, n_samples)
+}
+
+mvnorm <- function(M, C) {
+    .Call('_ideq_mvnorm', PACKAGE = 'ideq', M, C)
 }
 
