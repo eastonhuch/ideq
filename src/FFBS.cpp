@@ -81,13 +81,13 @@ arma::cube FFBS(arma::mat Y, arma::mat F_, arma::mat V,
 sig <- matrix(c(2, 1, 1,
                 1, 5, 1,
                 1, 1, 200), ncol = 3)
-xs <- matrix(NA, nrow = 3, ncol = 100000)
-for (i in 1: 100000) xs[, i] <- mvnorm(rep(1, 3), sig)
+xs <- matrix(NA, nrow = 3, ncol = 10000)
+for (i in 1:10000) xs[, i] <- mvnorm(rep(1, 3), sig)
 cov(t(xs))
 
 j <- 3
 p <- 2
-T_ <- 5 # T_ = T
+T_ <- 5
 Y <- matrix(c(1.2, 2.4, 2.5, 2.6, 3.2,
              5.6, 7.6, 7.4, 8.1, 8.8,
              0.2, 0.3, 0.3, 0.35, 0.45), nrow = j, ncol = T_, byrow = TRUE)
@@ -101,7 +101,7 @@ m_0 <- c(0.3, 0.8)
 C_0 <- diag(c(0.1, 0.1))
 
 a <- FFBS(Y, F_, V, G, W, m_0, C_0, 100)
-a
+hist(a[1, 2, ])
 
 ? FFBS
 */
