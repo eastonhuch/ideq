@@ -48,23 +48,18 @@ void Kalman(arma::mat & Y, arma::mat & F, arma::mat & V,
                  const int & T, const int & j,
                  arma::mat & a, arma::cube & R) {
   // Don't need to keep
-  Rcout << "K0" << std::endl;
   arma::mat Q(j, j);
   arma::colvec f(j);
-  Rcout << "K1" << std::endl;
 
   for (int t = 1; t <= T; t++) {
+    checkUserInterrupt();
     // One step ahead predictive distribution of theta
-    Rcout << "K2a" << std::endl;
     a.col(t - 1) = G * m.col(t - 1);
-    Rcout << "K2b" << std::endl;
     R.slice(t - 1) = G * C.slice(t - 1) * G.t() + W;
-    Rcout << "K3" << std::endl;
 
     // One step ahead predictive distribution of Y_t
     f = F * a.col(t - 1);
     Q = F * R.slice(t - 1) * F.t() + V;
-    Rcout << "K4" << std::endl;
 
     // Filtering distribution of theta
     // NOTE: Y.col(t -1) corresponds to Y_t
@@ -72,7 +67,6 @@ void Kalman(arma::mat & Y, arma::mat & F, arma::mat & V,
                           solve(Q, (Y.col(t - 1) - f));
     C.slice(t) = R.slice(t - 1) - R.slice(t - 1) * F.t() *
                                   solve(Q, F * R.slice(t - 1));
-    Rcout << "K5" << std::endl;
   }
   return;
 };

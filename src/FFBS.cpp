@@ -25,14 +25,12 @@ arma::cube FFBS(arma::mat Y, arma::mat F_, arma::mat V,
                arma::colvec m_0, arma::mat C_0,
                const int n_samples) {
   // This is for known m_0 and C_0
-  Rcout << "chkpt 1" << std::endl;
-
   // figure out dimensions of matrices and check conformability
   const int T = Y.n_cols;
   const int j = Y.n_rows;
   const int p = F_.n_cols;
   CheckDims(Y, F_, V, G, W, m_0, C_0, T, j, p);
-  Rcout << "chkpt 2" << std::endl;
+  Rcout << "Dimensions correct, beginning filtering" << std::endl;
 
   // Kalman Filter
   arma::mat a(p, T);
@@ -41,34 +39,28 @@ arma::cube FFBS(arma::mat Y, arma::mat F_, arma::mat V,
   arma::cube C(p, p, T + 1);
   m.col(0) = m_0;
   C.slice(0) = C_0;
-  Rcout << "chkpt 3" << std::endl;
   Kalman(Y, F_, V, G, W, m, C, T, j, a, R);
-  Rcout << "chkpt 4" << std::endl;
+  Rcout << "Finished filtering, beginning sampling" << std::endl;
 
   // Begin sampling
   arma::colvec h_t(p);
   arma::mat H_t(p, p);
   arma::cube theta(p, T + 1, n_samples);
-  Rcout << "chkpt 5" << std::endl;
 
   for (int s = 0; s < n_samples; s++) {
     theta.slice(s).col(T) = mvnorm(m.col(T), C.slice(T)); // draw theta_T
-    Rcout << "chkpt 7" << std::endl;
     // Draw values for theta_{T-1} down to theta_0
     for (int t = T-1; t >= 0; t--) {
+      Rcout << "Drawing a value for t = " << t << std::endl;
+      checkUserInterrupt();
       // Mean and variance of theta_t
       h_t = m.col(t) + C.slice(t) * G.t() *
         solve(R.slice(t), (theta.slice(s).col(t + 1) - a.col(t)));
-      Rcout << "chkpt 8" << std::endl;
 
       H_t = C.slice(t) - C.slice(t) * G.t() *
         solve(R.slice(t), G) * C.slice(t);
-      Rcout << "chkpt 9" << std::endl;
       // Draw value for theta_t
       theta.slice(s).col(t) = mvnorm(h_t, H_t);
-      Rcout << "chkpt 10, t = " << t << std::endl;
-      Rcout << "h_t = " << h_t << std::endl;
-      Rcout << "H_t = " << H_t << std::endl;
     }
   }
   return theta;
@@ -77,31 +69,54 @@ arma::cube FFBS(arma::mat Y, arma::mat F_, arma::mat V,
 // The below R code is for testing
 // Simply reload (Ctrl + Shift + L) and create documentation (Ctrl + Shift + D)
 /*** R
-# Test mvnorm
-sig <- matrix(c(2, 1, 1,
-                1, 5, 1,
-                1, 1, 200), ncol = 3)
-xs <- matrix(NA, nrow = 3, ncol = 10000)
-for (i in 1:10000) xs[, i] <- mvnorm(rep(1, 3), sig)
-cov(t(xs))
+n <- 1600
+load('/home/easton/Documents/School/Research/data/test_data.Rdata')
+anoms <- anoms[1:n, ]
+latlon <- latlon[1:n, ]
+Ft <- diag(n)
+Gt <- diag(n)
+Vt <- .5*diag(n)
+D <- as.matrix(dist(latlon))
+Wt <- .5*exp(-D^2/10)
+m0 <- anoms[,1]
+C0 <- diag(n)
 
-j <- 3
-p <- 2
-T_ <- 5
-Y <- matrix(c(1.2, 2.4, 2.5, 2.6, 3.2,
-             5.6, 7.6, 7.4, 8.1, 8.8,
-             0.2, 0.3, 0.3, 0.35, 0.45), nrow = j, ncol = T_, byrow = TRUE)
-F_ <- matrix(c(1, 1,
-              1, 2.5,
-              0.1, 0.2), nrow = j, ncol = p, byrow = TRUE)
-V <- diag(c(0.2, 0.5, 0.02))
-G <- diag(1, 2)
-W <- diag(c(0.1, 0.1))
-m_0 <- c(0.3, 0.8)
-C_0 <- diag(c(0.1, 0.1))
+quilt.plot(latlon[,1],latlon[,2],anoms[,1],ny=20) # Not working
+# This is my work around
+quilt.plot_e <- function(x, y, z, title) {
+  combined <- cbind(x, y, z)
+  x_unique <- sort(unique(latlon[, 1]))
+  y_unique <- sort(unique(latlon[, 2]))
+  fill_z <- function(vec) {
+    a <- combined[combined[, 1] == vec[1] & combined[, 2] == vec[2], 3]
+    ifelse(length(a) == 0, NA, a)
+  }
+  xy <- expand.grid(x_unique, y_unique)
+  z <- apply(xy, 1, fill_z)
+  z <- matrix(z, nrow = length(x_unique), ncol = length(y_unique))
+  image(x_unique, y_unique, z, xlab = "x", ylab = "y", main = title)
+}
+quilt.plot_e(latlon[, 1], latlon[, 2], anoms[, 1], "Heat Map")
 
-a <- FFBS(Y, F_, V, G, W, m_0, C_0, 100)
-hist(a[1, 2, ])
+draws <- 1
+#dat <- FFBS(anoms, Ft, Vt, Gt, Wt, m0, C0, draws)
+#save(dat, file = "/home/easton/Documents/School/Research/data/dat_sample1.RData")
+load(file = '/home/easton/Documents/School/Research/data/dat_sample.RData')
+
+plot_FFBS <- function(results, t) {
+  par(mfrow = c(1, 2), oma = c(0, 0, 2, 0))
+  quilt.plot_e(latlon[, 1], latlon[, 2], anoms[, t], "Raw Data")
+
+  results_t0 <- results[, t + 1, ] # t + 1 because index 1 is time 0
+  if (draws > 1) results_t0 <- apply(results_t0, 1, mean)
+  quilt.plot_e(latlon[, 1], latlon[, 2], results_t0, "FFBS Sample")
+  mtext(paste0("Plots for t =", t), outer = TRUE, cex = 1.6)
+}
+
+for (i in 1:30) {
+  plot_FFBS(dat, i)
+  Sys.sleep(1)
+}
 
 ? FFBS
 */
