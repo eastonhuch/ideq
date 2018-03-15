@@ -101,20 +101,5 @@ dat <- FFBS(anoms, Ft, Vt, Gt, Wt, m0, C0, ndraws)
 #save(dat, file = "/home/easton/Documents/School/Research/data/dat_sample1.RData")
 #load(file = '/home/easton/Documents/School/Research/data/dat_sample.RData')
 
-plot_FFBS <- function(results, t) {
-  par(mfrow = c(1, 2), oma = c(0, 0, 2, 0))
-  quilt.plot(latlon_i[, 1], latlon_i[, 2], anoms_i[, t], ny = 20, main = "Raw Data")
-
-  results_t <- results[, t + 1, ] # t + 1 because index 1 is time 0
-  if (draws > 1) results_t0 <- apply(results_t0, 1, mean)
-  quilt.plot(latlon_i[, 1], latlon_i[, 2], results_t, ny = 20, main = "FFBS Sample")
-  mtext(paste0("Plots for t =", t), outer = TRUE, cex = 1.6)
-}
-
-for (i in 1:30) {
-  plot_FFBS(dat, i)
-  Sys.sleep(1)
-}
-
 ? FFBS
 */

@@ -4,7 +4,7 @@
 \alias{FFBS}
 \title{Performs FFBS}
 \usage{
-FFBS(Y, F_, V, G, W, m_0, C_0, n_samples)
+FFBS(Y, F_, V, G, W, m_0, C_0, n_samples, verbose = FALSE)
 }
 \arguments{
 \item{Y}{j by T matrix containing response variable}
