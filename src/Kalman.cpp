@@ -1,4 +1,4 @@
-// [[Rcpp::depends(RcppArmadillo)]]
+  // [[Rcpp::depends(RcppArmadillo)]]
 
 #include <RcppArmadillo.h>
 using namespace Rcpp;
@@ -6,12 +6,12 @@ using namespace Rcpp;
 void CheckDims(arma::mat & Y, arma::mat & F, arma::mat & V,
                  arma::mat & G, arma::mat & W,
                  arma::colvec & m_0, arma::mat & C_0,
-                 const int & T, const int & j, const int & p) {
+                 const int & T, const int & S, const int & p) {
   // check size of matrices
-  if (F.n_rows != j) {
-    Rcerr << "F must be j by p" << std::endl;
+  if (F.n_rows != S) {
+    Rcerr << "F must be S by p" << std::endl;
   }
-  if (V.n_rows !=  j || V.n_cols != j) {
+  if (V.n_rows !=  S || V.n_cols != S) {
     Rcerr << "V must be q by p" << std::endl;
   }
   if (G.n_rows !=  p || G.n_cols != p) {
@@ -21,7 +21,7 @@ void CheckDims(arma::mat & Y, arma::mat & F, arma::mat & V,
     Rcerr << "W must be p by p" << std::endl;
   }
   if (m_0.n_elem != p) {
-    Rcerr << "F must be j by p" << std::endl;
+    Rcerr << "F must be S by p" << std::endl;
   }
   if (C_0.n_rows !=  p || C_0.n_cols != p) {
     Rcerr << "C_0 must be p by p" << std::endl;
@@ -30,26 +30,14 @@ void CheckDims(arma::mat & Y, arma::mat & F, arma::mat & V,
   return;
 };
 
-// [[Rcpp::export]]
-arma::colvec mvnorm(arma::colvec M, arma::mat C) {
-  int n = M.n_elem;
-  arma::colvec z(n);
-  for (int i = 0; i < n; i++) {
-    z.at(i) = R::rnorm(0.0, 1.0);
-  }
-  arma::colvec x = M + arma::chol(C).t() * z;
-  return x;
-};
-
-
 void Kalman(arma::mat & Y, arma::mat & F, arma::mat & V,
                  arma::mat & G, arma::mat & W,
                  arma::mat & m, arma::cube & C,
-                 const int & T, const int & j,
+                 const int & T, const int & S,
                  arma::mat & a, arma::cube & R) {
   // Don't need to keep
-  arma::mat Q(j, j);
-  arma::colvec f(j);
+  arma::mat Q(S, S);
+  arma::colvec f(S);
 
   for (int t = 1; t <= T; t++) {
     checkUserInterrupt();
