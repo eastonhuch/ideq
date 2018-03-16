@@ -33,3 +33,17 @@ void BackwardSample(arma::cube & theta, arma::mat & m, arma::mat & a,
   }
   return;
 }
+
+void SampleSigma(const double & alpha_sigma, const double & beta_sigma,
+                 const int & S, const int & T, int i,
+                 arma::mat & Y, arma::mat & F_, arma::mat & a, arma::colvec & sigma) {
+  const double alpha_new = alpha_sigma + S * T / 2;
+  double sum = 0;
+  for (int t = 0; t < T; t++) {
+    arma::colvec x = Y.col(t) - F_ * a.col(t);
+    sum += arma::dot(x, x);
+  }
+  const double beta_new = beta_sigma + sum / 2;
+  sigma[i] = rigamma(alpha_new, beta_new);
+  return;
+}

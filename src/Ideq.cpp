@@ -43,6 +43,9 @@ arma::cube Ideq(arma::mat Y, arma::mat F_, arma::mat V,
   m.col(0) = m_0;
   C.slice(0) = C_0;
   arma::cube theta(p, T + 1, n_samples);
+  const double alpha_sigma = 0.1;
+  const double beta_sigma = 0.1;
+  arma::colvec sigma(n_samples);
 
   for (int i = 0; i < n_samples; i++) {
     if (verbose) {
@@ -51,7 +54,7 @@ arma::cube Ideq(arma::mat Y, arma::mat F_, arma::mat V,
     checkUserInterrupt();
     Kalman(Y, F_, V, G, W, m, C, T, S, a, R);
     BackwardSample(theta, m, a, C, G, R, T, 1, i, verbose, p);
-    // Sample sigma^2;
+    SampleSigma(alpha_sigma, beta_sigma, S, T, i, Y, F_, a, sigma);
     // Sample tau^2;
   }
 
@@ -82,7 +85,7 @@ Gt <- diag(n)
 Wt <- exp(-as.matrix(dist(latlon_small)))
 m0 <- anoms_small[, 1]
 C0 <- diag(n)
-ndraws <- 1
+ndraws <- 2
 
 dat <- Ideq(anoms_small, Ft, Vt, Gt, Wt, m0, C0, ndraws)
 t <- 3 # Time you want to plot
