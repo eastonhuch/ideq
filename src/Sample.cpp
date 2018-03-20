@@ -13,20 +13,20 @@ void BackwardSample(arma::cube & theta, arma::mat & m, arma::mat & a,
   arma::mat H_t(p, p);
 
   // NOTE: n_samples is how many samples we want to draw on this function call
-  for (int s = start_slice; s < (start_slice + n_samples); s++) {
+  for (int s = start_slice; s < (start_slice + n_samples); ++s) {
     if (verbose) {
       Rcout << "Drawing sample number " << s << std::endl;
     }
     checkUserInterrupt();
     theta.slice(s).col(T) = mvnorm(m.col(T), C.slice(T)); // draw theta_T
     // Draw values for theta_{T-1} down to theta_0
-    for (int t = T-1; t >= 0; t--) {
+    for (int t = T-1; t >= 0; --t) {
       // Mean and variance of theta_t
       h_t = m.col(t) + C.slice(t) * G.t() *
-        solve(R.slice(t), (theta.slice(s).col(t + 1) - a.col(t)));
+        solve(R.slice(t + 1), (theta.slice(s).col(t + 1) - a.col(t + 1)));
 
       H_t = C.slice(t) - C.slice(t) * G.t() *
-        solve(R.slice(t), G) * C.slice(t);
+        solve(R.slice(t + 1), G) * C.slice(t);
       // Draw value for theta_t
       theta.slice(s).col(t) = mvnorm(h_t, H_t);
     }
@@ -39,7 +39,7 @@ void SampleSigma2(const double & alpha_sigma2, const double & beta_sigma2,
                  arma::mat & Y, arma::mat & F_, arma::mat & a, arma::colvec & sigma2) {
   const double alpha_new = alpha_sigma2 + S * T / 2;
   double total = 0;
-  for (int t = 1; t < T; t++) {
+  for (int t = 1; t < T; ++t) {
     arma::colvec x = Y.col(t) - F_ * a.col(t);
     total += dot(x, x);
   }
@@ -56,7 +56,7 @@ void SampleLambda(const double & alpha_lambda, const double & beta_lambda,
   arma::mat P(p, p);
   arma::mat tmp(1, 1);
   double total = 0;
-  for (int t = 1; t < T; t++) {
+  for (int t = 2; t < T; ++t) { // Double check
     P = G * C.slice(t - 1) * G.t();
     arma::colvec x = a.col(t) - G * a.col(t - 1);
     tmp = (x.t() * solve(P, x));

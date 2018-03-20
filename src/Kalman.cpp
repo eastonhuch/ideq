@@ -12,7 +12,7 @@ void CheckDims(arma::mat & Y, arma::mat & F, arma::mat & V,
     Rcerr << "F must be S by p" << std::endl;
   }
   if (V.n_rows !=  S || V.n_cols != S) {
-    Rcerr << "V must be q by p" << std::endl;
+    Rcerr << "V must be p by p" << std::endl;
   }
   if (G.n_rows !=  p || G.n_cols != p) {
     Rcerr << "G must be p by p" << std::endl;
@@ -21,7 +21,7 @@ void CheckDims(arma::mat & Y, arma::mat & F, arma::mat & V,
     Rcerr << "W must be p by p" << std::endl;
   }
   if (m_0.n_elem != p) {
-    Rcerr << "F must be S by p" << std::endl;
+    Rcerr << "m_0 must have p elements" << std::endl;
   }
   if (C_0.n_rows !=  p || C_0.n_cols != p) {
     Rcerr << "C_0 must be p by p" << std::endl;
@@ -35,11 +35,11 @@ void Kalman(arma::mat & Y, arma::mat & F, arma::mat & V,
                  arma::mat & m, arma::cube & C,
                  const int & T, const int & S,
                  arma::mat & a, arma::cube & R) {
-  // Don't need to keep
+  // Don't need to keep these quantities
   arma::mat Q(S, S);
   arma::colvec f(S);
 
-  for (int t = 1; t <= T; t++) {
+  for (int t = 1; t <= T; ++t) {
     checkUserInterrupt();
     // One step ahead predictive distribution of theta
     a.col(t) = G * m.col(t - 1);

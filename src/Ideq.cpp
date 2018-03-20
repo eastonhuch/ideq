@@ -49,7 +49,7 @@ List Ideq(arma::mat Y, arma::mat F_, arma::mat V,
   arma::colvec sigma2(n_samples), lambda(n_samples);
 
   // FFBS
-  for (int i = 0; i < n_samples; i++) {
+  for (int i = 0; i < n_samples; ++i) {
     if (verbose) {
       Rcout << "Filtering sample number " << i << std::endl;
     }
