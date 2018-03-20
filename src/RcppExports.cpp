@@ -19,7 +19,7 @@ BEGIN_RCPP
 END_RCPP
 }
 // Ideq
-arma::cube Ideq(arma::mat Y, arma::mat F_, arma::mat V, arma::mat G, arma::mat W, arma::colvec m_0, arma::mat C_0, const int n_samples, const bool verbose);
+List Ideq(arma::mat Y, arma::mat F_, arma::mat V, arma::mat G, arma::mat W, arma::colvec m_0, arma::mat C_0, const int n_samples, const bool verbose);
 RcppExport SEXP _ideq_Ideq(SEXP YSEXP, SEXP F_SEXP, SEXP VSEXP, SEXP GSEXP, SEXP WSEXP, SEXP m_0SEXP, SEXP C_0SEXP, SEXP n_samplesSEXP, SEXP verboseSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;

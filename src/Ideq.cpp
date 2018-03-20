@@ -21,7 +21,7 @@ using namespace Rcpp;
 //' @useDynLib ideq
 //' @importFrom Rcpp sourceCpp
 // [[Rcpp::export]]
-arma::cube Ideq(arma::mat Y, arma::mat F_, arma::mat V,
+List Ideq(arma::mat Y, arma::mat F_, arma::mat V,
                arma::mat G, arma::mat W,
                arma::colvec m_0, arma::mat C_0,
                const int n_samples, const bool verbose = false) {
@@ -58,44 +58,47 @@ arma::cube Ideq(arma::mat Y, arma::mat F_, arma::mat V,
     // Sample tau^2;
   }
 
-  return theta;
+  List out(3);
+  out.names() = CharacterVector::create("theta", "sigma2", "tau");
+  out[0] = theta;
+  out[1] = sigma;
+  //out[2] = tau
+  return out;
 }
 
 // The below R code is for testing
 // Simply reload (Ctrl + Shift + L) and create documentation (Ctrl + Shift + D)
 /*** R
-t <- 10 # number of time points
-ndraws <- 3
 load('/home/easton/Documents/School/Research/data/test_data.Rdata')
-dim(latlon)
-quilt.plot(latlon[, 1], latlon[, 2], anoms[, 1], ny=20)
-
+require(fields)
+t <- 10; ndraws <- 100
+# quilt.plot(latlon[, 1], latlon[, 2], anoms[, 1], ny=20)
 small_idx <- latlon[, 1] < 170 & latlon[, 2] > 5
 latlon_small <- latlon[small_idx, ]
 anoms_small <- anoms[small_idx, 1:t]
-
-require(fields)
 quilt.plot(latlon_small[, 1], latlon_small[, 2], anoms_small[, 1], nx = 10, ny = 10)
 
 n <- nrow(anoms_small)
-Ft <- diag(n)
-Vt <- diag(n)
-
-Gt <- diag(n)
+Ft <- Vt <- Gt <- C0 <- diag(n)
 Wt <- exp(-as.matrix(dist(latlon_small)))
 m0 <- anoms_small[, 1]
-C0 <- diag(n)
-ndraws <- 2
-
 dat <- Ideq(anoms_small, Ft, Vt, Gt, Wt, m0, C0, ndraws)
+
+# Plot results compared to raw data
 t <- 3 # Time you want to plot
 par(mfrow = c(1, 2), mai = c(.4, .5, .2, .2), oma = c(0, 0, 0, .6))
-my_breaks <- seq(-1, 1, .1)
-my_levels <- length(my_breaks) - 1
+my_breaks <- seq(-1, 1, .1); my_levels <- length(my_breaks) - 1
 quilt.plot(latlon_small[, 1], latlon_small[, 2], anoms_small[, t], nx = 10, ny = 10,
            breaks = my_breaks, nlevel = my_levels, add.legend = FALSE)
-quilt.plot(latlon_small[, 1], latlon_small[, 2], apply(dat[, t + 1 ,], 1, mean), nx = 10, ny = 10,
-           breaks = my_breaks, nlevel = my_levels, ylab = "", yaxt = "n")
+quilt.plot(latlon_small[, 1], latlon_small[, 2],
+           apply(dat[["theta"]][, t + 1 ,], 1, mean), # mean(thetas)
+           breaks = my_breaks, nlevel = my_levels,
+           nx = 10, ny = 10, ylab = "", yaxt = "n")
+# Plot samples of variance parameters
+dev.off()
+plot(density(dat[["sigma2"]]), xlab = "Sigma2", main = "Sigma2 KDE")
+plot(density(dat[["tau"]]), xlab = "Tau", main = "Tau KDE")
+
 
 ? Ideq
 */
