@@ -36,16 +36,17 @@ List Ideq(arma::mat Y, arma::mat F_, arma::mat V,
   }
 
   // Kalman Filter
-  arma::mat a(p, T);
-  arma::cube R(p, p, T);
-  arma::mat m(p, T + 1);
-  arma::cube C(p, p, T + 1);
+  arma::mat a(p, T), m(p, T + 1);
+  arma::cube R(p, p, T), C(p, p, T + 1);
   m.col(0) = m_0;
   C.slice(0) = C_0;
   arma::cube theta(p, T + 1, n_samples);
-  const double alpha_sigma = 0.1;
-  const double beta_sigma = 0.1;
-  arma::colvec sigma(n_samples);
+  const double initial_val = 0.1;
+  const double alpha_sigma = initial_val,
+               alpha_tau   = initial_val,
+               beta_sigma  = initial_val,
+               beta_tau    = initial_val;
+  arma::colvec sigma(n_samples), tau(n_samples);
 
   for (int i = 0; i < n_samples; i++) {
     if (verbose) {
@@ -55,15 +56,12 @@ List Ideq(arma::mat Y, arma::mat F_, arma::mat V,
     Kalman(Y, F_, V, G, W, m, C, T, S, a, R);
     BackwardSample(theta, m, a, C, G, R, T, 1, i, verbose, p);
     SampleSigma(alpha_sigma, beta_sigma, S, T, i, Y, F_, a, sigma);
-    // Sample tau^2;
+    SampleTau  (alpha_tau  ,   beta_tau, p, T, i, G, C , a, tau);
   }
 
-  List out(3);
-  out.names() = CharacterVector::create("theta", "sigma2", "tau");
-  out[0] = theta;
-  out[1] = sigma;
-  //out[2] = tau
-  return out;
+  return List::create(_["theta"]  = theta,
+                      _["sigma2"] = sigma,
+                      _["tau"]    = tau);
 }
 
 // The below R code is for testing
@@ -71,7 +69,7 @@ List Ideq(arma::mat Y, arma::mat F_, arma::mat V,
 /*** R
 load('/home/easton/Documents/School/Research/data/test_data.Rdata')
 require(fields)
-t <- 10; ndraws <- 100
+t <- 10; ndraws <- 30
 # quilt.plot(latlon[, 1], latlon[, 2], anoms[, 1], ny=20)
 small_idx <- latlon[, 1] < 170 & latlon[, 2] > 5
 latlon_small <- latlon[small_idx, ]
@@ -95,7 +93,6 @@ quilt.plot(latlon_small[, 1], latlon_small[, 2],
            breaks = my_breaks, nlevel = my_levels,
            nx = 10, ny = 10, ylab = "", yaxt = "n")
 # Plot samples of variance parameters
-dev.off()
 plot(density(dat[["sigma2"]]), xlab = "Sigma2", main = "Sigma2 KDE")
 plot(density(dat[["tau"]]), xlab = "Tau", main = "Tau KDE")
 
