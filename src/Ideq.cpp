@@ -25,7 +25,6 @@ List Ideq(arma::mat Y, arma::mat F_, arma::mat V,
                arma::mat G, arma::mat W,
                arma::colvec m_0, arma::mat C_0,
                const int n_samples, const bool verbose = false) {
-  // This is for known m_0 and C_0
   // figure out dimensions of matrices and check conformability
   const int T = Y.n_cols;
   const int S = Y.n_rows;
@@ -35,19 +34,21 @@ List Ideq(arma::mat Y, arma::mat F_, arma::mat V,
     Rcout << "Dimensions correct, beginning filtering" << std::endl;
   }
 
-  // Kalman Filter
-  arma::mat a(p, T), m(p, T + 1);
-  arma::cube R(p, p, T), C(p, p, T + 1);
+  // create objects for FFBS
+  Y.insert_cols(0, 1); // Y.is now true-indexed
+  arma::mat a(p, T + 1), m(p, T + 1);
+  arma::cube R(p, p, T + 1), C(p, p, T + 1);
   m.col(0) = m_0;
   C.slice(0) = C_0;
   arma::cube theta(p, T + 1, n_samples);
   const double initial_val = 0.1;
-  const double alpha_sigma = initial_val,
-               alpha_tau   = initial_val,
-               beta_sigma  = initial_val,
-               beta_tau    = initial_val;
-  arma::colvec sigma(n_samples), tau(n_samples);
+  const double alpha_sigma2 = initial_val,
+               alpha_lambda   = initial_val,
+               beta_sigma2  = initial_val,
+               beta_lambda    = initial_val;
+  arma::colvec sigma2(n_samples), lambda(n_samples);
 
+  // FFBS
   for (int i = 0; i < n_samples; i++) {
     if (verbose) {
       Rcout << "Filtering sample number " << i << std::endl;
@@ -55,13 +56,13 @@ List Ideq(arma::mat Y, arma::mat F_, arma::mat V,
     checkUserInterrupt();
     Kalman(Y, F_, V, G, W, m, C, T, S, a, R);
     BackwardSample(theta, m, a, C, G, R, T, 1, i, verbose, p);
-    SampleSigma(alpha_sigma, beta_sigma, S, T, i, Y, F_, a, sigma);
-    SampleTau  (alpha_tau  ,   beta_tau, p, T, i, G, C , a, tau);
+    SampleSigma2(alpha_sigma2, beta_sigma2, S, T, i, Y, F_, a, sigma2);
+    SampleLambda(alpha_lambda, beta_lambda, p, T, i, G, C , a, lambda);
   }
 
   return List::create(_["theta"]  = theta,
-                      _["sigma2"] = sigma,
-                      _["tau"]    = tau);
+                      _["sigma2"] = sigma2,
+                      _["lambda"] = lambda);
 }
 
 // The below R code is for testing
@@ -94,8 +95,7 @@ quilt.plot(latlon_small[, 1], latlon_small[, 2],
            nx = 10, ny = 10, ylab = "", yaxt = "n")
 # Plot samples of variance parameters
 plot(density(dat[["sigma2"]]), xlab = "Sigma2", main = "Sigma2 KDE")
-plot(density(dat[["tau"]]), xlab = "Tau", main = "Tau KDE")
-
+plot(density(dat[["lambda"]]), xlab = "lambda", main = "lambda KDE")
 
 ? Ideq
 */

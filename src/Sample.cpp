@@ -34,25 +34,25 @@ void BackwardSample(arma::cube & theta, arma::mat & m, arma::mat & a,
   return;
 }
 
-void SampleSigma(const double & alpha_sigma, const double & beta_sigma,
+void SampleSigma2(const double & alpha_sigma2, const double & beta_sigma2,
                  const int & S, const int & T, int i,
-                 arma::mat & Y, arma::mat & F_, arma::mat & a, arma::colvec & sigma) {
-  const double alpha_new = alpha_sigma + S * T / 2;
+                 arma::mat & Y, arma::mat & F_, arma::mat & a, arma::colvec & sigma2) {
+  const double alpha_new = alpha_sigma2 + S * T / 2;
   double total = 0;
-  for (int t = 0; t < T; t++) {
+  for (int t = 1; t < T; t++) {
     arma::colvec x = Y.col(t) - F_ * a.col(t);
     total += dot(x, x);
   }
-  const double beta_new = beta_sigma + total / 2;
-  sigma[i] = rigamma(alpha_new, beta_new);
+  const double beta_new = beta_sigma2 + total / 2;
+  sigma2[i] = rigamma(alpha_new, beta_new);
   return;
 }
 
-void SampleTau(const double & alpha_tau, const double & beta_tau,
+void SampleLambda(const double & alpha_lambda, const double & beta_lambda,
                  const int & p, const int & T, int i,
                  arma::mat & G, arma::cube & C,
-                 arma::mat & a, arma::colvec & tau) {
-  const double alpha_new = alpha_tau + p * T / 2;
+                 arma::mat & a, arma::colvec & lambda) {
+  const double alpha_new = alpha_lambda + p * T / 2;
   arma::mat P(p, p);
   arma::mat tmp(1, 1);
   double total = 0;
@@ -62,7 +62,7 @@ void SampleTau(const double & alpha_tau, const double & beta_tau,
     tmp = (x.t() * solve(P, x));
     total += tmp(0);
   }
-  const double beta_new = beta_tau + total / 2;
-  tau[i] = rigamma(alpha_new, beta_new);
+  const double beta_new = beta_lambda + total / 2;
+  lambda[i] = rigamma(alpha_new, beta_new);
   return;
 }

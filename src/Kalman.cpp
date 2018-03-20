@@ -42,19 +42,18 @@ void Kalman(arma::mat & Y, arma::mat & F, arma::mat & V,
   for (int t = 1; t <= T; t++) {
     checkUserInterrupt();
     // One step ahead predictive distribution of theta
-    a.col(t - 1) = G * m.col(t - 1);
-    R.slice(t - 1) = G * C.slice(t - 1) * G.t() + W;
+    a.col(t) = G * m.col(t - 1);
+    R.slice(t) = G * C.slice(t - 1) * G.t() + W;
 
     // One step ahead predictive distribution of Y_t
-    f = F * a.col(t - 1);
-    Q = F * R.slice(t - 1) * F.t() + V;
+    f = F * a.col(t);
+    Q = F * R.slice(t) * F.t() + V;
 
     // Filtering distribution of theta
-    // NOTE: Y.col(t -1) corresponds to Y_t
-    m.col(t) = a.col(t - 1) + R.slice(t - 1) * F.t() *
-                          solve(Q, (Y.col(t - 1) - f));
-    C.slice(t) = R.slice(t - 1) - R.slice(t - 1) * F.t() *
-                                  solve(Q, F * R.slice(t - 1));
+    m.col(t) = a.col(t) + R.slice(t) * F.t() *
+                          solve(Q, (Y.col(t) - f));
+    C.slice(t) = R.slice(t) - R.slice(t) * F.t() *
+                                  solve(Q, F * R.slice(t));
   }
   return;
 };
