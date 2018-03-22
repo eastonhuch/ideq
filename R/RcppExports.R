@@ -21,7 +21,7 @@ mvnorm <- function(mean, Sigma) {
 #' # Duhh...nothing yet
 #' @useDynLib ideq
 #' @importFrom Rcpp sourceCpp
-Ideq <- function(Y, F_, V, G, W, m_0, C_0, n_samples, verbose = FALSE) {
-    .Call('_ideq_Ideq', PACKAGE = 'ideq', Y, F_, V, G, W, m_0, C_0, n_samples, verbose)
+Ideq <- function(Y, F_, G, m_0, C_0, n_samples, verbose = FALSE) {
+    .Call('_ideq_Ideq', PACKAGE = 'ideq', Y, F_, G, m_0, C_0, n_samples, verbose)
 }
 

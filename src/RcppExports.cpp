@@ -19,28 +19,26 @@ BEGIN_RCPP
 END_RCPP
 }
 // Ideq
-List Ideq(arma::mat Y, arma::mat F_, arma::mat V, arma::mat G, arma::mat W, arma::colvec m_0, arma::mat C_0, const int n_samples, const bool verbose);
-RcppExport SEXP _ideq_Ideq(SEXP YSEXP, SEXP F_SEXP, SEXP VSEXP, SEXP GSEXP, SEXP WSEXP, SEXP m_0SEXP, SEXP C_0SEXP, SEXP n_samplesSEXP, SEXP verboseSEXP) {
+List Ideq(arma::mat Y, arma::mat F_, arma::mat G, arma::colvec m_0, arma::mat C_0, const int n_samples, const bool verbose);
+RcppExport SEXP _ideq_Ideq(SEXP YSEXP, SEXP F_SEXP, SEXP GSEXP, SEXP m_0SEXP, SEXP C_0SEXP, SEXP n_samplesSEXP, SEXP verboseSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< arma::mat >::type Y(YSEXP);
     Rcpp::traits::input_parameter< arma::mat >::type F_(F_SEXP);
-    Rcpp::traits::input_parameter< arma::mat >::type V(VSEXP);
     Rcpp::traits::input_parameter< arma::mat >::type G(GSEXP);
-    Rcpp::traits::input_parameter< arma::mat >::type W(WSEXP);
     Rcpp::traits::input_parameter< arma::colvec >::type m_0(m_0SEXP);
     Rcpp::traits::input_parameter< arma::mat >::type C_0(C_0SEXP);
     Rcpp::traits::input_parameter< const int >::type n_samples(n_samplesSEXP);
     Rcpp::traits::input_parameter< const bool >::type verbose(verboseSEXP);
-    rcpp_result_gen = Rcpp::wrap(Ideq(Y, F_, V, G, W, m_0, C_0, n_samples, verbose));
+    rcpp_result_gen = Rcpp::wrap(Ideq(Y, F_, G, m_0, C_0, n_samples, verbose));
     return rcpp_result_gen;
 END_RCPP
 }
 
 static const R_CallMethodDef CallEntries[] = {
     {"_ideq_mvnorm", (DL_FUNC) &_ideq_mvnorm, 2},
-    {"_ideq_Ideq", (DL_FUNC) &_ideq_Ideq, 9},
+    {"_ideq_Ideq", (DL_FUNC) &_ideq_Ideq, 7},
     {NULL, NULL, 0}
 };
 

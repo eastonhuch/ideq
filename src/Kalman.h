@@ -15,4 +15,10 @@ void Kalman(arma::mat & Y, arma::mat & F, arma::mat & V,
                  const int & T, const int & S,
                  arma::mat & a, arma::cube & R);
 
+void KalmanDiscounted(arma::mat & Y, arma::mat & F, arma::mat & G,
+                      arma::mat & m, arma::cube & C,
+                      arma::mat & a, arma::cube & R,
+                      const int T, const int S, const int p,
+                      double sigma2 , double lambda);
+
 #endif

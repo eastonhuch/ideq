@@ -15,7 +15,7 @@ void BackwardSample(arma::cube & theta, arma::mat & m, arma::mat & a,
   // NOTE: n_samples is how many samples we want to draw on this function call
   for (int s = start_slice; s < (start_slice + n_samples); ++s) {
     if (verbose) {
-      Rcout << "Drawing sample number " << s << std::endl;
+      Rcout << "Drawing sample number " << s + 1 << std::endl;
     }
     checkUserInterrupt();
     theta.slice(s).col(T) = mvnorm(m.col(T), C.slice(T)); // draw theta_T
@@ -36,33 +36,34 @@ void BackwardSample(arma::cube & theta, arma::mat & m, arma::mat & a,
 
 void SampleSigma2(const double & alpha_sigma2, const double & beta_sigma2,
                  const int & S, const int & T, int i,
-                 arma::mat & Y, arma::mat & F_, arma::mat & a, arma::colvec & sigma2) {
+                 arma::mat & Y, arma::mat & F_,
+                 arma::cube & theta, arma::colvec & sigma2) {
   const double alpha_new = alpha_sigma2 + S * T / 2;
   double total = 0;
   for (int t = 1; t < T; ++t) {
-    arma::colvec x = Y.col(t) - F_ * a.col(t);
+    arma::colvec x = Y.col(t) - F_ * theta.slice(i).col(t);
     total += dot(x, x);
   }
   const double beta_new = beta_sigma2 + total / 2;
-  sigma2[i] = rigamma(alpha_new, beta_new);
+  sigma2[i + 1] = rigamma(alpha_new, beta_new);
   return;
 }
 
 void SampleLambda(const double & alpha_lambda, const double & beta_lambda,
                  const int & p, const int & T, int i,
                  arma::mat & G, arma::cube & C,
-                 arma::mat & a, arma::colvec & lambda) {
+                 arma::cube & theta, arma::colvec & lambda) {
   const double alpha_new = alpha_lambda + p * T / 2;
   arma::mat P(p, p);
   arma::mat tmp(1, 1);
   double total = 0;
-  for (int t = 2; t < T; ++t) { // Double check
+  for (int t = 1; t < T; ++t) {
     P = G * C.slice(t - 1) * G.t();
-    arma::colvec x = a.col(t) - G * a.col(t - 1);
+    arma::colvec x = theta.slice(i).col(t) - G * theta.slice(i).col(t - 1);
     tmp = (x.t() * solve(P, x));
     total += tmp(0);
   }
   const double beta_new = beta_lambda + total / 2;
-  lambda[i] = rigamma(alpha_new, beta_new);
+  lambda[i + 1] = rigamma(alpha_new, beta_new);
   return;
 }
