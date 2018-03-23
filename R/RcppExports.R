@@ -9,9 +9,7 @@ mvnorm <- function(mean, Sigma) {
 #'
 #' @param Y S by T matrix containing response variable
 #' @param F_ S by p matrix defining \eqn{Y_t = F \theta_t + V}
-#' @param V S by S variance-covariance matrix of \eqn{V}
 #' @param G p by p matrix defining \eqn{\theta_t = G \theta_{t-1} + W}
-#' @param W p by p variance-covariance matrix of \eqn{W}
 #' @param m_0 p by 1 column vector for a priori mean of \eqn{\theta}
 #' @param C_0 p by p matrix of for a priori variance-covariance matrix of \eqn{\theta}
 #'

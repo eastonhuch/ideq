@@ -9,9 +9,7 @@ using namespace Rcpp;
 //'
 //' @param Y S by T matrix containing response variable
 //' @param F_ S by p matrix defining \eqn{Y_t = F \theta_t + V}
-//' @param V S by S variance-covariance matrix of \eqn{V}
 //' @param G p by p matrix defining \eqn{\theta_t = G \theta_{t-1} + W}
-//' @param W p by p variance-covariance matrix of \eqn{W}
 //' @param m_0 p by 1 column vector for a priori mean of \eqn{\theta}
 //' @param C_0 p by p matrix of for a priori variance-covariance matrix of \eqn{\theta}
 //'
@@ -41,10 +39,10 @@ List Ideq(arma::mat Y, arma::mat F_, arma::mat G,
   m.col(0) = m_0;
   C.slice(0) = C_0;
   arma::cube theta(p, T + 1, n_samples);
-  const double alpha_sigma2   = 2,
-               alpha_lambda   = 2,
-               beta_sigma2    = 1,
-               beta_lambda    = 1; //FIX ME: these are hard-coded
+  const double alpha_sigma2   = 2.0025,
+               alpha_lambda   = 2.25,
+               beta_sigma2    = 0.010025,
+               beta_lambda    = 0.0625; //FIX ME: these are hard-coded
   arma::colvec sigma2(n_samples + 1), lambda(n_samples + 1);
   // Initial values for sigma2/lambda
   sigma2[0] = rigamma(alpha_sigma2, beta_sigma2);
@@ -70,20 +68,32 @@ List Ideq(arma::mat Y, arma::mat F_, arma::mat G,
 // The below R code is for testing
 // Simply reload (Ctrl + Shift + L) and create documentation (Ctrl + Shift + D)
 /*** R
+# load ocean temperature anomaly data
 load('../data/test_data.Rdata')
 require(fields)
 ts <- 10; ndraws <- 200
-#quilt.plot(latlon[, 1], latlon[, 2], anoms[, 1], ny=20)
+
+# Choose alpha/beta with Method of Moments Estimators
+get_prior <- function(m, v) {
+  a <- 2 + m^2 / v
+  b <- (a - 1) * m
+  c(a = a, b = b)
+}
+get_prior(0.01, 0.2^2) # For sigma2
+get_prior(0.05, 0.1^2) # For lambda
+# For now these values are hard-coded
+
+# Take small sample of data for debugging
 small_idx <- latlon[, 1] < 170 & latlon[, 2] > 5
 latlon_small <- latlon[small_idx, ]
 anoms_small <- anoms[small_idx, 1:ts]
-#quilt.plot(latlon_small[, 1], latlon_small[, 2], anoms_small[, 1], nx = 10, ny = 10)
+quilt.plot(latlon_small[, 1], latlon_small[, 2], anoms_small[, 1], nx = 10, ny = 10)
 
+# Create vectors/matrices and fit model
 n <- nrow(anoms_small)
-Ft <- Gt <- C0 <- diag(n)
-#C0 <- exp(-as.matrix(dist(latlon_small)))
-#m0 <- anoms_small[, 1]
-m0 <- rnorm(100)
+Ft <- Gt <- diag(n)
+C0 <- exp(-as.matrix(dist(latlon_small)))
+m0 <- anoms_small[, 1]
 dat_full <- Ideq(anoms_small, Ft, Gt, m0, C0, ndraws, verbose = TRUE)
 
 # Assess convergence
@@ -91,7 +101,7 @@ dev.off()
 plot(dat_full[["theta"]][1 ,1 ,], type = "l") # s = 1, t = 1
 plot(dat_full[["theta"]][1 ,5 ,], type = "l") # s = 1, t = 5
 plot(dat_full[["sigma2"]], type = "l")
-plot(dat_full[["lambda"]], type = "l")
+plot(dat_full[["lambda"]], type = "l", ylim = c(0, max(dat_full[["lambda"]])))
 
 # lets say the burn-in was 100
 burnin <- 100
@@ -100,7 +110,6 @@ dat <- list("theta"  = dat_full[["theta"]][, , burnin:ndraws],
             "lambda" = dat_full[["lambda"]][burnin:ndraws])
 
 # Plot results compared to raw data
-t <- 1 # Time you want to plot
 par(mfrow = c(1, 2), mai = c(.4, .5, .2, .2), oma = c(0, 0, 0, .6))
 my_breaks <- seq(-1, 1, .1); my_levels <- length(my_breaks) - 1
 plot_t <- function(t) {
