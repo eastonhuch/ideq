@@ -27,7 +27,7 @@ List Ideq(arma::mat Y, arma::mat F_, arma::mat G,
   const int T = Y.n_cols;
   const int S = Y.n_rows;
   const int p = F_.n_cols;
-  //CheckDims(Y, F_, V, G, W, m_0, C_0, T, S, p);
+  CheckDims(Y, F_, G, m_0, C_0, T, S, p);
   if (verbose) {
     Rcout << "Dimensions correct, beginning FFBS" << std::endl;
   }

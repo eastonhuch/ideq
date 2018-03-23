@@ -3,30 +3,22 @@
 #include <RcppArmadillo.h>
 using namespace Rcpp;
 
-void CheckDims(arma::mat & Y, arma::mat & F, arma::mat & V,
-                 arma::mat & G, arma::mat & W,
-                 arma::colvec & m_0, arma::mat & C_0,
-                 const int & T, const int & S, const int & p) {
+void CheckDims(arma::mat & Y, arma::mat & F, arma::mat & G,
+               arma::colvec & m_0, arma::mat & C_0,
+               const int & T, const int & S, const int & p) {
   // check size of matrices
   if (F.n_rows != S) {
     Rcerr << "F must be S by p" << std::endl;
   }
-  if (V.n_rows !=  S || V.n_cols != S) {
-    Rcerr << "V must be p by p" << std::endl;
-  }
   if (G.n_rows !=  p || G.n_cols != p) {
     Rcerr << "G must be p by p" << std::endl;
     }
-  if (W.n_rows !=  p || W.n_cols != p) {
-    Rcerr << "W must be p by p" << std::endl;
-  }
   if (m_0.n_elem != p) {
     Rcerr << "m_0 must have p elements" << std::endl;
   }
   if (C_0.n_rows !=  p || C_0.n_cols != p) {
     Rcerr << "C_0 must be p by p" << std::endl;
   }
-
   return;
 };
 
