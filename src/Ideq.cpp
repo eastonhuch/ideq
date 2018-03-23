@@ -70,7 +70,7 @@ List Ideq(arma::mat Y, arma::mat F_, arma::mat G,
 // The below R code is for testing
 // Simply reload (Ctrl + Shift + L) and create documentation (Ctrl + Shift + D)
 /*** R
-load('/home/easton/Documents/School/Research/data/test_data.Rdata')
+load('../data/test_data.Rdata')
 require(fields)
 ts <- 10; ndraws <- 200
 #quilt.plot(latlon[, 1], latlon[, 2], anoms[, 1], ny=20)
