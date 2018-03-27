@@ -71,7 +71,7 @@ List Ideq(arma::mat Y, arma::mat F_, arma::mat G,
 # load ocean temperature anomaly data
 load('../data/test_data.Rdata')
 require(fields)
-ts <- 10; ndraws <- 2000
+ts <- 20; ndraws <- 2000
 
 # Choose alpha/beta with Method of Moments Estimators
 get_prior <- function(m, v) {
