@@ -40,7 +40,7 @@ void SampleSigma2(const double & alpha_sigma2, const double & beta_sigma2,
                  arma::cube & theta, arma::colvec & sigma2) {
   const double alpha_new = alpha_sigma2 + S * T / 2;
   double total = 0;
-  for (int t = 1; t < T; ++t) {
+  for (int t = 1; t <= T; ++t) {
     arma::colvec x = Y.col(t) - F_ * theta.slice(i).col(t);
     total += dot(x, x);
   }
@@ -57,7 +57,7 @@ void SampleLambda(const double & alpha_lambda, const double & beta_lambda,
   arma::mat P(p, p);
   arma::mat tmp(1, 1);
   double total = 0;
-  for (int t = 1; t < T; ++t) {
+  for (int t = 1; t <= T; ++t) {
     P = G * C.slice(t - 1) * G.t();
     arma::colvec x = theta.slice(i).col(t) - G * theta.slice(i).col(t - 1);
     tmp = (x.t() * solve(P, x));
