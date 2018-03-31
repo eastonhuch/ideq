@@ -71,7 +71,7 @@ List Ideq(arma::mat Y, arma::mat F_, arma::mat G,
 # load ocean temperature anomaly data
 load('../data/test_data.Rdata')
 require(fields)
-ts <- 20; ndraws <- 2000
+ts <- 20; ndraws <- 800
 
 # Choose alpha/beta with Method of Moments Estimators
 get_prior <- function(m, v) {
@@ -92,10 +92,10 @@ quilt.plot(latlon_small[, 1], latlon_small[, 2], anoms_small[, 1], nx = 10, ny =
 # Create vectors/matrices and fit model
 n <- nrow(anoms_small)
 Ft <- Gt <- diag(n)
-C0 <- exp(-0.3 * as.matrix(dist(latlon_small)))
+C0 <- exp(-1.5 * as.matrix(dist(latlon_small)))
 m0 <- anoms_small[, 1]
 dat_full <- Ideq(anoms_small, Ft, Gt, m0, C0, ndraws, verbose = TRUE)
-save(dat_full, file = "../data/dat_sample4.RData")
+save(dat_full, file = "../data/dat_sample6.RData")
 #load("../data/dat_sample2.RData")
 
 # Assess convergence
@@ -106,14 +106,14 @@ plot(dat_full[["sigma2"]], type = "l")
 plot(dat_full[["lambda"]], type = "l", ylim = c(0, max(dat_full[["lambda"]])))
 
 # lets say the burn-in was 100
-burnin <- 500
+burnin <- 300
 dat <- list("theta"  = dat_full[["theta"]][, , burnin:ndraws],
             "sigma2" = dat_full[["sigma2"]][burnin:ndraws],
             "lambda" = dat_full[["lambda"]][burnin:ndraws])
 
 # Plot results compared to raw data
 par(mfrow = c(1, 2), mai = c(.4, .5, .2, .2), oma = c(0, 0, 0, .6))
-my_breaks <- seq(-1, 1, .1); my_levels <- length(my_breaks) - 1
+my_breaks <- seq(-1.5, 1.5, .1); my_levels <- length(my_breaks) - 1
 plot_t <- function(t) {
   quilt.plot(latlon_small[, 1], latlon_small[, 2], anoms_small[, t], nx = 10, ny = 10,
              breaks = my_breaks, nlevel = my_levels, add.legend = FALSE)

@@ -67,3 +67,7 @@ void SampleLambda(const double & alpha_lambda, const double & beta_lambda,
   lambda[i + 1] = rigamma(alpha_new, beta_new);
   return;
 }
+
+void SampleG() {
+
+};
