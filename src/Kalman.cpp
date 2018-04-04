@@ -55,7 +55,7 @@ void KalmanDiscounted(arma::mat & Y, arma::mat & F, arma::mat & G,
                       arma::mat & a, arma::cube & R,
                       const int T, const int S, const int p,
                       double sigma2 , double lambda) {
-  // Don't need to keep these quantities
+  // Don't need to keep these
   arma::mat Q(S, S);
   arma::colvec f(S);
 

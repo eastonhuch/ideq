@@ -18,27 +18,30 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
-// Ideq
-List Ideq(arma::mat Y, arma::mat F_, arma::mat G, arma::colvec m_0, arma::mat C_0, const int n_samples, const bool verbose);
-RcppExport SEXP _ideq_Ideq(SEXP YSEXP, SEXP F_SEXP, SEXP GSEXP, SEXP m_0SEXP, SEXP C_0SEXP, SEXP n_samplesSEXP, SEXP verboseSEXP) {
+// dstm
+List dstm(arma::mat Y, arma::mat F_, arma::mat G_0, arma::colvec m_0, arma::mat C_0, const int n_samples, const bool verbose, const bool sample_sigma2, const bool discount, const bool sample_G);
+RcppExport SEXP _ideq_dstm(SEXP YSEXP, SEXP F_SEXP, SEXP G_0SEXP, SEXP m_0SEXP, SEXP C_0SEXP, SEXP n_samplesSEXP, SEXP verboseSEXP, SEXP sample_sigma2SEXP, SEXP discountSEXP, SEXP sample_GSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< arma::mat >::type Y(YSEXP);
     Rcpp::traits::input_parameter< arma::mat >::type F_(F_SEXP);
-    Rcpp::traits::input_parameter< arma::mat >::type G(GSEXP);
+    Rcpp::traits::input_parameter< arma::mat >::type G_0(G_0SEXP);
     Rcpp::traits::input_parameter< arma::colvec >::type m_0(m_0SEXP);
     Rcpp::traits::input_parameter< arma::mat >::type C_0(C_0SEXP);
     Rcpp::traits::input_parameter< const int >::type n_samples(n_samplesSEXP);
     Rcpp::traits::input_parameter< const bool >::type verbose(verboseSEXP);
-    rcpp_result_gen = Rcpp::wrap(Ideq(Y, F_, G, m_0, C_0, n_samples, verbose));
+    Rcpp::traits::input_parameter< const bool >::type sample_sigma2(sample_sigma2SEXP);
+    Rcpp::traits::input_parameter< const bool >::type discount(discountSEXP);
+    Rcpp::traits::input_parameter< const bool >::type sample_G(sample_GSEXP);
+    rcpp_result_gen = Rcpp::wrap(dstm(Y, F_, G_0, m_0, C_0, n_samples, verbose, sample_sigma2, discount, sample_G));
     return rcpp_result_gen;
 END_RCPP
 }
 
 static const R_CallMethodDef CallEntries[] = {
     {"_ideq_mvnorm", (DL_FUNC) &_ideq_mvnorm, 2},
-    {"_ideq_Ideq", (DL_FUNC) &_ideq_Ideq, 7},
+    {"_ideq_dstm", (DL_FUNC) &_ideq_dstm, 10},
     {NULL, NULL, 0}
 };
 

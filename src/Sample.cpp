@@ -1,7 +1,11 @@
+#include <RcppArmadillo.h>
 // [[Rcpp::depends(RcppArmadillo)]]
 
-#include <RcppArmadillo.h>
+#include <rgen.h>
+// [[Rcpp::depends(rgen)]]
+
 #include "Distributions.h"
+
 using namespace Rcpp;
 
 void BackwardSample(arma::cube & theta, arma::mat & m, arma::mat & a,
@@ -68,6 +72,49 @@ void SampleLambda(const double & alpha_lambda, const double & beta_lambda,
   return;
 }
 
-void SampleG() {
+void SampleG(arma::mat & G, arma::mat & W, arma::cube theta,
+             arma::mat & Sigma_g_inv, arma::colvec mu_g,
+             int & i, const int & p, const int & T, const int S) {
+  arma::mat kron1 = kron(theta.slice(i).cols(0, T - 1).t(), arma::eye(p, p));
+  arma::mat W_tilde = arma::kron(arma::eye(T, T), W);
 
+  Rcout << "trying to invert W_tilde" << std::endl;
+  W_tilde = arma::inv_sympd(W_tilde);
+  arma::mat V_g = kron1.t() * W_tilde * kron1 + Sigma_g_inv;
+
+  Rcout << "trying to invert V_g" << std::endl;
+  V_g = arma::inv_sympd(V_g);
+  Rcout << "Finished V_g" << std::endl;
+
+  arma::colvec a_g = kron1.t() * W_tilde *
+                     arma::resize(theta.slice(i).cols(1, T), T * p, 1) +
+                     Sigma_g_inv * mu_g;
+  Rcout << "Finished a_g" << std::endl;
+
+  arma::mat g = mvnorm(V_g * a_g, V_g);
+  G = reshape(g, p, p);
+  return;
 };
+
+void SampleV_inv (arma::mat & Y, arma::mat & F, arma::cube & theta,
+                  arma::cube & V, arma::mat & C_V, const int & df_V,
+                  int & i, const int & T) {
+  arma::mat C_new = Y.cols(1, T) - F * theta.slice(i).cols(1, T);
+  C_new = C_new * C_new.t() + df_V * C_V;
+  C_new = arma::inv_sympd(C_new);
+  int df_new = df_V + T;
+  V.slice(i) = rgen::rwishart(df_new, C_new);
+  return;
+}
+
+void SampleW_inv (arma::cube & theta, arma::mat & G,
+                  arma::cube & W, arma::mat & C_W, const int & df_W,
+                  int & i, const int & T) {
+  arma::mat C_new = theta.slice(i).cols(1, T) -
+                    G * theta.slice(i).cols(0, T - 1);
+  C_new = C_new * C_new.t() + df_W * C_W;
+  C_new = arma::inv_sympd(C_new);
+  int df_new = df_W + T;
+  W.slice(i) = rgen::rwishart(df_new, C_new);
+  return;
+}

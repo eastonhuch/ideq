@@ -1,15 +1,17 @@
-// [[Rcpp::depends(RcppArmadillo)]]
 #include <RcppArmadillo.h>
+// [[Rcpp::depends(RcppArmadillo)]]
+
 #include "Kalman.h"
 #include "Sample.h"
 #include "Distributions.h"
 using namespace Rcpp;
 
-//' Performs FFBS
+//' Fits a dynamic spatio-temporal model (DSTM)
 //'
-//' @param Y S by T matrix containing response variable
+//' @param Y S by T matrix containing response variable at S spatial locations and T time points
 //' @param F_ S by p matrix defining \eqn{Y_t = F \theta_t + V}
-//' @param G p by p matrix defining \eqn{\theta_t = G \theta_{t-1} + W}
+//' @param G_0 p by p matrix defining \eqn{\theta_t = G \theta_{t-1} + W}.
+//'        If sample_G is TRUE, then this is used as the starting value and prior mean for G.
 //' @param m_0 p by 1 column vector for a priori mean of \eqn{\theta}
 //' @param C_0 p by p matrix of for a priori variance-covariance matrix of \eqn{\theta}
 //'
@@ -20,49 +22,111 @@ using namespace Rcpp;
 //' @useDynLib ideq
 //' @importFrom Rcpp sourceCpp
 // [[Rcpp::export]]
-List Ideq(arma::mat Y, arma::mat F_, arma::mat G,
+List dstm(arma::mat Y, arma::mat F_, arma::mat G_0,
                arma::colvec m_0, arma::mat C_0,
-               const int n_samples, const bool verbose = false) {
+               const int n_samples, const bool verbose = false,
+               const bool sample_sigma2 = true, const bool discount = true,
+               const bool sample_G = false) {
   // figure out dimensions of matrices and check conformability
   const int T = Y.n_cols;
   const int S = Y.n_rows;
   const int p = F_.n_cols;
-  CheckDims(Y, F_, G, m_0, C_0, T, S, p);
+  CheckDims(Y, F_, G_0, m_0, C_0, T, S, p);
   if (verbose) {
-    Rcout << "Dimensions correct, beginning FFBS" << std::endl;
+    Rcout << "Dimensions correct" << std::endl;
   }
 
   // create objects for FFBS
   Y.insert_cols(0, 1); // Y is now true-indexed
+  arma::cube G(p, p, 1);
+  G.slice(0) = G_0;
+  G_0.reset(); //Set size to 0 to minimize memory usage
   arma::mat a(p, T + 1), m(p, T + 1);
   arma::cube R(p, p, T + 1), C(p, p, T + 1);
   m.col(0) = m_0;
   C.slice(0) = C_0;
+  arma::mat W(p, p), V(S, S);
   arma::cube theta(p, T + 1, n_samples);
-  const double alpha_sigma2   = 2.0025,
-               alpha_lambda   = 2.25,
-               beta_sigma2    = 0.010025,
-               beta_lambda    = 0.0625; //FIX ME: these are hard-coded
-  arma::colvec sigma2(n_samples + 1), lambda(n_samples + 1);
-  // Initial values for sigma2/lambda
-  sigma2[0] = rigamma(alpha_sigma2, beta_sigma2);
-  lambda[0] = rigamma(alpha_lambda, beta_lambda);
 
-  // FFBS
+  // Values for sampling sigma2, lambda
+  double alpha_sigma2 = 0, beta_sigma2 = 0,
+               alpha_lambda = 0, beta_lambda = 0;
+  arma::colvec sigma2, lambda;
+
+  if (sample_sigma2) {
+    alpha_sigma2 = 2.0025;
+    beta_sigma2 = 0.010025;
+    sigma2.set_size(n_samples + 1);
+    sigma2[0] = rigamma(alpha_sigma2, beta_sigma2);
+  }
+
+  if (discount) {
+    alpha_lambda = 2.25;
+    beta_lambda  = 0.0625;
+    lambda.set_size(n_samples + 1);
+    lambda[0] = rigamma(alpha_lambda, beta_lambda);
+  } else {
+    W = arma::eye(p, p);
+  }
+
+  // Values for sampling G
+  arma::mat mu_g;
+  arma::mat Sigma_g_inv;
+  if (sample_G) {
+    Sigma_g_inv = arma::eye(p * p, p * p);
+    mu_g = arma::resize(G.slice(0), p * p, 1);
+    G.insert_slices(1, n_samples);
+  }
+
+  // Begin Sampling Loop
+  int G_idx = 0; // Avoids complicated control flow
   for (int i = 0; i < n_samples; ++i) {
     if (verbose) {
       Rcout << "Filtering sample number " << i + 1 << std::endl;
     }
     checkUserInterrupt();
-    KalmanDiscounted(Y, F_, G, m, C, a, R, T, S, p, sigma2(i), lambda(i));
-    BackwardSample(theta, m, a, C, G, R, T, 1, i, verbose, p);
-    SampleSigma2(alpha_sigma2, beta_sigma2, S, T, i, Y, F_, theta, sigma2);
-    SampleLambda(alpha_lambda, beta_lambda, p, T, i, G, C , theta, lambda);
+
+    if (discount) {
+      KalmanDiscounted(Y, F_, G.slice(G_idx), m, C, a, R, T, S, p, sigma2(i), lambda(i));
+    } else {
+      V = arma::eye(S, S);
+      Kalman(Y, F_, V, G.slice(G_idx), W, m, C, T, S, a, R);
+    }
+
+    BackwardSample(theta, m, a, C, G.slice(G_idx), R, T, 1, i, verbose, p);
+
+    if (sample_G) {
+      // NOTE: this only works if discount = FALSE;
+      SampleG(G.slice(G_idx + 1), W, theta, Sigma_g_inv, mu_g, i, p, T, S);
+    }
+
+    if (sample_sigma2) {
+      SampleSigma2(alpha_sigma2, beta_sigma2, S, T, i, Y, F_, theta, sigma2);
+    }
+
+    if (discount) {
+      SampleLambda(alpha_lambda, beta_lambda, p, T, i, G.slice(G_idx), C , theta, lambda);
+    }
+
+    if (sample_G) {
+      ++G_idx;
+    }
+
   }
 
-  return List::create(_["theta"]  = theta,
-                      _["sigma2"] = sigma2,
-                      _["lambda"] = lambda);
+  List results;
+  results["theta"]  = theta;
+  if (sample_sigma2) {
+    results["sigma2"] = sigma2;
+  }
+  if (discount) {
+    results["lambda"] = lambda;
+  }
+  if (sample_G) {
+    results["G"] = G;
+  }
+
+  return results;
 }
 
 // The below R code is for testing
@@ -71,7 +135,7 @@ List Ideq(arma::mat Y, arma::mat F_, arma::mat G,
 # load ocean temperature anomaly data
 load('../data/test_data.Rdata')
 require(fields)
-ts <- 20; ndraws <- 800
+ts <- 20; ndraws <- 2
 
 # Choose alpha/beta with Method of Moments Estimators
 get_prior <- function(m, v) {
@@ -94,8 +158,10 @@ n <- nrow(anoms_small)
 Ft <- Gt <- diag(n)
 C0 <- exp(-1.5 * as.matrix(dist(latlon_small)))
 m0 <- anoms_small[, 1]
-dat_full <- Ideq(anoms_small, Ft, Gt, m0, C0, ndraws, verbose = TRUE)
-save(dat_full, file = "../data/dat_sample6.RData")
+dat_full <- dstm(anoms_small, Ft, Gt, m0, C0, ndraws, verbose = TRUE)
+dat_full <- dstm(anoms_small, Ft, Gt, m0, C0, ndraws, verbose = TRUE,
+                 sample_G = TRUE, sample_sigma2 = FALSE, discount = FALSE)
+#save(dat_full, file = "../data/dat_sample6.RData")
 #load("../data/dat_sample2.RData")
 
 # Assess convergence
@@ -106,7 +172,7 @@ plot(dat_full[["sigma2"]], type = "l")
 plot(dat_full[["lambda"]], type = "l", ylim = c(0, max(dat_full[["lambda"]])))
 
 # lets say the burn-in was 100
-burnin <- 300
+burnin <- 100
 dat <- list("theta"  = dat_full[["theta"]][, , burnin:ndraws],
             "sigma2" = dat_full[["sigma2"]][burnin:ndraws],
             "lambda" = dat_full[["lambda"]][burnin:ndraws])
@@ -131,5 +197,5 @@ for (i in 1:ts) {
 plot(density(dat[["sigma2"]]), xlab = "Sigma2", main = "Sigma2 KDE")
 plot(density(dat[["lambda"]]), xlab = "lambda", main = "lambda KDE")
 
-? Ideq
+? dstm
 */

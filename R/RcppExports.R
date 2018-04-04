@@ -5,11 +5,12 @@ mvnorm <- function(mean, Sigma) {
     .Call('_ideq_mvnorm', PACKAGE = 'ideq', mean, Sigma)
 }
 
-#' Performs FFBS
+#' Fits a dynamic spatio-temporal model (DSTM)
 #'
-#' @param Y S by T matrix containing response variable
+#' @param Y S by T matrix containing response variable at S spatial locations and T time points
 #' @param F_ S by p matrix defining \eqn{Y_t = F \theta_t + V}
-#' @param G p by p matrix defining \eqn{\theta_t = G \theta_{t-1} + W}
+#' @param G_0 p by p matrix defining \eqn{\theta_t = G \theta_{t-1} + W}.
+#'        If sample_G is TRUE, then this is used as the starting value and prior mean for G.
 #' @param m_0 p by 1 column vector for a priori mean of \eqn{\theta}
 #' @param C_0 p by p matrix of for a priori variance-covariance matrix of \eqn{\theta}
 #'
@@ -19,7 +20,7 @@ mvnorm <- function(mean, Sigma) {
 #' # Duhh...nothing yet
 #' @useDynLib ideq
 #' @importFrom Rcpp sourceCpp
-Ideq <- function(Y, F_, G, m_0, C_0, n_samples, verbose = FALSE) {
-    .Call('_ideq_Ideq', PACKAGE = 'ideq', Y, F_, G, m_0, C_0, n_samples, verbose)
+dstm <- function(Y, F_, G_0, m_0, C_0, n_samples, verbose = FALSE, sample_sigma2 = TRUE, discount = TRUE, sample_G = FALSE) {
+    .Call('_ideq_dstm', PACKAGE = 'ideq', Y, F_, G_0, m_0, C_0, n_samples, verbose, sample_sigma2, discount, sample_G)
 }
 

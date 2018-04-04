@@ -3,7 +3,7 @@ Title: Integrodifference Equation Models
 Version: 0.0.0.9000
 Authors@R: person("Easton", "Huch", email = "easton.huch@gmail.com", role = c("aut", "cre"))
 Description: ideq allows you to fit integrodifference equation models without getting bogged down in the details.
-Depends: R (>= 3.2.3)
+Depends: R (>= 3.4.4)
 License: MIT
 Encoding: UTF-8
 LazyData: true
@@ -11,5 +11,6 @@ RoxygenNote: 6.0.1.9000
 LinkingTo: 
   RcppArmadillo,
   Rcpp,
+  rgen
 Imports: 
   Rcpp
