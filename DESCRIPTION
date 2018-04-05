@@ -10,6 +10,7 @@ LazyData: true
 RoxygenNote: 6.0.1.9000
 LinkingTo: 
   RcppArmadillo,
+  RcppEigen,
   Rcpp,
   rgen
 Imports: 

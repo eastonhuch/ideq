@@ -161,6 +161,12 @@ m0 <- anoms_small[, 1]
 dat_full <- dstm(anoms_small, Ft, Gt, m0, C0, ndraws, verbose = TRUE)
 dat_full <- dstm(anoms_small, Ft, Gt, m0, C0, ndraws, verbose = TRUE,
                  sample_G = TRUE, sample_sigma2 = FALSE, discount = FALSE)
+# Eventuall, I'd like it to look more like this
+dat_full <- dstm(anoms_small, model = "discount", sample_sigma2 = TRUE,
+                 m_0 = m0, C_0 = C0, n_samples = ndraws, verbose = TRUE)
+dat_full <- dstm(anoms_small, model = "sample_G", sample_sigma2 = TRUE,
+                 m_0 = m0, C_0 = C0, n_samples = ndraws, verbose = TRUE)
+
 #save(dat_full, file = "../data/dat_sample6.RData")
 #load("../data/dat_sample2.RData")
 
