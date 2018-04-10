@@ -20,9 +20,13 @@ void SampleLambda(const double & alpha_lambda, const double & beta_lambda,
                  arma::mat & G, arma::cube & C,
                  arma::cube & theta, arma::colvec & lambda);
 
-void SampleG(arma::mat & G, arma::mat & W, arma::cube theta,
-             arma::mat & Sigma_g_inv, arma::colvec mu_g,
-             int & i, const int & p, const int & T, const int S);
+void SampleG(arma::mat & G, arma::mat & W, arma::cube & theta,
+             arma::mat & Sigma_g_inv, arma::colvec & mu_g,
+             int & i, const int & p, const int & T);
+
+void SampleAR(arma::mat & G, arma::mat & W, arma::cube & theta,
+             arma::mat & Sigma_g_inv, arma::mat & mu_g,
+             int & i, const int & p, const int & T);
 
 void SampleV_inv (arma::mat & Y, arma::mat & F, arma::cube & theta,
                   arma::cube & V, arma::mat & C_V, const int & df_V,

@@ -18,9 +18,8 @@ mvnorm <- function(mean, Sigma) {
 #' @export
 #' @examples
 #' # Duhh...nothing yet
-#' @useDynLib ideq
 #' @importFrom Rcpp sourceCpp
-dstm <- function(Y, F_, G_0, m_0, C_0, n_samples, verbose = FALSE, sample_sigma2 = TRUE, discount = TRUE, sample_G = FALSE) {
-    .Call('_ideq_dstm', PACKAGE = 'ideq', Y, F_, G_0, m_0, C_0, n_samples, verbose, sample_sigma2, discount, sample_G)
+dstm <- function(Y, model = "discount", n_samples = 1L, p = 20L, verbose = FALSE, sample_sigma2 = TRUE) {
+    .Call('_ideq_dstm', PACKAGE = 'ideq', Y, model, n_samples, p, verbose, sample_sigma2)
 }
 

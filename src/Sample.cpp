@@ -4,9 +4,6 @@
 #include <rgen.h>
 // [[Rcpp::depends(rgen)]]
 
-#include <RcppEigen.h>
-// [[Rcpp::depends(RcppEigen)]]
-
 #include "Distributions.h"
 
 using namespace Rcpp;
@@ -75,24 +72,21 @@ void SampleLambda(const double & alpha_lambda, const double & beta_lambda,
   return;
 }
 
-void SampleG(arma::mat & G, arma::mat & W, arma::cube theta,
-             arma::mat & Sigma_g_inv, arma::colvec mu_g,
-             int & i, const int & p, const int & T, const int S) {
+void SampleG(arma::mat & G, arma::mat & W, arma::cube & theta,
+             arma::mat & Sigma_g_inv, arma::colvec & mu_g,
+             int & i, const int & p, const int & T) {
 
   // FIX ME: Convert to RcppEigen and use selfadjointView
   // https://stackoverflow.com/questions/46700560/converting-an-armadillo-matrix-to-an-eigen-matrixd-and-vice-versa
-  // This works if W is fixed
+  // This works if W is fixed over time
   arma::mat W_inv = arma::inv_sympd(W);
   arma::mat tmp  = theta.slice(i).cols(0, T - 1) *
                    theta.slice(i).cols(0, T - 1).t();
   arma::mat V_g = arma::kron(tmp, W_inv) + Sigma_g_inv;
-  Rcout << "trying to invert V_g" << std::endl;
   V_g = arma::inv_sympd(V_g);
-  Rcout << "Finished V_g" << std::endl;
   arma::colvec a_g = arma::kron(theta.slice(i).cols(0, T - 1), W_inv)
                      * arma::resize(theta.slice(i).cols(1, T), T * p, 1)
                      + Sigma_g_inv * mu_g;
-  Rcout << "Finished a_g" << std::endl;
 
   // Less efficient approach
   //arma::mat kron1 = kron(theta.slice(i).cols(0, T - 1).t(), arma::eye(p, p));
@@ -102,6 +96,26 @@ void SampleG(arma::mat & G, arma::mat & W, arma::cube theta,
 
   arma::mat g = mvnorm(V_g * a_g, V_g);
   G = reshape(g, p, p);
+  return;
+};
+
+void SampleAR(arma::mat & G, arma::mat & W, arma::cube & theta,
+             arma::mat & Sigma_g_inv, arma::mat & mu_g,
+             int & i, const int & p, const int & T) {
+
+  arma::mat W_inv = arma::inv_sympd(W);
+  arma::mat tmp = arma::zeros(p, p);
+  arma::mat sum = arma::zeros(p, p);
+
+  for (int t = 1; t <= T; ++t) {
+    tmp.diag() = theta.slice(i).col(t);
+    sum += tmp * W_inv * tmp;
+  }
+
+  arma::mat Sigma_g_new = sum + Sigma_g_inv;
+  tmp = arma::solve(Sigma_g_new, sum + Sigma_g_inv * mu_g);
+
+  G.diag() = mvnorm(tmp.diag(), Sigma_g_new);
   return;
 };
 

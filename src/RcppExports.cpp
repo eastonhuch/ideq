@@ -2,7 +2,6 @@
 // Generator token: 10BE3573-1514-4C36-9D1C-5A225CD40393
 
 #include <RcppArmadillo.h>
-#include <RcppEigen.h>
 #include <Rcpp.h>
 
 using namespace Rcpp;
@@ -20,29 +19,25 @@ BEGIN_RCPP
 END_RCPP
 }
 // dstm
-List dstm(arma::mat Y, arma::mat F_, arma::mat G_0, arma::colvec m_0, arma::mat C_0, const int n_samples, const bool verbose, const bool sample_sigma2, const bool discount, const bool sample_G);
-RcppExport SEXP _ideq_dstm(SEXP YSEXP, SEXP F_SEXP, SEXP G_0SEXP, SEXP m_0SEXP, SEXP C_0SEXP, SEXP n_samplesSEXP, SEXP verboseSEXP, SEXP sample_sigma2SEXP, SEXP discountSEXP, SEXP sample_GSEXP) {
+List dstm(arma::mat Y, CharacterVector model, const int n_samples, const int p, const bool verbose, const bool sample_sigma2);
+RcppExport SEXP _ideq_dstm(SEXP YSEXP, SEXP modelSEXP, SEXP n_samplesSEXP, SEXP pSEXP, SEXP verboseSEXP, SEXP sample_sigma2SEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< arma::mat >::type Y(YSEXP);
-    Rcpp::traits::input_parameter< arma::mat >::type F_(F_SEXP);
-    Rcpp::traits::input_parameter< arma::mat >::type G_0(G_0SEXP);
-    Rcpp::traits::input_parameter< arma::colvec >::type m_0(m_0SEXP);
-    Rcpp::traits::input_parameter< arma::mat >::type C_0(C_0SEXP);
+    Rcpp::traits::input_parameter< CharacterVector >::type model(modelSEXP);
     Rcpp::traits::input_parameter< const int >::type n_samples(n_samplesSEXP);
+    Rcpp::traits::input_parameter< const int >::type p(pSEXP);
     Rcpp::traits::input_parameter< const bool >::type verbose(verboseSEXP);
     Rcpp::traits::input_parameter< const bool >::type sample_sigma2(sample_sigma2SEXP);
-    Rcpp::traits::input_parameter< const bool >::type discount(discountSEXP);
-    Rcpp::traits::input_parameter< const bool >::type sample_G(sample_GSEXP);
-    rcpp_result_gen = Rcpp::wrap(dstm(Y, F_, G_0, m_0, C_0, n_samples, verbose, sample_sigma2, discount, sample_G));
+    rcpp_result_gen = Rcpp::wrap(dstm(Y, model, n_samples, p, verbose, sample_sigma2));
     return rcpp_result_gen;
 END_RCPP
 }
 
 static const R_CallMethodDef CallEntries[] = {
     {"_ideq_mvnorm", (DL_FUNC) &_ideq_mvnorm, 2},
-    {"_ideq_dstm", (DL_FUNC) &_ideq_dstm, 10},
+    {"_ideq_dstm", (DL_FUNC) &_ideq_dstm, 6},
     {NULL, NULL, 0}
 };
 

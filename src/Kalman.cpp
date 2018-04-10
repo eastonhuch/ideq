@@ -25,8 +25,10 @@ void CheckDims(arma::mat & Y, arma::mat & F, arma::mat & G,
 void Kalman(arma::mat & Y, arma::mat & F, arma::mat & V,
                  arma::mat & G, arma::mat & W,
                  arma::mat & m, arma::cube & C,
-                 const int & T, const int & S,
                  arma::mat & a, arma::cube & R) {
+  const int T = Y.n_cols - 1;
+  const int S = Y.n_rows;
+
   // Don't need to keep these quantities
   arma::mat Q(S, S);
   arma::colvec f(S);
@@ -53,8 +55,10 @@ void Kalman(arma::mat & Y, arma::mat & F, arma::mat & V,
 void KalmanDiscounted(arma::mat & Y, arma::mat & F, arma::mat & G,
                       arma::mat & m, arma::cube & C,
                       arma::mat & a, arma::cube & R,
-                      const int T, const int S, const int p,
                       double sigma2 , double lambda) {
+  const int T = Y.n_cols - 1;
+  const int S = Y.n_rows;
+
   // Don't need to keep these
   arma::mat Q(S, S);
   arma::colvec f(S);
