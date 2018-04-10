@@ -27,11 +27,11 @@ List dstm(arma::mat Y, CharacterVector model = "discount",
   if (model(0) == "discount") {
     results = dstm_discount(Y, n_samples, p, sample_sigma2, verbose);
   } else if (model(0) == "sample_G") {
-    results = dstm_sample_G(Y, n_samples, p, verbose);
+    results = dstm_sample_G(Y, n_samples, p, verbose, sample_sigma2);
+  } else if (model(0) == "AR") {
+    results = dstm_AR(Y, n_samples, p, verbose, sample_sigma2);
   } else if (model(0) == "IDE") {
     results = dstm_IDE();
-  } else if (model(0) == "AR") {
-    results = dstm_AR(Y, n_samples, p, verbose);
   } else {
     Rcout << "Model type not recognized" << std::endl;
   }
@@ -66,17 +66,24 @@ quilt.plot(latlon_small[, 1], latlon_small[, 2], anoms_small[, 1], nx = 10, ny =
 # The lambda values are much larger than expected
 dat_full <- dstm(anoms_small, model = "discount", sample_sigma2 = TRUE,
                  n_samples = ndraws, verbose = TRUE)
+dat_full <- dstm(anoms_small, model = "discount", sample_sigma2 = TRUE,
+                 n_samples = ndraws, verbose = TRUE)
+# Try with full data
 dat_full <- dstm(anoms, model = "discount", sample_sigma2 = TRUE, p = 8,
                  n_samples = ndraws, verbose = TRUE)
 save(dat_full, file = "../data/dat_sample7.RData")
 load(file = "../data/dat_sample7.RData")
 
-# This one is working great
+# Sampling G is working great
 dat_full <- dstm(anoms_small, model = "sample_G", sample_sigma2 = TRUE,
                  n_samples = ndraws, verbose = TRUE)
+dat_full <- dstm(anoms_small, model = "sample_G", sample_sigma2 = FALSE,
+                 n_samples = ndraws, verbose = TRUE)
 
-# AR model is doing alright
-dat_full <- dstm(anoms_small, model = "AR", sample_sigma2 = TRUE, p = 20,
+# AR model is doing great
+dat_full <- dstm(anoms_small, model = "AR", sample_sigma2 = TRUE, p = 30,
+                 n_samples = ndraws, verbose = TRUE)
+dat_full <- dstm(anoms_small, model = "AR", sample_sigma2 = FALSE, p = 30,
                  n_samples = ndraws, verbose = TRUE)
 
 # IDE model is still not implemented

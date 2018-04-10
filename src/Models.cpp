@@ -71,8 +71,8 @@ List dstm_discount(arma::mat & Y, const int n_samples, const int p,
   return results;
 }
 
-List dstm_sample_G(arma::mat & Y, const int n_samples,
-                   const int p, const bool verbose) {
+List dstm_sample_G(arma::mat & Y, const int n_samples, const int p,
+                   const bool verbose, const bool sample_sigma2) {
   const int T = Y.n_cols;
   const int S = Y.n_rows;
 
@@ -86,6 +86,19 @@ List dstm_sample_G(arma::mat & Y, const int n_samples,
   arma::colvec mu_g = arma::resize(G.slice(0), p * p, 1);
   arma::mat Sigma_g_inv = arma::eye(p * p, p * p);
 
+  // For sampling sigma2
+  double alpha_sigma2 = 0, beta_sigma2 = 0;
+  arma::colvec sigma2(1);
+
+  if (sample_sigma2) {
+    alpha_sigma2 = 2.0025; // FIX ME: How do we want to set priors for sigma?
+    beta_sigma2 = 0.010025;
+    sigma2.set_size(n_samples + 1);
+    sigma2[0] = rigamma(alpha_sigma2, beta_sigma2);
+  } else {
+    sigma2[0] = 0.02; // FIX ME: How do we want to specify this?
+  }
+
   // Other objects for sampling
   Y.insert_cols(0, 1); // Y is now true-indexed
   arma::cube theta(p, T + 1, n_samples);
@@ -93,7 +106,11 @@ List dstm_sample_G(arma::mat & Y, const int n_samples,
   arma::cube R(p, p, T + 1), C(p, p, T + 1);
   m.col(0).zeros(); // FIX ME: Create better priors
   C.slice(0).eye();  // FIX ME: Create better priors
-  arma::mat W = arma::eye(p, p), V = arma::eye(S, S); // FIX ME: Make more generic
+  arma::mat W = arma::eye(p, p), V = arma::eye(S, S), V_i; // FIX ME: Make more generic
+  if (!sample_sigma2) {
+    V_i = sigma2[0] * V;
+    V.reset();
+  }
 
   int G_idx = 0; // Avoids complicated control flow
   for (int i = 0; i < n_samples; ++i) {
@@ -102,9 +119,13 @@ List dstm_sample_G(arma::mat & Y, const int n_samples,
     }
     checkUserInterrupt();
 
-    Kalman(Y, F, V, G.slice(G_idx), W, m, C, a, R);
+    if (sample_sigma2) V_i = sigma2[i] * V;
+    Kalman(Y, F, V_i, G.slice(G_idx), W, m, C, a, R);
     BackwardSample(theta, m, a, C, G.slice(G_idx), R, T, 1, i, verbose, p);
     SampleG(G.slice(G_idx + 1), W, theta, Sigma_g_inv, mu_g, i, p, T);
+    if (sample_sigma2) {
+      SampleSigma2(alpha_sigma2, beta_sigma2, S, T, i, Y, F, theta, sigma2);
+    }
     ++G_idx;
   }
 
@@ -112,12 +133,14 @@ List dstm_sample_G(arma::mat & Y, const int n_samples,
   results["theta"]  = theta;
   results["G"]      = G;
   results["F"]      = F;
+  if (sample_sigma2) {
+    results["sigma2"] = sigma2;
+  }
   return results;
 }
 
-// Still in progress
-List dstm_AR(arma::mat & Y, const int n_samples,
-                   const int p, const bool verbose) {
+List dstm_AR(arma::mat & Y, const int n_samples, const int p,
+             const bool verbose, const bool sample_sigma2) {
   const int T = Y.n_cols;
   const int S = Y.n_rows;
 
@@ -131,6 +154,19 @@ List dstm_AR(arma::mat & Y, const int n_samples,
   arma::mat mu_g = G.slice(0);
   arma::mat Sigma_g_inv = arma::eye(p, p);
 
+  // For sampling sigma2
+  double alpha_sigma2 = 0, beta_sigma2 = 0;
+  arma::colvec sigma2(1);
+
+  if (sample_sigma2) {
+    alpha_sigma2 = 2.0025; // FIX ME: How do we want to set priors for sigma?
+    beta_sigma2 = 0.010025;
+    sigma2.set_size(n_samples + 1);
+    sigma2[0] = rigamma(alpha_sigma2, beta_sigma2);
+  } else {
+    sigma2[0] = 0.02; // FIX ME: How do we want to specify this?
+  }
+
   // Other objects for sampling
   Y.insert_cols(0, 1); // Y is now true-indexed
   arma::cube theta(p, T + 1, n_samples);
@@ -138,7 +174,11 @@ List dstm_AR(arma::mat & Y, const int n_samples,
   arma::cube R(p, p, T + 1), C(p, p, T + 1);
   m.col(0).zeros(); // FIX ME: Create better priors
   C.slice(0).eye();  // FIX ME: Create better priors
-  arma::mat W = arma::eye(p, p), V = arma::eye(S, S) * 0.02; // FIX ME: Make more generic
+  arma::mat W = arma::eye(p, p), V = arma::eye(S, S), V_i; // FIX ME: Make more generic
+  if (!sample_sigma2) {
+    V_i = sigma2[0] * V;
+    V.reset();
+  }
 
   int G_idx = 0; // Avoids complicated control flow
   for (int i = 0; i < n_samples; ++i) {
@@ -147,9 +187,13 @@ List dstm_AR(arma::mat & Y, const int n_samples,
     }
     checkUserInterrupt();
 
-    Kalman(Y, F, V, G.slice(G_idx), W, m, C, a, R);
+    if (sample_sigma2) V_i = sigma2[i] * V;
+    Kalman(Y, F, V_i, G.slice(G_idx), W, m, C, a, R);
     BackwardSample(theta, m, a, C, G.slice(G_idx), R, T, 1, i, verbose, p);
     SampleAR(G.slice(G_idx + 1), W, theta, Sigma_g_inv, mu_g, i, p, T);
+    if (sample_sigma2) {
+      SampleSigma2(alpha_sigma2, beta_sigma2, S, T, i, Y, F, theta, sigma2);
+    }
     ++G_idx;
   }
 
@@ -157,6 +201,9 @@ List dstm_AR(arma::mat & Y, const int n_samples,
   results["theta"]  = theta;
   results["G"]      = G;
   results["F"]      = F;
+  if (sample_sigma2) {
+    results["sigma2"] = sigma2;
+  }
   return results;
 }
 
