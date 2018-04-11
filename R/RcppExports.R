@@ -8,11 +8,11 @@ mvnorm <- function(mean, Sigma) {
 #' Fits a dynamic spatio-temporal model (DSTM)
 #'
 #' @param Y S by T matrix containing response variable at S spatial locations and T time points
-#' @param F_ S by p matrix defining \eqn{Y_t = F \theta_t + V}
-#' @param G_0 p by p matrix defining \eqn{\theta_t = G \theta_{t-1} + W}.
-#'        If sample_G is TRUE, then this is used as the starting value and prior mean for G.
-#' @param m_0 p by 1 column vector for a priori mean of \eqn{\theta}
-#' @param C_0 p by p matrix of for a priori variance-covariance matrix of \eqn{\theta}
+#' @param model character string; options include `discount`, `sample_G`, `AR`, and `IDE
+#' @param n_samples integer; number of posterior samples to take
+#' @param p integer; dimension of G in the state equation \eqn{\theta_{t+1} = G \theta_{t}}
+#' @param verbose boolean; controls verbosity
+#' @param sample_sigma2 whether boolean; to sample \eqn{\sigma^2}
 #'
 #' @keyword IDE, Kalman, Filter
 #' @export

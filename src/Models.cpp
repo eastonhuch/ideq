@@ -52,7 +52,7 @@ List dstm_discount(arma::mat & Y, const int n_samples, const int p,
 
     if (sample_sigma2) sigma2_i = sigma2(i);
     KalmanDiscounted(Y, F, G_0, m, C, a, R, sigma2_i, lambda(i));
-    BackwardSample(theta, m, a, C, G_0, R, T, 1, i, verbose, p);
+    BackwardSample(theta, m, a, C, G_0, R, 1, i, verbose);
 
     if (sample_sigma2) {
       SampleSigma2(alpha_sigma2, beta_sigma2, S, T, i, Y, F, theta, sigma2);
@@ -121,7 +121,7 @@ List dstm_sample_G(arma::mat & Y, const int n_samples, const int p,
 
     if (sample_sigma2) V_i = sigma2[i] * V;
     Kalman(Y, F, V_i, G.slice(G_idx), W, m, C, a, R);
-    BackwardSample(theta, m, a, C, G.slice(G_idx), R, T, 1, i, verbose, p);
+    BackwardSample(theta, m, a, C, G.slice(G_idx), R, 1, i, verbose);
     SampleG(G.slice(G_idx + 1), W, theta, Sigma_g_inv, mu_g, i, p, T);
     if (sample_sigma2) {
       SampleSigma2(alpha_sigma2, beta_sigma2, S, T, i, Y, F, theta, sigma2);
@@ -189,7 +189,7 @@ List dstm_AR(arma::mat & Y, const int n_samples, const int p,
 
     if (sample_sigma2) V_i = sigma2[i] * V;
     Kalman(Y, F, V_i, G.slice(G_idx), W, m, C, a, R);
-    BackwardSample(theta, m, a, C, G.slice(G_idx), R, T, 1, i, verbose, p);
+    BackwardSample(theta, m, a, C, G.slice(G_idx), R, 1, i, verbose);
     SampleAR(G.slice(G_idx + 1), W, theta, Sigma_g_inv, mu_g, i, p, T);
     if (sample_sigma2) {
       SampleSigma2(alpha_sigma2, beta_sigma2, S, T, i, Y, F, theta, sigma2);

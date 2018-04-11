@@ -4,20 +4,21 @@
 \alias{dstm}
 \title{Fits a dynamic spatio-temporal model (DSTM)}
 \usage{
-dstm(Y, F_, G_0, m_0, C_0, n_samples, verbose = FALSE, sample_sigma2 = TRUE,
-  discount = TRUE, sample_G = FALSE)
+dstm(Y, model = "discount", n_samples = 1L, p = 20L, verbose = FALSE,
+  sample_sigma2 = TRUE)
 }
 \arguments{
 \item{Y}{S by T matrix containing response variable at S spatial locations and T time points}
 
-\item{F_}{S by p matrix defining \eqn{Y_t = F \theta_t + V}}
+\item{model}{character string; options include `discount`, `sample_G`, `AR`, and `IDE}
 
-\item{G_0}{p by p matrix defining \eqn{\theta_t = G \theta_{t-1} + W}.
-If sample_G is TRUE, then this is used as the starting value and prior mean for G.}
+\item{n_samples}{integer; number of posterior samples to take}
 
-\item{m_0}{p by 1 column vector for a priori mean of \eqn{\theta}}
+\item{p}{integer; dimension of G in the state equation \eqn{\theta_{t+1} = G \theta_{t}}}
 
-\item{C_0}{p by p matrix of for a priori variance-covariance matrix of \eqn{\theta}}
+\item{verbose}{boolean; controls verbosity}
+
+\item{sample_sigma2}{whether boolean; to sample \eqn{\sigma^2}}
 }
 \description{
 Fits a dynamic spatio-temporal model (DSTM)
