@@ -7,7 +7,23 @@
 
 using namespace Rcpp;
 
-List dstm_discount(arma::mat & Y, const int n_samples, const int p,
+//' Fits a dynamic spatio-temporal model (DSTM) with a discount factor
+//'
+//' @param Y S by T matrix containing response variable at S spatial locations and T time points
+//' @param n_samples integer; number of posterior samples to take
+//' @param p integer; dimension of G in the state equation \eqn{\theta_{t+1} = G \theta_{t}}
+//' @param verbose boolean; controls verbosity
+//' @param sample_sigma2 whether boolean; to sample \eqn{\sigma^2}
+//'
+//' @keyword IDE, Kalman, Filter
+//' @export
+//' @examples
+//' # Duhh...nothing yet
+//' @importFrom Rcpp sourceCpp evalCpp
+//' @useDynLib ideq
+// [[Rcpp::export]]
+List dstm_discount(arma::mat & Y, arma::mat F, arma::mat G, arma::colvec m_0,
+                   arma::mat C_0, NumericVector params, const int n_samples, const int p,
                    const bool sample_sigma2, const bool verbose) {
   const int T = Y.n_cols;
   const int S = Y.n_rows;
@@ -15,33 +31,28 @@ List dstm_discount(arma::mat & Y, const int n_samples, const int p,
   // Construct F and G
   arma::mat    eig_vecs;
   arma::colvec eig_vals;
-  arma::eig_sym(eig_vals, eig_vecs, arma::cov(Y.t()));
-  arma::mat F   = eig_vecs.cols(S - p, S - 1);
-  arma::mat G_0 = arma::eye(p, p);
 
   // Other objects for sampling
   Y.insert_cols(0, 1); // make Y true-indexed
   arma::cube theta(p, T + 1, n_samples);
   arma::mat a(p, T + 1), m(p, T + 1);
   arma::cube R(p, p, T + 1), C(p, p, T + 1);
-  m.col(0).zeros(); // FIX ME: Create better priors
-  C.slice(0).eye();  // FIX ME: Create better priors
-  arma::mat W = arma::eye(p, p);
+  m.col(0) = m_0;
+  C.slice(0) = C_0;
 
-  double alpha_sigma2 = 0, beta_sigma2 = 0,
-               alpha_lambda = 0, beta_lambda = 0;
-  arma::colvec sigma2, lambda;
-  alpha_lambda = 2.25; // FIX ME: How do we want to set priors for sigma?
-  beta_lambda  = 0.0625;
-  lambda.set_size(n_samples + 1);
+  double alpha_lambda = params[0];
+  double beta_lambda  = params[1];
+  arma::colvec sigma2, lambda(n_samples + 1);
   lambda[0] = rigamma(alpha_lambda, beta_lambda);
 
-  double sigma2_i = 0.02; // FIX ME: How do we want to specify this?
+  double alpha_sigma2, beta_sigma2, sigma2_i;
   if (sample_sigma2) {
-    alpha_sigma2 = 2.0025; // FIX ME: How do we want to set priors for sigma?
-    beta_sigma2 = 0.010025;
+    alpha_sigma2 = params[2];
+    beta_sigma2  = params[3];
     sigma2.set_size(n_samples + 1);
     sigma2[0] = rigamma(alpha_sigma2, beta_sigma2);
+  } else {
+    sigma2_i = params[4];
   }
 
   for (int i = 0; i < n_samples; ++i) {
@@ -51,14 +62,14 @@ List dstm_discount(arma::mat & Y, const int n_samples, const int p,
     checkUserInterrupt();
 
     if (sample_sigma2) sigma2_i = sigma2(i);
-    KalmanDiscounted(Y, F, G_0, m, C, a, R, sigma2_i, lambda(i));
-    BackwardSample(theta, m, a, C, G_0, R, 1, i, verbose);
+    KalmanDiscounted(Y, F, G, m, C, a, R, sigma2_i, lambda(i));
+    BackwardSample(theta, m, a, C, G, R, 1, i, verbose);
 
     if (sample_sigma2) {
       SampleSigma2(alpha_sigma2, beta_sigma2, S, T, i, Y, F, theta, sigma2);
     }
 
-    SampleLambda(alpha_lambda, beta_lambda, p, T, i, G_0, C , theta, lambda);
+    SampleLambda(alpha_lambda, beta_lambda, p, T, i, G, C , theta, lambda);
   }
 
   List results;
@@ -71,6 +82,21 @@ List dstm_discount(arma::mat & Y, const int n_samples, const int p,
   return results;
 }
 
+//' Fits a dynamic spatio-temporal model (DSTM) that samples the matrix G defining the state equation
+//'
+//' @param Y S by T matrix containing response variable at S spatial locations and T time points
+//' @param n_samples integer; number of posterior samples to take
+//' @param p integer; dimension of G in the state equation \eqn{\theta_{t+1} = G \theta_{t}}
+//' @param verbose boolean; controls verbosity
+//' @param sample_sigma2 whether boolean; to sample \eqn{\sigma^2}
+//'
+//' @keyword IDE, Kalman, Filter
+//' @export
+//' @examples
+//' # Duhh...nothing yet
+//' @importFrom Rcpp sourceCpp evalCpp
+//' @useDynLib ideq
+// [[Rcpp::export]]
 List dstm_sample_G(arma::mat & Y, const int n_samples, const int p,
                    const bool verbose, const bool sample_sigma2) {
   const int T = Y.n_cols;
@@ -139,6 +165,21 @@ List dstm_sample_G(arma::mat & Y, const int n_samples, const int p,
   return results;
 }
 
+//' Fits a dynamic spatio-temporal model (DSTM) that samples a diagonal matrix G defining the state equation
+//'
+//' @param Y S by T matrix containing response variable at S spatial locations and T time points
+//' @param n_samples integer; number of posterior samples to take
+//' @param p integer; dimension of G in the state equation \eqn{\theta_{t+1} = G \theta_{t}}
+//' @param verbose boolean; controls verbosity
+//' @param sample_sigma2 whether boolean; to sample \eqn{\sigma^2}
+//'
+//' @keyword IDE, Kalman, Filter
+//' @export
+//' @examples
+//' # Duhh...nothing yet
+//' @importFrom Rcpp sourceCpp evalCpp
+//' @useDynLib ideq
+// [[Rcpp::export]]
 List dstm_AR(arma::mat & Y, const int n_samples, const int p,
              const bool verbose, const bool sample_sigma2) {
   const int T = Y.n_cols;
@@ -207,6 +248,15 @@ List dstm_AR(arma::mat & Y, const int n_samples, const int p,
   return results;
 }
 
+//' Fits a integrodifference equation model (IDE)
+//'
+//' @keyword IDE, Kalman, Filter
+//' @export
+//' @examples
+//' # Duhh...nothing yet
+//' @importFrom Rcpp sourceCpp evalCpp
+//' @useDynLib ideq
+// [[Rcpp::export]]
 List dstm_IDE() {
   Rcout << "The answer is 42" << std::endl;
   List results;

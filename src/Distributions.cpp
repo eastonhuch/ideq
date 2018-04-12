@@ -3,6 +3,14 @@
 #include <RcppArmadillo.h>
 using namespace Rcpp;
 
+//' Samples from a multivariate normal distribution
+//'
+//' @keyword Normal, Multivariate, Sample, Random
+//' @export
+//' @examples
+//' # Duhh...nothing yet
+//' @importFrom Rcpp sourceCpp evalCpp
+//' @useDynLib ideq
 // [[Rcpp::export]]
 arma::colvec mvnorm(arma::colvec mean, arma::mat Sigma) {
   int n = mean.n_elem;
