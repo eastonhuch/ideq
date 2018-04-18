@@ -22,23 +22,41 @@ using namespace Rcpp;
 //' @importFrom Rcpp sourceCpp evalCpp
 //' @useDynLib ideq
 // [[Rcpp::export]]
-List dstm_discount(arma::mat & Y, arma::mat F, arma::mat G, arma::colvec m_0,
-                   arma::mat C_0, NumericVector params, const int n_samples, const int p,
-                   const bool sample_sigma2, const bool verbose) {
+List dstm_discount(arma::mat Y, arma::mat F, arma::mat G_0, arma::mat Sigma_G_inv,
+                   arma::colvec m_0, arma::mat C_0, NumericVector params,
+                   CharacterVector proc_model, const int n_samples,
+                   const bool verbose) {
+  bool AR = false, FULL = false;
+  if (proc_model(0) == "AR") {
+    AR = true;
+  } else if (proc_model(0) == "Full") {
+    FULL = true;
+  }
+
+  bool sample_sigma2 = true;
+  if (params[4] == NA_REAL) {
+    sample_sigma2 = false;
+  }
+
+  const int p = G_0.n_rows;
   const int T = Y.n_cols;
   const int S = Y.n_rows;
 
-  // Construct F and G
-  arma::mat    eig_vecs;
-  arma::colvec eig_vals;
-
   // Other objects for sampling
   Y.insert_cols(0, 1); // make Y true-indexed
-  arma::cube theta(p, T + 1, n_samples);
+  arma::cube theta(p, T + 1, n_samples), G;
   arma::mat a(p, T + 1), m(p, T + 1);
-  arma::cube R(p, p, T + 1), C(p, p, T + 1);
+  arma::cube R(p, p, T + 1), C(p, p, T + 1), W_inv;
   m.col(0) = m_0;
   C.slice(0) = C_0;
+
+  if (AR || FULL) {
+    G.set_size(p, p, n_samples + 1);
+    W_inv.set_size(p, p, T + 1);
+  } else {
+    G.set_size(p, p, 1);
+  }
+  G.slice(0) = G_0;
 
   double alpha_lambda = params[0];
   double beta_lambda  = params[1];
@@ -55,21 +73,38 @@ List dstm_discount(arma::mat & Y, arma::mat F, arma::mat G, arma::colvec m_0,
     sigma2_i = params[4];
   }
 
+  int G_idx = 0;
   for (int i = 0; i < n_samples; ++i) {
     if (verbose) {
       Rcout << "Filtering sample number " << i + 1 << std::endl;
     }
     checkUserInterrupt();
 
+    // FFBS
     if (sample_sigma2) sigma2_i = sigma2(i);
-    KalmanDiscounted(Y, F, G, m, C, a, R, sigma2_i, lambda(i));
-    BackwardSample(theta, m, a, C, G, R, 1, i, verbose);
+    KalmanDiscounted(Y, F, G.slice(G_idx), m, C, a, R, sigma2_i, lambda(i));
+    BackwardSample(theta, m, a, C, G.slice(G_idx), R, 1, i, verbose);
 
+    // G
+    if (AR) {
+      UpdateW_inv(W_inv, C, G.slice(G_idx), AR, lambda(i));
+      SampleAR(G.slice(G_idx + 1), W_inv, theta.slice(i), Sigma_G_inv, G_0, T);
+    } else if (FULL) {
+      UpdateW_inv(W_inv, C, G.slice(G_idx), AR, lambda(i));
+      // FIX ME: update W_inv
+      //SampleG(G.slice(i + 1), W, theta, Sigma_G_inv, G_0, i, p, T);
+    }
+
+    // Sigma2
     if (sample_sigma2) {
       SampleSigma2(alpha_sigma2, beta_sigma2, S, T, i, Y, F, theta, sigma2);
     }
 
-    SampleLambda(alpha_lambda, beta_lambda, p, T, i, G, C , theta, lambda);
+    // Lambda (W)
+    SampleLambda(alpha_lambda, beta_lambda, p, T, i, G.slice(G_idx), C, theta, lambda);
+    if (AR || FULL) {
+      ++ G_idx;
+    }
   }
 
   List results;

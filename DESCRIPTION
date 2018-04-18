@@ -13,4 +13,5 @@ LinkingTo:
   Rcpp,
   rgen
 Imports: 
-  Rcpp
+  Rcpp,
+  matrixcalc

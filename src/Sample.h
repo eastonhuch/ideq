@@ -23,9 +23,8 @@ void SampleG(arma::mat & G, arma::mat & W, arma::cube & theta,
              arma::mat & Sigma_g_inv, arma::colvec & mu_g,
              int & i, const int & p, const int & T);
 
-void SampleAR(arma::mat & G, arma::mat & W, arma::cube & theta,
-             arma::mat & Sigma_g_inv, arma::mat & mu_g,
-             int & i, const int & p, const int & T);
+void SampleAR(arma::mat & G, arma::cube & W_inv, arma::mat & theta,
+              arma::mat & Sigma_G_inv, arma::mat & mu_G, const int & T);
 
 void SampleV_inv (arma::mat & Y, arma::mat & F, arma::cube & theta,
                   arma::cube & V, arma::mat & C_V, const int & df_V,
@@ -34,5 +33,8 @@ void SampleV_inv (arma::mat & Y, arma::mat & F, arma::cube & theta,
 void SampleW_inv (arma::cube & theta, arma::mat & G,
                   arma::cube & W, arma::mat & C_W, const int & df_W,
                   int & i, const int & T);
+
+void UpdateW_inv (arma::cube & W_inv, arma::cube & C, arma::mat & G,
+                  bool AR, int lambda);
 
 #endif

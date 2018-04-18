@@ -27,8 +27,8 @@ mvnorm <- function(mean, Sigma) {
 #' # Duhh...nothing yet
 #' @importFrom Rcpp sourceCpp evalCpp
 #' @useDynLib ideq
-dstm_discount <- function(Y, F, G, m_0, C_0, params, n_samples, p, sample_sigma2, verbose) {
-    .Call('_ideq_dstm_discount', PACKAGE = 'ideq', Y, F, G, m_0, C_0, params, n_samples, p, sample_sigma2, verbose)
+dstm_discount <- function(Y, F, G_0, Sigma_G_inv, m_0, C_0, params, proc_model, n_samples, verbose) {
+    .Call('_ideq_dstm_discount', PACKAGE = 'ideq', Y, F, G_0, Sigma_G_inv, m_0, C_0, params, proc_model, n_samples, verbose)
 }
 
 #' Fits a dynamic spatio-temporal model (DSTM) that samples the matrix G defining the state equation
