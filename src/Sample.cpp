@@ -74,37 +74,32 @@ void SampleLambda(const double & alpha_lambda, const double & beta_lambda,
   return;
 }
 
-void SampleG(arma::mat & G, arma::mat & W, arma::cube & theta,
-             arma::mat & Sigma_g_inv, arma::colvec & mu_g,
-             int & i, const int & p, const int & T) {
+void SampleG(arma::mat & G, arma::cube & W_inv, arma::mat & theta,
+             arma::mat & Sigma_g_inv, arma::mat & mu_g,
+             const int & p, const int & T) {
 
-  arma::mat W_tilde = arma::zeros(T * p, T * p);
-  int start, stop;
+  // NOTE: mu_g is arma::reshape(G_0, p * p, 1)
+  // Create W_tilde_inv
+  arma::mat W_tilde_inv = arma::zeros(T * p, T * p);
+  const bool dynamic_W = (W_inv.n_slices > 1);
+  int W_idx = 0, start = 0, stop = 0;
+
   for (int t = 1; t <= T; ++t) {
+    if (dynamic_W) {
+      ++W_idx;
+    }
     start = (t - 1) * p;
-    stop  = start + 7;
-    W_tilde.submat(start, start, stop, stop) = W_inv.slice(t);
+    stop  = start + p - 1;
+    W_tilde_inv.submat(start, start, stop, stop) = W_inv.slice(W_idx);
   }
 
-
-  // FIX ME: Convert to RcppEigen and use selfadjointView
-  // https://stackoverflow.com/questions/46700560/converting-an-armadillo-matrix-to-an-eigen-matrixd-and-vice-versa
-  // This works if W is fixed over time
-
-  arma::mat W_inv = arma::inv_sympd(W);
-  arma::mat tmp  = theta.slice(i).cols(0, T - 1) *
-                   theta.slice(i).cols(0, T - 1).t();
-  arma::mat V_g = arma::kron(tmp, W_inv) + Sigma_g_inv;
-  V_g = arma::inv_sympd(V_g);
-  arma::colvec a_g = arma::kron(theta.slice(i).cols(0, T - 1), W_inv)
-                     * arma::resize(theta.slice(i).cols(1, T), T * p, 1)
-                     + Sigma_g_inv * mu_g;
-
   // Less efficient approach
-  //arma::mat kron1 = kron(theta.slice(i).cols(0, T - 1).t(), arma::eye(p, p));
-  //arma::mat W_tilde_inv = arma::kron(arma::eye(T, T), W_inv);
-  //Rcout << "Creating V_g" << std::endl;
-  //arma::mat V_g = kron1.t() * W_tilde_inv * kron1 + Sigma_g_inv;
+  arma::mat kron1 = kron(theta.cols(0, T - 1).t(), arma::eye(p, p));
+  arma::mat V_g = kron1.t() * W_tilde_inv * kron1 + Sigma_g_inv;
+  V_g = arma::inv_sympd(V_g);
+  arma::colvec a_g = kron1.t() * W_tilde_inv *
+                     arma::resize(theta.cols(1, T), T * p, 1) +
+                     Sigma_g_inv * mu_g;
 
   arma::mat g = mvnorm(V_g * a_g, V_g);
   G = reshape(g, p, p);

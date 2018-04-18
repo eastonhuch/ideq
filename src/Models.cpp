@@ -59,6 +59,10 @@ List dstm_discount(arma::mat Y, arma::mat F, arma::mat G_0, arma::mat Sigma_G_in
   }
   G.slice(0) = G_0;
 
+  if (FULL) {
+    G_0.reshape(p * p, 1);
+  }
+
   double alpha_lambda = params[0];
   double beta_lambda  = params[1];
   arma::colvec sigma2, lambda(n_samples + 1);
@@ -92,7 +96,7 @@ List dstm_discount(arma::mat Y, arma::mat F, arma::mat G_0, arma::mat Sigma_G_in
       SampleAR(G.slice(G_idx + 1), W_inv, theta.slice(i), Sigma_G_inv, G_0, T);
     } else if (FULL) {
       UpdateW_inv(W_inv, C, G.slice(G_idx), AR, lambda(i));
-      //SampleG(G.slice(i + 1), W, theta, Sigma_G_inv, G_0, i, p, T);
+      SampleG(G.slice(i + 1), W_inv, theta.slice(i), Sigma_G_inv, G_0, p, T);
     }
 
     // Sigma2
