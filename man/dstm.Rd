@@ -4,21 +4,22 @@
 \alias{dstm}
 \title{Fits a dynamic spatio-temporal model (DSTM)}
 \usage{
-dstm(Y, params = NULL, model = "discount", n_samples = 1L, p = 20L,
-  verbose = FALSE, sample_sigma2 = TRUE)
+dstm(Y, obs_model = "EOF", proc_model = "RW", proc_error = "discount",
+  p = 10L, n_samples = 1L, sample_sigma2 = TRUE, verbose = FALSE,
+  params = NULL)
 }
 \arguments{
 \item{Y}{S by T matrix containing response variable at S spatial locations and T time points}
 
-\item{model}{character string; options include `discount`, `sample_G`, `AR`, and `IDE}
+\item{p}{integer; dimension of G in the state equation \eqn{\theta_{t+1} = G \theta_{t}}}
 
 \item{n_samples}{integer; number of posterior samples to take}
 
-\item{p}{integer; dimension of G in the state equation \eqn{\theta_{t+1} = G \theta_{t}}}
+\item{sample_sigma2}{whether boolean; to sample \eqn{\sigma^2}}
 
 \item{verbose}{boolean; controls verbosity}
 
-\item{sample_sigma2}{whether boolean; to sample \eqn{\sigma^2}}
+\item{model}{character string; options include `discount`, `sample_G`, `AR`, and `IDE}
 }
 \description{
 Fits a dynamic spatio-temporal model (DSTM)

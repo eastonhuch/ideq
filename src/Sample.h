@@ -35,6 +35,6 @@ void SampleW_inv (arma::cube & theta, arma::mat & G,
                   int & i, const int & T);
 
 void UpdateW_inv (arma::cube & W_inv, arma::cube & C, arma::mat & G,
-                  bool AR, int lambda);
+                  bool AR, double lambda);
 
 #endif

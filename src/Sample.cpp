@@ -78,9 +78,19 @@ void SampleG(arma::mat & G, arma::mat & W, arma::cube & theta,
              arma::mat & Sigma_g_inv, arma::colvec & mu_g,
              int & i, const int & p, const int & T) {
 
+  arma::mat W_tilde = arma::zeros(T * p, T * p);
+  int start, stop;
+  for (int t = 1; t <= T; ++t) {
+    start = (t - 1) * p;
+    stop  = start + 7;
+    W_tilde.submat(start, start, stop, stop) = W_inv.slice(t);
+  }
+
+
   // FIX ME: Convert to RcppEigen and use selfadjointView
   // https://stackoverflow.com/questions/46700560/converting-an-armadillo-matrix-to-an-eigen-matrixd-and-vice-versa
   // This works if W is fixed over time
+
   arma::mat W_inv = arma::inv_sympd(W);
   arma::mat tmp  = theta.slice(i).cols(0, T - 1) *
                    theta.slice(i).cols(0, T - 1).t();
@@ -104,9 +114,8 @@ void SampleG(arma::mat & G, arma::mat & W, arma::cube & theta,
 void SampleAR(arma::mat & G, arma::cube & W_inv, arma::mat & theta,
               arma::mat & Sigma_G_inv, arma::mat & mu_G, const int & T) {
   const int p = G.n_rows;
-  arma::mat tmp(p, p), sum(p, p), G_inv(p, p);
-  tmp.zeros();
-  sum.zeros();
+  arma::mat tmp = arma::zeros(p, p);
+  arma::mat sum = tmp;
   int W_inv_idx = 0;
   const bool dynamic_W = (W_inv.n_slices > 1);
 
@@ -118,10 +127,11 @@ void SampleAR(arma::mat & G, arma::cube & W_inv, arma::mat & theta,
     sum += tmp * W_inv.slice(W_inv_idx) * tmp;
   }
 
-  arma::mat Sigma_g_new = sum + Sigma_G_inv;
-  tmp = arma::solve(Sigma_g_new, sum + Sigma_G_inv * mu_G);
+  arma::mat Sigma_G_new = sum + Sigma_G_inv;
+  tmp = arma::solve(Sigma_G_new, sum + Sigma_G_inv * mu_G);
 
-  G.diag() = mvnorm(tmp.diag(), Sigma_g_new);
+  G.diag() = mvnorm(tmp.diag(), Sigma_G_new);
+  //G = W_inv.slice(T);
   return;
 };
 
@@ -149,13 +159,9 @@ void SampleW_inv (arma::cube & theta, arma::mat & G,
 }
 
 void UpdateW_inv (arma::cube & W_inv, arma::cube & C, arma::mat & G,
-                  bool AR, int lambda) {
-  arma::mat G_inv;
-  if (AR) {
-    G_inv = arma::inv_sympd(G);
-  } else {
-    G_inv = arma::inv(G);
-  }
+                  bool AR, double lambda) {
+  arma::mat G_inv = arma::inv(G);
+  Rcout << lambda << std::endl;
 
   for (int t = 1; t < W_inv.n_slices; ++t) {
     if (AR) {

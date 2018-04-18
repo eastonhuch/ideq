@@ -31,42 +31,6 @@ dstm_discount <- function(Y, F, G_0, Sigma_G_inv, m_0, C_0, params, proc_model, 
     .Call('_ideq_dstm_discount', PACKAGE = 'ideq', Y, F, G_0, Sigma_G_inv, m_0, C_0, params, proc_model, n_samples, verbose)
 }
 
-#' Fits a dynamic spatio-temporal model (DSTM) that samples the matrix G defining the state equation
-#'
-#' @param Y S by T matrix containing response variable at S spatial locations and T time points
-#' @param n_samples integer; number of posterior samples to take
-#' @param p integer; dimension of G in the state equation \eqn{\theta_{t+1} = G \theta_{t}}
-#' @param verbose boolean; controls verbosity
-#' @param sample_sigma2 whether boolean; to sample \eqn{\sigma^2}
-#'
-#' @keyword IDE, Kalman, Filter
-#' @export
-#' @examples
-#' # Duhh...nothing yet
-#' @importFrom Rcpp sourceCpp evalCpp
-#' @useDynLib ideq
-dstm_sample_G <- function(Y, n_samples, p, verbose, sample_sigma2) {
-    .Call('_ideq_dstm_sample_G', PACKAGE = 'ideq', Y, n_samples, p, verbose, sample_sigma2)
-}
-
-#' Fits a dynamic spatio-temporal model (DSTM) that samples a diagonal matrix G defining the state equation
-#'
-#' @param Y S by T matrix containing response variable at S spatial locations and T time points
-#' @param n_samples integer; number of posterior samples to take
-#' @param p integer; dimension of G in the state equation \eqn{\theta_{t+1} = G \theta_{t}}
-#' @param verbose boolean; controls verbosity
-#' @param sample_sigma2 whether boolean; to sample \eqn{\sigma^2}
-#'
-#' @keyword IDE, Kalman, Filter
-#' @export
-#' @examples
-#' # Duhh...nothing yet
-#' @importFrom Rcpp sourceCpp evalCpp
-#' @useDynLib ideq
-dstm_AR <- function(Y, n_samples, p, verbose, sample_sigma2) {
-    .Call('_ideq_dstm_AR', PACKAGE = 'ideq', Y, n_samples, p, verbose, sample_sigma2)
-}
-
 #' Fits a integrodifference equation model (IDE)
 #'
 #' @keyword IDE, Kalman, Filter

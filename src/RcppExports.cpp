@@ -38,36 +38,6 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
-// dstm_sample_G
-List dstm_sample_G(arma::mat& Y, const int n_samples, const int p, const bool verbose, const bool sample_sigma2);
-RcppExport SEXP _ideq_dstm_sample_G(SEXP YSEXP, SEXP n_samplesSEXP, SEXP pSEXP, SEXP verboseSEXP, SEXP sample_sigma2SEXP) {
-BEGIN_RCPP
-    Rcpp::RObject rcpp_result_gen;
-    Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< arma::mat& >::type Y(YSEXP);
-    Rcpp::traits::input_parameter< const int >::type n_samples(n_samplesSEXP);
-    Rcpp::traits::input_parameter< const int >::type p(pSEXP);
-    Rcpp::traits::input_parameter< const bool >::type verbose(verboseSEXP);
-    Rcpp::traits::input_parameter< const bool >::type sample_sigma2(sample_sigma2SEXP);
-    rcpp_result_gen = Rcpp::wrap(dstm_sample_G(Y, n_samples, p, verbose, sample_sigma2));
-    return rcpp_result_gen;
-END_RCPP
-}
-// dstm_AR
-List dstm_AR(arma::mat& Y, const int n_samples, const int p, const bool verbose, const bool sample_sigma2);
-RcppExport SEXP _ideq_dstm_AR(SEXP YSEXP, SEXP n_samplesSEXP, SEXP pSEXP, SEXP verboseSEXP, SEXP sample_sigma2SEXP) {
-BEGIN_RCPP
-    Rcpp::RObject rcpp_result_gen;
-    Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< arma::mat& >::type Y(YSEXP);
-    Rcpp::traits::input_parameter< const int >::type n_samples(n_samplesSEXP);
-    Rcpp::traits::input_parameter< const int >::type p(pSEXP);
-    Rcpp::traits::input_parameter< const bool >::type verbose(verboseSEXP);
-    Rcpp::traits::input_parameter< const bool >::type sample_sigma2(sample_sigma2SEXP);
-    rcpp_result_gen = Rcpp::wrap(dstm_AR(Y, n_samples, p, verbose, sample_sigma2));
-    return rcpp_result_gen;
-END_RCPP
-}
 // dstm_IDE
 List dstm_IDE();
 RcppExport SEXP _ideq_dstm_IDE() {
@@ -82,8 +52,6 @@ END_RCPP
 static const R_CallMethodDef CallEntries[] = {
     {"_ideq_mvnorm", (DL_FUNC) &_ideq_mvnorm, 2},
     {"_ideq_dstm_discount", (DL_FUNC) &_ideq_dstm_discount, 10},
-    {"_ideq_dstm_sample_G", (DL_FUNC) &_ideq_dstm_sample_G, 5},
-    {"_ideq_dstm_AR", (DL_FUNC) &_ideq_dstm_AR, 5},
     {"_ideq_dstm_IDE", (DL_FUNC) &_ideq_dstm_IDE, 0},
     {NULL, NULL, 0}
 };

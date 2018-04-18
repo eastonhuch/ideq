@@ -4,18 +4,19 @@
 \alias{dstm_discount}
 \title{Fits a dynamic spatio-temporal model (DSTM) with a discount factor}
 \usage{
-dstm_discount(Y, F, G, m_0, C_0, params, n_samples, p, sample_sigma2, verbose)
+dstm_discount(Y, F, G_0, Sigma_G_inv, m_0, C_0, params, proc_model, n_samples,
+  verbose)
 }
 \arguments{
 \item{Y}{S by T matrix containing response variable at S spatial locations and T time points}
 
 \item{n_samples}{integer; number of posterior samples to take}
 
+\item{verbose}{boolean; controls verbosity}
+
 \item{p}{integer; dimension of G in the state equation \eqn{\theta_{t+1} = G \theta_{t}}}
 
 \item{sample_sigma2}{whether boolean; to sample \eqn{\sigma^2}}
-
-\item{verbose}{boolean; controls verbosity}
 }
 \description{
 Fits a dynamic spatio-temporal model (DSTM) with a discount factor
