@@ -9,7 +9,7 @@ void Kalman(arma::mat & Y, arma::mat & F, arma::mat & V,
                  arma::mat & m, arma::cube & C,
                  arma::mat & a, arma::cube & R);
 
-void KalmanDiscounted(arma::mat & Y, arma::mat & F, arma::mat & G,
+void KalmanDiscount(arma::mat & Y, arma::mat & F, arma::mat & G,
                       arma::mat & m, arma::cube & C,
                       arma::mat & a, arma::cube & R,
                       double sigma2 , double lambda);

@@ -40,6 +40,40 @@ void BackwardSample(arma::cube & theta, arma::mat & m, arma::mat & a,
   return;
 }
 
+void BackwardSample_Discount(arma::cube & theta, arma::mat & m, arma::mat & a,
+                    arma::cube & C, arma::mat & G, arma::cube & R_inv,
+                    const int & n_samples, int & start_slice,
+                    const bool & verbose) {
+  const int T = theta.n_cols - 1;
+  const int p = theta.n_rows;
+
+  arma::colvec h_t(p);
+  arma::mat H_t(p, p);
+
+  // NOTE: n_samples is how many samples we want to draw on this function call
+  for (int s = start_slice; s < (start_slice + n_samples); ++s) {
+    if (verbose) {
+      Rcout << "Drawing sample number " << s + 1 << std::endl;
+    }
+    checkUserInterrupt();
+    theta.slice(s).col(T) = mvnorm(m.col(T), C.slice(T)); // draw theta_T
+    // Draw values for theta_{T-1} down to theta_0
+    for (int t = T-1; t >= 0; --t) {
+      // Mean and variance of theta_t
+      h_t = m.col(t) + C.slice(t) * G.t() * R_inv.slice(t + 1) *
+            (theta.slice(s).col(t + 1) - a.col(t + 1));
+
+      H_t = C.slice(t) - C.slice(t) * G.t() *
+            R_inv.slice(t + 1) * G * C.slice(t);
+
+      // Draw value for theta_t
+      theta.slice(s).col(t) = mvnorm(h_t, H_t);
+    }
+  }
+  return;
+}
+
+
 void SampleSigma2(const double & alpha_sigma2, const double & beta_sigma2,
                  const int & S, const int & T, int i,
                  arma::mat & Y, arma::mat & F_,
@@ -75,8 +109,9 @@ void SampleLambda(const double & alpha_lambda, const double & beta_lambda,
 }
 
 void SampleG(arma::mat & G, arma::cube & W_inv, arma::mat & theta,
-             arma::mat & Sigma_g_inv, arma::mat & mu_g,
-             const int & p, const int & T) {
+             arma::mat & Sigma_g_inv, arma::mat & mu_g, const int & p,
+             const int & T, const bool Discount = false,
+             const double lambda = 0.0) {
 
   // NOTE: mu_g is arma::reshape(G_0, p * p, 1)
   // Create W_tilde_inv
@@ -93,7 +128,11 @@ void SampleG(arma::mat & G, arma::cube & W_inv, arma::mat & theta,
     W_tilde_inv.submat(start, start, stop, stop) = W_inv.slice(W_idx);
   }
 
-  // Less efficient approach
+  if (Discount) {
+    W_tilde_inv *= ((1 + lambda) / lambda);
+  }
+
+  // This could probably be optimized
   arma::mat kron1 = kron(theta.cols(0, T - 1).t(), arma::eye(p, p));
   arma::mat V_g = kron1.t() * W_tilde_inv * kron1 + Sigma_g_inv;
   V_g = arma::inv_sympd(V_g);
@@ -106,25 +145,9 @@ void SampleG(arma::mat & G, arma::cube & W_inv, arma::mat & theta,
   return;
 };
 
-void CalculateW_inv (arma::cube & W_inv, arma::cube & C, arma::mat & G,
-                  bool AR, double lambda) {
-  arma::mat G_inv = arma::inv(G);
-  Rcout << lambda << std::endl;
-
-  for (int t = 1; t < W_inv.n_slices; ++t) {
-    if (AR) {
-      W_inv.slice(t) = G_inv * arma::inv_sympd(C.slice(t - 1)) *
-                       G_inv / lambda;
-    } else {
-      W_inv.slice(t) = G_inv * arma::inv_sympd(C.slice(t - 1)) *
-                       G_inv.t() / lambda;
-    }
-  }
-  return;
-}
-
 void SampleAR(arma::mat & G, arma::cube & W_inv, arma::mat & theta,
-              arma::mat & Sigma_G_inv, arma::mat & mu_G, const int & T) {
+              arma::mat & Sigma_G_inv, arma::mat & mu_G, const int & T,
+              const int Discount = false, const double lambda = 0.0) {
   const int p = G.n_rows;
   arma::mat tmp = arma::zeros(p, p);
   arma::mat sum = tmp;
@@ -137,6 +160,10 @@ void SampleAR(arma::mat & G, arma::cube & W_inv, arma::mat & theta,
     }
     tmp.diag() = theta.col(t);
     sum += tmp * W_inv.slice(W_inv_idx) * tmp;
+  }
+
+  if (Discount) {
+    sum *= ((1 + lambda) / lambda);
   }
 
   arma::mat Sigma_G_new = sum + Sigma_G_inv;

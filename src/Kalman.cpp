@@ -33,9 +33,9 @@ void Kalman(arma::mat & Y, arma::mat & F, arma::mat & V,
   return;
 };
 
-void KalmanDiscounted(arma::mat & Y, arma::mat & F, arma::mat & G,
+void KalmanDiscount(arma::mat & Y, arma::mat & F, arma::mat & G,
                       arma::mat & m, arma::cube & C,
-                      arma::mat & a, arma::cube & R,
+                      arma::mat & a, arma::cube & R_inv,
                       double sigma2 , double lambda) {
   const int T = Y.n_cols - 1;
   const int S = Y.n_rows;
@@ -49,18 +49,22 @@ void KalmanDiscounted(arma::mat & Y, arma::mat & F, arma::mat & G,
 
     // One step ahead predictive distribution of theta
     a.col(t) = G * m.col(t - 1);
-    R.slice(t) = (1 + lambda) * G * C.slice(t - 1) * G.t();
+    R_inv.slice(t) = (1 + lambda) * G * C.slice(t - 1) * G.t();
+    // NOTE: R is inverted at the end of this loop
 
     // One step ahead predictive distribution of Y_t
     f = F * a.col(t);
-    Q = F * R.slice(t) * F.t();
+    Q = F * R_inv.slice(t) * F.t();
     Q.diag() += sigma2;
 
     // Filtering distribution of theta
-    m.col(t) = a.col(t) + R.slice(t) * F.t() *
+    m.col(t) = a.col(t) + R_inv.slice(t) * F.t() *
                           solve(Q, (Y.col(t) - f));
-    C.slice(t) = R.slice(t) - R.slice(t) * F.t() *
-                              solve(Q, F * R.slice(t));
+    C.slice(t) = R_inv.slice(t) - R_inv.slice(t) * F.t() *
+                              solve(Q, F * R_inv.slice(t));
+
+    // Invert R for sampling
+    R_inv.slice(t) = arma::inv_sympd(R_inv.slice(t));
   }
   return;
 };

@@ -46,7 +46,7 @@ List dstm_discount(arma::mat Y, arma::mat F, arma::mat G_0, arma::mat Sigma_G_in
   Y.insert_cols(0, 1); // make Y true-indexed
   arma::cube theta(p, T + 1, n_samples), G;
   arma::mat a(p, T + 1), m(p, T + 1);
-  arma::cube R(p, p, T + 1), C(p, p, T + 1), W_inv;
+  arma::cube R_inv(p, p, T + 1), C(p, p, T + 1), W_inv;
   m.col(0) = m_0;
   C.slice(0) = C_0;
 
@@ -87,16 +87,17 @@ List dstm_discount(arma::mat Y, arma::mat F, arma::mat G_0, arma::mat Sigma_G_in
 
     // FFBS
     if (sample_sigma2) sigma2_i = sigma2(i);
-    KalmanDiscounted(Y, F, G.slice(G_idx), m, C, a, R, sigma2_i, lambda(i));
-    BackwardSample(theta, m, a, C, G.slice(G_idx), R, 1, i, verbose);
+    KalmanDiscount(Y, F, G.slice(G_idx), m, C, a, R_inv, sigma2_i, lambda(i));
+    BackwardSample_Discount(theta, m, a, C, G.slice(G_idx),
+                            R_inv, 1, i, verbose);
 
     // G
     if (AR) {
-      CalculateW_inv(W_inv, C, G.slice(G_idx), AR, lambda(i));
-      SampleAR(G.slice(G_idx + 1), W_inv, theta.slice(i), Sigma_G_inv, G_0, T);
+      SampleAR(G.slice(G_idx + 1), R_inv, theta.slice(i),
+               Sigma_G_inv, G_0, T, true, lambda(i));
     } else if (FULL) {
-      CalculateW_inv(W_inv, C, G.slice(G_idx), AR, lambda(i));
-      SampleG(G.slice(i + 1), W_inv, theta.slice(i), Sigma_G_inv, G_0, p, T);
+      SampleG(G.slice(i + 1), R_inv, theta.slice(i), Sigma_G_inv, G_0,
+              p, T, true, lambda(i));
     }
 
     // Sigma2
