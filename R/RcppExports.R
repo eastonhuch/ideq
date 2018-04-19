@@ -31,6 +31,18 @@ dstm_discount <- function(Y, F, G_0, Sigma_G_inv, m_0, C_0, params, proc_model, 
     .Call('_ideq_dstm_discount', PACKAGE = 'ideq', Y, F, G_0, Sigma_G_inv, m_0, C_0, params, proc_model, n_samples, verbose)
 }
 
+#' Fits a DSTM using a wishart prior for W
+#'
+#' @keyword Kalman, Filter, FFBS, Wishart
+#' @export
+#' @examples
+#' # Duhh...nothing yet
+#' @importFrom Rcpp sourceCpp evalCpp
+#' @useDynLib ideq
+dstm_IW <- function() {
+    .Call('_ideq_dstm_IW', PACKAGE = 'ideq')
+}
+
 #' Fits a integrodifference equation model (IDE)
 #'
 #' @keyword IDE, Kalman, Filter

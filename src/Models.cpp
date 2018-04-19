@@ -92,10 +92,10 @@ List dstm_discount(arma::mat Y, arma::mat F, arma::mat G_0, arma::mat Sigma_G_in
 
     // G
     if (AR) {
-      UpdateW_inv(W_inv, C, G.slice(G_idx), AR, lambda(i));
+      CalculateW_inv(W_inv, C, G.slice(G_idx), AR, lambda(i));
       SampleAR(G.slice(G_idx + 1), W_inv, theta.slice(i), Sigma_G_inv, G_0, T);
     } else if (FULL) {
-      UpdateW_inv(W_inv, C, G.slice(G_idx), AR, lambda(i));
+      CalculateW_inv(W_inv, C, G.slice(G_idx), AR, lambda(i));
       SampleG(G.slice(i + 1), W_inv, theta.slice(i), Sigma_G_inv, G_0, p, T);
     }
 
@@ -124,6 +124,22 @@ List dstm_discount(arma::mat Y, arma::mat F, arma::mat G_0, arma::mat Sigma_G_in
     results["G"] = G;
   }
   results["F"] = F;
+  return results;
+}
+
+//' Fits a DSTM using a wishart prior for W
+//'
+//' @keyword Kalman, Filter, FFBS, Wishart
+//' @export
+//' @examples
+//' # Duhh...nothing yet
+//' @importFrom Rcpp sourceCpp evalCpp
+//' @useDynLib ideq
+// [[Rcpp::export]]
+List dstm_IW() {
+  Rcout << "The answer is 42" << std::endl;
+  List results;
+  results["answer"] = 42;
   return results;
 }
 

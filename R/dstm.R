@@ -17,22 +17,48 @@ dstm <- function(Y, obs_model = "EOF", proc_model = "RW",
                  verbose = FALSE, params = NULL) {
   results <- "No output...whoops"
 
-  # Observation Model
-  F_ <- matrix()
+  # Observation Model; creates F, m_0, C_0
   if (obs_model == "EOF") {
     F_ <-eigen(cov(t(Y)))$vectors[, 1:p]
-  } else if (obs_model == "IDE") {
+    # Set m_0
+    m_0 <- NULL
+    if ("m_0" %in% names(params)) {
+      if(length(params[["m_0"]]) != p) stop("m_0 must have length p")
+      m_0 <- params[["m_0"]]
+    }
+    else {
+      message("No prior was provided for m_0 so I am using a vector of zeros")
+      m_0 <- rep(0, p)
+    }
+
+    # Set C_0
+    C_0 <- matrix()
+    if ("C_0" %in% names(params)) {
+      if (!is.matrix(params[["C_0"]]) || any(dim(params[["C_0"]]) != c(p, p))){
+        stop("C_0 must be a p by p matrix")
+      }
+      C_0 <- params[["C_0"]]
+    }
+    else {
+      message("No prior was provided for C_0 so I am using an identity matrix ")
+      C_0 <- diag(p)
+    }
+
+    }
+  else if (obs_model == "IDE") {
     stop("IDE model not implemented")
-  } else {
+  }
+  else {
     stop("obs_model is invalid")
   }
 
-  # Process Model
-  G_0 <- Sigma_G_inv <- matrix()
+  # Process Model; creates G_0 (mu_G) and Sigma_G_inv
+  Sigma_G_inv <- matrix()
   if (proc_model == "RW") {
     G_0 <- diag(p)
 
-  } else if (proc_model == "AR") {
+  }
+  else if (proc_model == "AR") {
     if ("mu_G" %in% names(params)) {
       if (!is.diagonal.matrix(params$mu_G) ||
           any(dim(params$mu_G) != c(p, p))) {
@@ -57,7 +83,8 @@ dstm <- function(Y, obs_model = "EOF", proc_model = "RW",
       Sigma_G_inv <- diag(p)
     }
 
-  } else if (proc_model == "Full") {
+  }
+  else if (proc_model == "Full") {
     if ("mu_G" %in% names(params)) {
       if (!is.matrix(params$mu_G) ||
           any(dim(params$mu_G) != c(p, p))) {
@@ -83,84 +110,75 @@ dstm <- function(Y, obs_model = "EOF", proc_model = "RW",
       Sigma_G_inv <- diag(p^2)
     }
 
-  } else {
+  }
+  else {
     stop("proc_model is invalid")
   }
 
-  # Set m_0
-  if ("m_0" %in% names(params)) {
-    if(length(params[["m_0"]]) != p) stop("m_0 must have length p")
-    m_0 <- params[["m_0"]]
-  } else {
-    message("No prior was provided for m_0 so I am using a vector of zeros")
-    m_0 <- rep(0, p)
-  }
+  # Process Error; creates all necessary params (e.g., alpha_lambda, sigma2)
+  if (proc_error == "discount") {
 
-  # Set C_0
-  if ("C_0" %in% names(params)) {
-    if (!is.matrix(params[["C_0"]]) || any(dim(params[["C_0"]]) != c(p, p))){
-      stop("C_0 must be a p by p matrix")
+    # Set prior for lambda
+    alpha_lambda <- beta_lambda <- NULL
+    if ("alpha_lambda" %in% names(params)) {
+      alpha_lambda <- params[["alpha_lambda"]]
     }
-    C_0 <- params[["C_0"]]
-  } else {
-    message("No prior was provided for C_0 so I am using an identity matrix ")
-    C_0 <- diag(p)
-  }
+    else {
+      message("alpha_lambda was not provided so I am using 2.25")
+      alpha_lambda <- 2.25
+    }
 
-  # Set prior for lambda
-  if ("alpha_lambda" %in% names(params)) {
-    alpha_lambda <- params[["alpha_lambda"]]
-  } else {
-    message("alpha_lambda was not provided so I am using 2.25")
-    alpha_lambda <- 2.25
-  }
-  if ("beta_lambda" %in% names(params)) {
-    beta_lambda <- params[["beta_lambda"]]
-  } else {
-    message("beta_lambda was not provided so I am using 0.0625")
-    beta_lambda <- 0.0625
-  }
+    if ("beta_lambda" %in% names(params)) {
+      beta_lambda <- params[["beta_lambda"]]
+    }
+    else {
+      message("beta_lambda was not provided so I am using 0.0625")
+      beta_lambda <- 0.0625
+    }
 
-  # Set prior for sigma2 or sigma2 itself if not sampling
-  if (sample_sigma2) {
-    sigma2 <- NULL
-    if ("alpha_sigma2" %in% names(params)) {
-      alpha_sigma2 <- params[["alpha_sigma2"]]
-    } else {
-      v <- mean(apply(Y, 1, var))
-      alpha_sigma2 <- 2 + v / 4
-      message(paste("alpha_sigma2 was not provided so I am using", alpha_sigma2))
+    # Set prior for sigma2 or sigma2 itself if not sampling
+    alpha_sigma2 <- beta_sigma2 <- sigma2 <- NULL
+    if (sample_sigma2) {
+      sigma2 <- NULL
+      if ("alpha_sigma2" %in% names(params)) {
+        alpha_sigma2 <- params[["alpha_sigma2"]]
+      } else {
+        v <- mean(apply(Y, 1, var))
+        alpha_sigma2 <- 2 + v / 4
+        message(paste("alpha_sigma2 was not provided so I am using", alpha_sigma2))
+      }
+      if ("beta_sigma2" %in% names(params)) {
+        beta_sigma2 <- params[["beta_sigma2"]]
+      } else {
+        if (!exists("v")) v <- mean(apply(Y, 1, var))
+        beta_sigma2 <- (alpha_sigma2 - 1) * v
+        message(paste("beta_sigma2 was not provided so I am using", beta_sigma2))
+      }
+      if (alpha_sigma2 <= 0 || beta_sigma2 <= 0) {
+        stop("alpha_sigma2 or beta_sigma2 is not positive; specify them manually in params")
+      }
     }
-    if ("beta_sigma2" %in% names(params)) {
-      beta_sigma2 <- params[["beta_sigma2"]]
-    } else {
-      if (!exists("v")) v <- mean(apply(Y, 1, var))
-      beta_sigma2 <- (alpha_sigma2 - 1) * v
-      message(paste("beta_sigma2 was not provided so I am using", beta_sigma2))
-    }
-    if (alpha_sigma2 <= 0 || beta_sigma2 <= 0) {
-      stop("alpha_sigma2 or beta_sigma2 is not positive; specify them manually in params")
-    }
-  } else {
-    alpha_sigma2 <- beta_sigma2 <- NULL
-    if ("sigma2" %in% names(params)) {
+    else if ("sigma2" %in% names(params)) {
       sigma2 <- params[["sigma2"]]
-    } else {
+    }
+    else {
       if (!exists("v")) v <- mean(apply(Y, 1, var))
       sigma2 <- v
       message(paste("sigma2 was not provided so I am using", sigma2))
-    }
-  }
-  scalar_params <- c(alpha_lambda, beta_lambda, alpha_sigma2, beta_sigma2, sigma2)
+      }
 
-  # Process Error
-  if (proc_error == "discount") {
+    # Group scalar params into vector
+    scalar_params <- c(alpha_lambda, beta_lambda, alpha_sigma2, beta_sigma2, sigma2)
+
+    # Run the model
     results <- dstm_discount(Y, F_, G_0, Sigma_G_inv, m_0, C_0,
                   scalar_params, proc_model, n_samples, verbose)
-  } else if (proc_error == "IW") {
+  }
+  else if (proc_error == "IW") {
     stop("IW process error is not yet implemented")
     results <- dstm_IW()
-  } else {
+  }
+  else {
     stop("I don't know that type of process error")
   }
 

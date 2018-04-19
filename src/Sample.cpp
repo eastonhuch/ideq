@@ -106,6 +106,23 @@ void SampleG(arma::mat & G, arma::cube & W_inv, arma::mat & theta,
   return;
 };
 
+void CalculateW_inv (arma::cube & W_inv, arma::cube & C, arma::mat & G,
+                  bool AR, double lambda) {
+  arma::mat G_inv = arma::inv(G);
+  Rcout << lambda << std::endl;
+
+  for (int t = 1; t < W_inv.n_slices; ++t) {
+    if (AR) {
+      W_inv.slice(t) = G_inv * arma::inv_sympd(C.slice(t - 1)) *
+                       G_inv / lambda;
+    } else {
+      W_inv.slice(t) = G_inv * arma::inv_sympd(C.slice(t - 1)) *
+                       G_inv.t() / lambda;
+    }
+  }
+  return;
+}
+
 void SampleAR(arma::mat & G, arma::cube & W_inv, arma::mat & theta,
               arma::mat & Sigma_G_inv, arma::mat & mu_G, const int & T) {
   const int p = G.n_rows;
@@ -150,22 +167,5 @@ void SampleW_inv (arma::cube & theta, arma::mat & G,
   C_new = arma::inv_sympd(C_new);
   int df_new = df_W + T;
   W.slice(i) = rgen::rwishart(df_new, C_new);
-  return;
-}
-
-void UpdateW_inv (arma::cube & W_inv, arma::cube & C, arma::mat & G,
-                  bool AR, double lambda) {
-  arma::mat G_inv = arma::inv(G);
-  Rcout << lambda << std::endl;
-
-  for (int t = 1; t < W_inv.n_slices; ++t) {
-    if (AR) {
-      W_inv.slice(t) = G_inv * arma::inv_sympd(C.slice(t - 1)) *
-                       G_inv / lambda;
-    } else {
-      W_inv.slice(t) = G_inv * arma::inv_sympd(C.slice(t - 1)) *
-                       G_inv.t() / lambda;
-    }
-  }
   return;
 }

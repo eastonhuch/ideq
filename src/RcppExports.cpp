@@ -38,6 +38,16 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// dstm_IW
+List dstm_IW();
+RcppExport SEXP _ideq_dstm_IW() {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    rcpp_result_gen = Rcpp::wrap(dstm_IW());
+    return rcpp_result_gen;
+END_RCPP
+}
 // dstm_IDE
 List dstm_IDE();
 RcppExport SEXP _ideq_dstm_IDE() {
@@ -52,6 +62,7 @@ END_RCPP
 static const R_CallMethodDef CallEntries[] = {
     {"_ideq_mvnorm", (DL_FUNC) &_ideq_mvnorm, 2},
     {"_ideq_dstm_discount", (DL_FUNC) &_ideq_dstm_discount, 10},
+    {"_ideq_dstm_IW", (DL_FUNC) &_ideq_dstm_IW, 0},
     {"_ideq_dstm_IDE", (DL_FUNC) &_ideq_dstm_IDE, 0},
     {NULL, NULL, 0}
 };
