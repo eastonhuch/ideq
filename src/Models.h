@@ -9,7 +9,10 @@ List dstm_discount(arma::mat Y, arma::mat F, arma::mat G_0, arma::mat Sigma_G_in
                    CharacterVector proc_model, const int n_samples,
                    const bool verbose);
 
-List dstm_IW(void);
+List dstm_IW(arma::mat Y, arma::mat F, arma::mat G_0, arma::mat Sigma_G_inv,
+             arma::colvec m_0, arma::mat C_0, arma::mat C_W,
+             NumericVector params, CharacterVector proc_model,
+            const int n_samples, const bool verbose);
 
 List dstm_IDE(void);
 

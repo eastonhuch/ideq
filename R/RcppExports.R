@@ -39,8 +39,8 @@ dstm_discount <- function(Y, F, G_0, Sigma_G_inv, m_0, C_0, params, proc_model, 
 #' # Duhh...nothing yet
 #' @importFrom Rcpp sourceCpp evalCpp
 #' @useDynLib ideq
-dstm_IW <- function() {
-    .Call('_ideq_dstm_IW', PACKAGE = 'ideq')
+dstm_IW <- function(Y, F, G_0, Sigma_G_inv, m_0, C_0, C_W, params, proc_model, n_samples, verbose) {
+    .Call('_ideq_dstm_IW', PACKAGE = 'ideq', Y, F, G_0, Sigma_G_inv, m_0, C_0, C_W, params, proc_model, n_samples, verbose)
 }
 
 #' Fits a integrodifference equation model (IDE)

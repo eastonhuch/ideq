@@ -5,11 +5,6 @@
 using namespace Rcpp;
 
 void BackwardSample(arma::cube & theta, arma::mat & m, arma::mat & a,
-                    arma::cube & C, arma::mat & G,
-                    arma::cube & R, const int & n_samples,
-                    int & start_slice, const bool & verbose);
-
-void BackwardSample_Discount(arma::cube & theta, arma::mat & m, arma::mat & a,
                     arma::cube & C, arma::mat & G, arma::cube & R_inv,
                     const int & n_samples, int & start_slice,
                     const bool & verbose);
@@ -37,8 +32,7 @@ void SampleV_inv (arma::mat & Y, arma::mat & F, arma::cube & theta,
                   arma::cube & V, arma::mat & C_V, const int & df_V,
                   int & i, const int & T);
 
-void SampleW_inv (arma::cube & theta, arma::mat & G,
-                  arma::cube & W, arma::mat & C_W, const int & df_W,
-                  int & i, const int & T);
+void SampleW_inv (arma::mat & theta, arma::mat & G, arma::mat & W,
+                  arma::mat & C_W, const int & df_W, const int & T);
 
 #endif

@@ -52,6 +52,39 @@ dstm <- function(Y, obs_model = "EOF", proc_model = "RW",
     stop("obs_model is invalid")
   }
 
+  # Observation Error; creates alpha_sigma2, , etc.
+  # NOTE: We could also draw this from a Wishart distribution...nah
+  alpha_sigma2 <- beta_sigma2 <- sigma2 <- NULL
+  if (sample_sigma2) {
+    sigma2 <- NULL
+    if ("alpha_sigma2" %in% names(params)) {
+      alpha_sigma2 <- params[["alpha_sigma2"]]
+    } else {
+      v <- mean(apply(Y, 1, var))
+      alpha_sigma2 <- 2 + v / 4
+      message(paste("alpha_sigma2 was not provided so I am using", alpha_sigma2))
+    }
+    if ("beta_sigma2" %in% names(params)) {
+      beta_sigma2 <- params[["beta_sigma2"]]
+    } else {
+      if (!exists("v")) v <- mean(apply(Y, 1, var))
+      beta_sigma2 <- (alpha_sigma2 - 1) * v
+      message(paste("beta_sigma2 was not provided so I am using", beta_sigma2))
+    }
+    if (alpha_sigma2 <= 0 || beta_sigma2 <= 0) {
+      stop("alpha_sigma2 or beta_sigma2 is not positive; specify them manually in params")
+    }
+  }
+  else if ("sigma2" %in% names(params)) {
+    sigma2 <- params[["sigma2"]]
+  }
+  else {
+    if (!exists("v")) v <- mean(apply(Y, 1, var))
+    sigma2 <- v
+    message(paste("sigma2 was not provided so I am using", sigma2))
+  }
+
+
   # Process Model; creates G_0 (mu_G) and Sigma_G_inv
   Sigma_G_inv <- matrix()
   if (proc_model == "RW") {
@@ -72,11 +105,11 @@ dstm <- function(Y, obs_model = "EOF", proc_model = "RW",
     }
 
     if ("Sigma_G_inv" %in% names(params)) {
-      if (!is.positive.definite(params$Sigma_G_inv) ||
-          !is.symmetric.matrix(params$Sigma_G_inv)) {
-        stop("Sigma_G_inv must be symmetric positive definite matrix")
-      } else {
+      if (is.positive.definite(params$Sigma_G_inv) &&
+          is.symmetric.matrix(params$Sigma_G_inv)) {
         Sigma_G_inv <- params$Sigma_G_inv
+      } else {
+        stop("Sigma_G_inv must be symmetric positive definite matrix")
       }
     } else {
       message("Sigma_G_inv was not provided, so I am using an identity matrix")
@@ -136,37 +169,6 @@ dstm <- function(Y, obs_model = "EOF", proc_model = "RW",
       beta_lambda <- 0.0625
     }
 
-    # Set prior for sigma2 or sigma2 itself if not sampling
-    alpha_sigma2 <- beta_sigma2 <- sigma2 <- NULL
-    if (sample_sigma2) {
-      sigma2 <- NULL
-      if ("alpha_sigma2" %in% names(params)) {
-        alpha_sigma2 <- params[["alpha_sigma2"]]
-      } else {
-        v <- mean(apply(Y, 1, var))
-        alpha_sigma2 <- 2 + v / 4
-        message(paste("alpha_sigma2 was not provided so I am using", alpha_sigma2))
-      }
-      if ("beta_sigma2" %in% names(params)) {
-        beta_sigma2 <- params[["beta_sigma2"]]
-      } else {
-        if (!exists("v")) v <- mean(apply(Y, 1, var))
-        beta_sigma2 <- (alpha_sigma2 - 1) * v
-        message(paste("beta_sigma2 was not provided so I am using", beta_sigma2))
-      }
-      if (alpha_sigma2 <= 0 || beta_sigma2 <= 0) {
-        stop("alpha_sigma2 or beta_sigma2 is not positive; specify them manually in params")
-      }
-    }
-    else if ("sigma2" %in% names(params)) {
-      sigma2 <- params[["sigma2"]]
-    }
-    else {
-      if (!exists("v")) v <- mean(apply(Y, 1, var))
-      sigma2 <- v
-      message(paste("sigma2 was not provided so I am using", sigma2))
-      }
-
     # Group scalar params into vector
     scalar_params <- c(alpha_lambda, beta_lambda, alpha_sigma2, beta_sigma2, sigma2)
 
@@ -175,8 +177,36 @@ dstm <- function(Y, obs_model = "EOF", proc_model = "RW",
                   scalar_params, proc_model, n_samples, verbose)
   }
   else if (proc_error == "IW") {
-    stop("IW process error is not yet implemented")
-    results <- dstm_IW()
+    # C_W
+    if ("C_W" %in% names(params)) {
+      if (is.positive.definite(params[["C_W"]])) {
+        C_W <- params[["C_W"]]
+      }
+      else {
+        stop("C_W must be a square positive definite matrix")
+      }
+    }
+    else {
+      message("C_W was not provided so I am using an identity matrix")
+      C_W <- diag(p)
+    }
+
+    if ("df_W" %in% names(params)) {
+      if (is.numeric(params[["df_W"]] && params[["df_W"]] >= p)) {
+        df_W <- as.integer(params[["df_W"]])
+      }
+      else {
+        stop("df_W must be numeric >= p")
+      }
+    }
+    else {
+      message("df_W was not provided so I am using p")
+      df_W <- p
+    }
+
+    scalar_params <- c(df_W, alpha_sigma2, beta_sigma2, sigma2)
+    results <- dstm_IW(Y, F_, G_0, Sigma_G_inv, m_0, C_0, C_W,
+                       scalar_params, proc_model, n_samples, verbose)
   }
   else {
     stop("I don't know that type of process error")

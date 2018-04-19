@@ -9,38 +9,6 @@
 using namespace Rcpp;
 
 void BackwardSample(arma::cube & theta, arma::mat & m, arma::mat & a,
-                    arma::cube & C, arma::mat & G,
-                    arma::cube & R, const int & n_samples,
-                    int & start_slice, const bool & verbose) {
-  const int T = theta.n_cols - 1;
-  const int p = theta.n_rows;
-
-  arma::colvec h_t(p);
-  arma::mat H_t(p, p);
-
-  // NOTE: n_samples is how many samples we want to draw on this function call
-  for (int s = start_slice; s < (start_slice + n_samples); ++s) {
-    if (verbose) {
-      Rcout << "Drawing sample number " << s + 1 << std::endl;
-    }
-    checkUserInterrupt();
-    theta.slice(s).col(T) = mvnorm(m.col(T), C.slice(T)); // draw theta_T
-    // Draw values for theta_{T-1} down to theta_0
-    for (int t = T-1; t >= 0; --t) {
-      // Mean and variance of theta_t
-      h_t = m.col(t) + C.slice(t) * G.t() *
-        solve(R.slice(t + 1), (theta.slice(s).col(t + 1) - a.col(t + 1)));
-
-      H_t = C.slice(t) - C.slice(t) * G.t() *
-        solve(R.slice(t + 1), G) * C.slice(t);
-      // Draw value for theta_t
-      theta.slice(s).col(t) = mvnorm(h_t, H_t);
-    }
-  }
-  return;
-}
-
-void BackwardSample_Discount(arma::cube & theta, arma::mat & m, arma::mat & a,
                     arma::cube & C, arma::mat & G, arma::cube & R_inv,
                     const int & n_samples, int & start_slice,
                     const bool & verbose) {
@@ -185,14 +153,13 @@ void SampleV_inv (arma::mat & Y, arma::mat & F, arma::cube & theta,
   return;
 }
 
-void SampleW_inv (arma::cube & theta, arma::mat & G,
-                  arma::cube & W, arma::mat & C_W, const int & df_W,
-                  int & i, const int & T) {
-  arma::mat C_new = theta.slice(i).cols(1, T) -
-                    G * theta.slice(i).cols(0, T - 1);
+void SampleW_inv (arma::mat & theta, arma::mat & G, arma::mat & W,
+                  arma::mat & C_W, const int & df_W, const int & T) {
+  arma::mat C_new = theta.cols(1, T) -
+                    G * theta.cols(0, T - 1);
   C_new = C_new * C_new.t() + df_W * C_W;
   C_new = arma::inv_sympd(C_new);
   int df_new = df_W + T;
-  W.slice(i) = rgen::rwishart(df_new, C_new);
+  W = rgen::rwishart(df_new, C_new);
   return;
 }
