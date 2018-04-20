@@ -178,7 +178,6 @@ List dstm_IW(arma::mat Y, arma::mat F, arma::mat G_0, arma::mat Sigma_G_inv,
   if (AR || FULL) {
     G.set_size(p, p, n_samples + 1);
     G.zeros();
-    W_inv.set_size(p, p, T + 1);
   } else {
     G.set_size(p, p, 1);
   }
