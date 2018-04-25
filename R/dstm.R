@@ -212,5 +212,8 @@ dstm <- function(Y, obs_model = "EOF", proc_model = "RW",
     stop("I don't know that type of process error")
   }
 
+  # Process output
+  class(results) <- c("dstm", "list")
+
   return(results)
 }

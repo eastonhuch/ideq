@@ -12,7 +12,7 @@ using namespace Rcpp;
 //' @importFrom Rcpp sourceCpp evalCpp
 //' @useDynLib ideq
 // [[Rcpp::export]]
-arma::colvec mvnorm(arma::colvec mean, arma::mat Sigma) {
+arma::colvec mvnorm(const arma::colvec & mean, const arma::mat & Sigma) {
   int n = mean.n_elem;
   arma::colvec z(n);
   for (int i = 0; i < n; ++i) {
@@ -22,6 +22,6 @@ arma::colvec mvnorm(arma::colvec mean, arma::mat Sigma) {
   return x;
 };
 
-double rigamma(double a, double scl) {
+double rigamma(const double a, const double scl) {
   return (1 / R::rgamma(a, 1 / scl));
 }

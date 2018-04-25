@@ -65,7 +65,7 @@ List dstm_discount(arma::mat Y, arma::mat F, arma::mat G_0, arma::mat Sigma_G_in
 
   double alpha_lambda = params[0];
   double beta_lambda  = params[1];
-  arma::colvec sigma2, lambda(n_samples + 1);
+  arma::vec sigma2, lambda(n_samples + 1);
   lambda[0] = rigamma(alpha_lambda, beta_lambda);
 
   double alpha_sigma2, beta_sigma2, sigma2_i;
@@ -145,7 +145,7 @@ List dstm_IW(arma::mat Y, arma::mat F, arma::mat G_0, arma::mat Sigma_G_inv,
   }
 
   // scalar parameters
-  arma::colvec sigma2;
+  arma::vec sigma2;
   double alpha_sigma2, beta_sigma2, sigma2_i;
   bool sample_sigma2;
   if (params[3] == NA_REAL) {

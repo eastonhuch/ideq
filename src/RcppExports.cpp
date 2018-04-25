@@ -7,13 +7,13 @@
 using namespace Rcpp;
 
 // mvnorm
-arma::colvec mvnorm(arma::colvec mean, arma::mat Sigma);
+arma::colvec mvnorm(const arma::colvec& mean, const arma::mat& Sigma);
 RcppExport SEXP _ideq_mvnorm(SEXP meanSEXP, SEXP SigmaSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< arma::colvec >::type mean(meanSEXP);
-    Rcpp::traits::input_parameter< arma::mat >::type Sigma(SigmaSEXP);
+    Rcpp::traits::input_parameter< const arma::colvec& >::type mean(meanSEXP);
+    Rcpp::traits::input_parameter< const arma::mat& >::type Sigma(SigmaSEXP);
     rcpp_result_gen = Rcpp::wrap(mvnorm(mean, Sigma));
     return rcpp_result_gen;
 END_RCPP

@@ -4,8 +4,8 @@
 #include <RcppArmadillo.h>
 using namespace Rcpp;
 
-arma::colvec mvnorm(arma::colvec mean, arma::mat Sigma);
+arma::colvec mvnorm(const arma::colvec & mean, const arma::mat & Sigma);
 
-double rigamma(double a, double scl);
+double rigamma(const double a, const double scl);
 
 #endif

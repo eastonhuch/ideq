@@ -4,13 +4,13 @@
 #include <RcppArmadillo.h>
 using namespace Rcpp;
 
-void Kalman(arma::mat & Y, arma::mat & F, arma::mat & G, arma::mat & W,
-                 arma::mat & m, arma::cube & C, arma::mat & a,
-                 arma::cube & R_inv, const double sigma2);
+void Kalman(const arma::mat & Y, const arma::mat & F, const arma::mat & G,
+            const arma::mat & W, arma::mat & m, arma::cube & C, arma::mat & a,
+            arma::cube & R_inv, const double sigma2);
 
-void KalmanDiscount(arma::mat & Y, arma::mat & F, arma::mat & G,
-                      arma::mat & m, arma::cube & C,
-                      arma::mat & a, arma::cube & R,
-                      const double sigma2 , const double lambda);
+void KalmanDiscount(const arma::mat & Y, const arma::mat & F, const arma::mat & G,
+                    arma::mat & m, arma::cube & C,
+                    arma::mat & a, arma::cube & R_inv,
+                    const double sigma2 , const double lambda);
 
 #endif
