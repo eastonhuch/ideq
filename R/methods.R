@@ -9,8 +9,6 @@ predict.dstm <- function(x, K = 1, only_K = FALSE, return_ys = TRUE,
 
   # Calculate thetas
   thetas <- array(NA, dim = c(p, K, n_samples))
-
-  # proc_error = IW
   if (attr(x, "proc_error") == "IW") {
     W_chol <- lapply(1:n_samples + 1, function(i) solve(chol(x[["W_inv"]][ , , i])))
     w <- sapply(1:n_samples, function(i) W_chol[[i]] %*% rnorm(p))
@@ -34,8 +32,23 @@ predict.dstm <- function(x, K = 1, only_K = FALSE, return_ys = TRUE,
     }
 
   # proc_error != IW
+  } else if (attr(x, "proc_error") == "discount"){
+    # This one is more difficult because it depends on the process model
+    # For AR and FULL, you need to use the sampled G matrices
+    # For RW, you need to use the fixed G matrix
+    # Figure out exactly what lambda is
+
+    # Begin pseudo-code
+
+    # For i in K:
+    #   Multiply thetas by G
+    #   Add random error using the discount factor
+    #
+    # Calculate ys
+
   } else {
-    stop("predict.dstm only implemented for attr(x, \"proc_model\") == \"IW\"")
+    stop(paste("predict.dstm is not implemented for attr(x, \"proc_model\") == \"",
+               attr(x, "proc_error"), "\""))
   }
 
   # Calculate ys
@@ -46,11 +59,11 @@ predict.dstm <- function(x, K = 1, only_K = FALSE, return_ys = TRUE,
       my_sd <- sqrt(x[["sigma2"]])
     }
 
+    get_preds <- function(k) x[["F"]] %*% thetas[, k,] + rnorm(n_samples * S, 0, my_sd)
     if (only_K) {
-      ys <- x[["F"]] %*% thetas[, K,] + rnorm(n_samples * S, 0, my_sd)
+      ys <- get_preds(K)
     } else {
-      ys <- sapply(1:K, function(k) x[["F"]] %*% thetas[, k,] +
-                                    rnorm(n_samples * S, 0, my_sd))
+      ys <- sapply(1:K, get_preds)
       if (K > 1) {
         ys <- array(ys, dim = c(S, n_samples, K))
       } else {
@@ -59,17 +72,16 @@ predict.dstm <- function(x, K = 1, only_K = FALSE, return_ys = TRUE,
     }
 
     if (return_thetas) {
-      if (K < 2) thetas <- thetas[, 1,]
+      if (only_K || K < 2) thetas <- thetas[, K,]
       results <- list(ys = ys, thetas = thetas)
     } else {
       results <- ys
     }
 
   # Only thetas
-  } else if (only_K) {
+  } else if (only_K || K < 2) {
     results <- thetas[, K, ]
   } else {
-    if (K < 2) thetas <- thetas[, 1,]
     results <- thetas
   }
 

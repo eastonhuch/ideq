@@ -131,14 +131,14 @@ List dstm_IW(arma::mat Y, arma::mat F, arma::mat G_0, arma::mat Sigma_G_inv,
              arma::colvec m_0, arma::mat C_0, arma::mat C_W,
              NumericVector params, CharacterVector proc_model,
              const int n_samples, const bool verbose) {
-  bool AR = false, FULL = false;
-  if (proc_model(0) == "AR") {
-    AR = true;
-  } else if (proc_model(0) == "Full") {
-    FULL = true;
-  }
+  // Create high-level model parameters
+  bool AR = proc_model(0) == "AR";
+  bool FULL = proc_model(0) == "Full";
+  const int p = G_0.n_rows;
+  const int T = Y.n_cols;
+  const int S = Y.n_rows;
 
-  // scalar parameters
+  // Create variance parameters
   arma::vec sigma2;
   double alpha_sigma2, beta_sigma2, sigma2_i;
   bool sample_sigma2;
@@ -155,13 +155,8 @@ List dstm_IW(arma::mat Y, arma::mat F, arma::mat G_0, arma::mat Sigma_G_inv,
   }
   const double df_W = params[0];
 
-
-  const int p = G_0.n_rows;
-  const int T = Y.n_cols;
-  const int S = Y.n_rows;
-
-  // Other objects for sampling
-  Y.insert_cols(0, 1); // make Y true-indexed
+  // Create matrices and cubes for FFBS
+  Y.insert_cols(0, 1); // make Y true-indexed; i.e. index 1 is t_1
   arma::cube theta(p, T + 1, n_samples), G;
   arma::mat a(p, T + 1), m(p, T + 1);
   arma::cube R_inv(p, p, T + 1), C(p, p, T + 1), W_inv(p, p, n_samples + 1);
@@ -181,7 +176,8 @@ List dstm_IW(arma::mat Y, arma::mat F, arma::mat G_0, arma::mat Sigma_G_inv,
     G_0.reshape(p * p, 1);
   }
 
-  int G_idx = 0;
+  // Begin MCMC
+  int G_idx = 0; // This value is incremented each iteration for AR and Full models
   for (int i = 0; i < n_samples; ++i) {
     if (verbose) {
       Rcout << "Filtering sample number " << i + 1 << std::endl;
