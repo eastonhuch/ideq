@@ -52,7 +52,7 @@ dstm <- function(Y, obs_model = "EOF", proc_model = "RW",
     stop("obs_model is invalid")
   }
 
-  # Observation Error; creates alpha_sigma2, , etc.
+  # Observation Error; creates alpha_sigma2, beta_sigma2, sigma2
   # NOTE: We could also draw this from a Wishart distribution...nah
   alpha_sigma2 <- beta_sigma2 <- sigma2 <- NULL
   if (sample_sigma2) {
@@ -100,7 +100,7 @@ dstm <- function(Y, obs_model = "EOF", proc_model = "RW",
     if ("mu_G" %in% names(params)) {
       if (is.diagonal.matrix(params$mu_G) &&
           all(dim(params$mu_G) != c(p, p))) {
-        G_0 <- params$mu_G
+        G_0 <- params[["mu_G"]]
       }
       else {
         stop("mu_G must be a diagonal p by p matrix")
@@ -115,7 +115,7 @@ dstm <- function(Y, obs_model = "EOF", proc_model = "RW",
     if ("Sigma_G_inv" %in% names(params)) {
       if (is.positive.definite(params$Sigma_G_inv) &&
           is.symmetric.matrix(params$Sigma_G_inv)) {
-        Sigma_G_inv <- params$Sigma_G_inv
+        Sigma_G_inv <- params[["Sigma_G_inv"]]
       } else {
         stop("Sigma_G_inv must be symmetric positive definite matrix")
       }
@@ -166,6 +166,9 @@ dstm <- function(Y, obs_model = "EOF", proc_model = "RW",
     alpha_lambda <- beta_lambda <- NULL
     if ("alpha_lambda" %in% names(params)) {
       alpha_lambda <- params[["alpha_lambda"]]
+      if (!is.numeric(alpha_lambda) || alpha_lambda <= 0) {
+        stop("alpha_lambda must be numeric greater than 0")
+      }
     }
     else {
       message("alpha_lambda was not provided so I am using 2.25")
@@ -174,6 +177,9 @@ dstm <- function(Y, obs_model = "EOF", proc_model = "RW",
 
     if ("beta_lambda" %in% names(params)) {
       beta_lambda <- params[["beta_lambda"]]
+      if (!is.numeric(beta_lambda) || beta_lambda <= 0) {
+        stop("beta_lambda must be numeric greater than 0")
+      }
     }
     else {
       message("beta_lambda was not provided so I am using 0.0625")
@@ -190,10 +196,8 @@ dstm <- function(Y, obs_model = "EOF", proc_model = "RW",
   else if (proc_error == "IW") {
     # C_W
     if ("C_W" %in% names(params)) {
-      if (is.positive.definite(params[["C_W"]])) {
-        C_W <- params[["C_W"]]
-      }
-      else {
+      C_W <- params[["C_W"]]
+      if (!is.positive.definite(C_W)) {
         stop("C_W must be a square positive definite matrix")
       }
     }
@@ -203,10 +207,8 @@ dstm <- function(Y, obs_model = "EOF", proc_model = "RW",
     }
 
     if ("df_W" %in% names(params)) {
-      if (is.numeric(params[["df_W"]] && params[["df_W"]] >= p)) {
-        df_W <- as.integer(params[["df_W"]])
-      }
-      else {
+      df_W <- as.integer(params[["df_W"]])
+      if (!is.numeric(params[["df_W"]] || params[["df_W"]] < p)) {
         stop("df_W must be numeric >= p")
       }
     }
