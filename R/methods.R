@@ -23,17 +23,19 @@ predict.dstm <- function(x, K = 1, only_K = FALSE, return_ys = TRUE,
     if (K > 1) {
       for (k in 2:K) {
         if (attr(x, "proc_model") %in% c("AR", "Full")) {
+          w <- sapply(1:n_samples, function(i) W_chol[[i]] %*% rnorm(p))
           thetas[, k,] <- sapply(1:n_samples, function(i) x[["G"]][,, i + 1] %*%
                                               thetas[, k - 1, i] + w[, i])
         } else {
-            thetas[, k,] <- thetas[, k - 1,] + w
+          w <- sapply(1:n_samples, function(i) W_chol[[i]] %*% rnorm(p))
+          thetas[, k,] <- thetas[, k - 1,] + w
         }
       }
     }
 
   # proc_error != IW
   } else if (attr(x, "proc_error") == "discount"){
-    # This one is more difficult because it depends on the process model
+    # This one is more difficult because the vcov matrix involves a discount factor
     # For AR and FULL, you need to use the sampled G matrices
     # For RW, you need to use the fixed G matrix
     # Figure out exactly what lambda is
@@ -60,14 +62,12 @@ predict.dstm <- function(x, K = 1, only_K = FALSE, return_ys = TRUE,
     }
 
     get_preds <- function(k) x[["F"]] %*% thetas[, k,] + rnorm(n_samples * S, 0, my_sd)
-    if (only_K) {
+    if (only_K || K < 2) {
       ys <- get_preds(K)
     } else {
-      ys <- sapply(1:K, get_preds)
-      if (K > 1) {
-        ys <- array(ys, dim = c(S, n_samples, K))
-      } else {
-        ys <- matrix(ys, nrow = S, ncol = n_samples)
+      ys <- array(NA, dim = c(S, K, n_samples))
+      for (i in seq(1, K)) {
+        ys[, i, ] <- get_preds(i)
       }
     }
 
@@ -79,10 +79,13 @@ predict.dstm <- function(x, K = 1, only_K = FALSE, return_ys = TRUE,
     }
 
   # Only thetas
-  } else if (only_K || K < 2) {
-    results <- thetas[, K, ]
   } else {
+    if (only_K || K < 2) {
+    results <- thetas[, K, ]
+    }
+    else {
     results <- thetas
+    }
   }
 
   return(results)
