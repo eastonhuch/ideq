@@ -2,6 +2,7 @@
 
 export(dstm)
 export(dstm_IDE)
+export(dstm_IW)
 export(dstm_discount)
 export(mvnorm)
 importFrom(Rcpp,evalCpp)

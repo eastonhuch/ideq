@@ -1,7 +1,7 @@
 #' Fits a dynamic spatio-temporal model (DSTM)
 #'
 #' @param Y S by T matrix containing response variable at S spatial locations and T time points
-#' @param model character string; options include `discount`, `sample_G`, `AR`, and `IDE
+#' @param model character string; options include `discount`, `sample_G`, `AR`, and `IDE`
 #' @param n_samples integer; number of posterior samples to take
 #' @param p integer; dimension of G in the state equation \eqn{\theta_{t+1} = G \theta_{t}}
 #' @param verbose boolean; controls verbosity
@@ -56,50 +56,58 @@ dstm <- function(Y, obs_model = "EOF", proc_model = "RW",
   # NOTE: We could also draw this from a Wishart distribution...nah
   alpha_sigma2 <- beta_sigma2 <- sigma2 <- NULL
   if (sample_sigma2) {
-    sigma2 <- NULL
     if ("alpha_sigma2" %in% names(params)) {
       alpha_sigma2 <- params[["alpha_sigma2"]]
-    } else {
+    }
+    else {
       v <- mean(apply(Y, 1, var))
       alpha_sigma2 <- 2 + v / 4
       message(paste("alpha_sigma2 was not provided so I am using", alpha_sigma2))
     }
     if ("beta_sigma2" %in% names(params)) {
       beta_sigma2 <- params[["beta_sigma2"]]
-    } else {
+    }
+    else {
       if (!exists("v")) v <- mean(apply(Y, 1, var))
       beta_sigma2 <- (alpha_sigma2 - 1) * v
       message(paste("beta_sigma2 was not provided so I am using", beta_sigma2))
     }
-    if (alpha_sigma2 <= 0 || beta_sigma2 <= 0) {
-      stop("alpha_sigma2 or beta_sigma2 is not positive; specify them manually in params")
+    if (alpha_sigma2 <= 0) {
+      stop("alpha_sigma2 is not positive; specify manually in params")
+    }
+    else if (beta_sigma2 <= 0) {
+      stop("beta_sigma2 is not positive; specify manually in params")
     }
   }
   else if ("sigma2" %in% names(params)) {
     sigma2 <- params[["sigma2"]]
+    if (!is.numeric(sigma2) || sigma2 <= 0) {
+      stop("inavlid value for sigma2; must be numeric greater than zero")
+    }
   }
   else {
-    if (!exists("v")) v <- mean(apply(Y, 1, var))
+    v <- mean(apply(Y, 1, var))
     sigma2 <- v
     message(paste("sigma2 was not provided so I am using", sigma2))
   }
-
 
   # Process Model; creates G_0 (mu_G) and Sigma_G_inv
   Sigma_G_inv <- matrix()
   if (proc_model == "RW") {
     G_0 <- diag(p)
-
   }
   else if (proc_model == "AR") {
     if ("mu_G" %in% names(params)) {
-      if (!is.diagonal.matrix(params$mu_G) ||
-          any(dim(params$mu_G) != c(p, p))) {
-        stop("mu_G must be a diagonal p by p matrix")
-      } else {
+      if (is.diagonal.matrix(params$mu_G) &&
+          all(dim(params$mu_G) != c(p, p))) {
         G_0 <- params$mu_G
       }
-    } else {
+      else {
+        stop("mu_G must be a diagonal p by p matrix")
+      }
+
+    }
+    else {
       message("mu_G was not provided, so I am using an identity matrix")
       G_0 <- diag(p)
     }
@@ -119,26 +127,29 @@ dstm <- function(Y, obs_model = "EOF", proc_model = "RW",
   }
   else if (proc_model == "Full") {
     if ("mu_G" %in% names(params)) {
-      if (!is.matrix(params$mu_G) ||
-          any(dim(params$mu_G) != c(p, p))) {
-        stop("mu_G must be a p by p matrix")
-      } else {
+      if (is.matrix(params$mu_G) && all(dim(params$mu_G) != c(p, p))) {
         G_0 <- params$mu_G
       }
-    } else {
+      else {
+        stop("mu_G must be a p by p matrix")
+      }
+    }
+    else {
       message("mu_G was not provided, so I am using an identity matrix")
       G_0 <- diag(p)
     }
 
     if ("Sigma_G_inv" %in% names(params)) {
-      if (!is.positive.definite(params$Sigma_G_inv) ||
-          !is.symmetric.matrix(params$Sigma_G_inv) ||
-          nrow(params$Sigma_G_inv) != p^2) {
-        stop("Sigma_G_inv must be a p^2 by p^2 symmetric positive definite matrix")
-      } else {
+      if (is.positive.definite(params$Sigma_G_inv) &&
+          is.symmetric.matrix(params$Sigma_G_inv) &&
+          nrow(params$Sigma_G_inv) == p^2) {
         Sigma_G_inv <- params$Sigma_G_inv
       }
-    } else {
+      else {
+        stop("Sigma_G_inv must be a p^2 by p^2 symmetric positive definite matrix")
+      }
+    }
+    else {
       message("Sigma_G_inv was not provided, so I am using an identity matrix")
       Sigma_G_inv <- diag(p^2)
     }
@@ -214,6 +225,10 @@ dstm <- function(Y, obs_model = "EOF", proc_model = "RW",
 
   # Process output
   class(results) <- c("dstm", "list")
+  attr(results,  "obs_model") <- obs_model
+  attr(results, "proc_model") <- proc_model
+  attr(results, "proc_error") <- proc_error
+  attr(results, "sample_sigma2") <- sample_sigma2
 
   return(results)
 }

@@ -1,9 +1,80 @@
 # Methods for dstm objects
 
-predict.dstm <- function(x) {
-  print("not implemented. Ha!")
+predict.dstm <- function(x, K = 1, only_K = FALSE, return_ys = TRUE,
+                         return_thetas = FALSE) {
+  S  <- nrow(x[["F"]])
+  p  <- dim(x[["theta"]])[1]
+  Tp1 <- dim(x[["theta"]])[2] # T plus 1
+  n_samples <- dim(x[["theta"]])[3]
+
+  # Calculate thetas
+  thetas <- array(NA, dim = c(p, K, n_samples))
+
+  # proc_error = IW
+  if (attr(x, "proc_error") == "IW") {
+    W_chol <- lapply(1:n_samples + 1, function(i) solve(chol(x[["W_inv"]][ , , i])))
+    w <- sapply(1:n_samples, function(i) W_chol[[i]] %*% rnorm(p))
+
+    if (attr(x, "proc_model") %in% c("AR", "Full")) {
+      thetas[, 1,] <- sapply(1:n_samples, function(i) x[["G"]][,, i + 1] %*%
+                                            x[["theta"]][, Tp1, i] + w[, i])
+    } else {
+        thetas[, 1,] <- x[["theta"]][ , Tp1, ] + w
+    }
+
+    if (K > 1) {
+      for (k in 2:K) {
+        if (attr(x, "proc_model") %in% c("AR", "Full")) {
+          thetas[, k,] <- sapply(1:n_samples, function(i) x[["G"]][,, i + 1] %*%
+                                              thetas[, k - 1, i] + w[, i])
+        } else {
+            thetas[, k,] <- thetas[, k - 1,] + w
+        }
+      }
+    }
+
+  # proc_error != IW
+  } else {
+    stop("predict.dstm only implemented for attr(x, \"proc_model\") == \"IW\"")
+  }
+
+  # Calculate ys
+  if (return_ys) {
+    if (attr(x, "sample_sigma2")) {
+      my_sd <- rep(sqrt(x[["sigma2"]][-1]), each = p)
+    } else {
+      my_sd <- sqrt(x[["sigma2"]])
+    }
+
+    if (only_K) {
+      ys <- x[["F"]] %*% thetas[, K,] + rnorm(n_samples * S, 0, my_sd)
+    } else {
+      ys <- sapply(1:K, function(k) x[["F"]] %*% thetas[, k,] +
+                                    rnorm(n_samples * S, 0, my_sd))
+      if (K > 1) {
+        ys <- array(ys, dim = c(S, n_samples, K))
+      } else {
+        ys <- matrix(ys, nrow = S, ncol = n_samples)
+      }
+    }
+
+    if (return_thetas) {
+      if (K < 2) thetas <- thetas[, 1,]
+      results <- list(ys = ys, thetas = thetas)
+    } else {
+      results <- ys
+    }
+
+  # Only thetas
+  } else if (only_K) {
+    results <- thetas[, K, ]
+  } else {
+    if (K < 2) thetas <- thetas[, 1,]
+    results <- thetas
+  }
+
+  return(results)
 }
-predict(dat_full)
 
 summary.dstm <- function(x, object_name = deparse(substitute(x))) {
   cat("Summary for dstm object \`", object_name, "\`\n\n", sep = "")
@@ -44,10 +115,8 @@ summary.dstm <- function(x, object_name = deparse(substitute(x))) {
   rownames(other_summary) <- names(x)[other_idx]
   print(other_summary)
 }
-summary(dat_full)
 
 # print.dstm is just a wrapper for summary.dstm
 print.dstm <- function(x, display = deparse(substitute(x))) {
   summary.dstm(x, object_name = display)
 }
-print(dat_full)

@@ -19,7 +19,7 @@ dstm(Y, obs_model = "EOF", proc_model = "RW", proc_error = "discount",
 
 \item{verbose}{boolean; controls verbosity}
 
-\item{model}{character string; options include `discount`, `sample_G`, `AR`, and `IDE}
+\item{model}{character string; options include `discount`, `sample_G`, `AR`, and `IDE`}
 }
 \description{
 Fits a dynamic spatio-temporal model (DSTM)
