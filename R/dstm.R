@@ -156,7 +156,7 @@ dstm <- function(Y, obs_model = "EOF", proc_model = "RW",
 
   }
   else {
-    stop("proc_model is invalid")
+    stop("proc_model not supported")
   }
 
   # Process Error; creates all necessary params (e.g., alpha_lambda, sigma2)

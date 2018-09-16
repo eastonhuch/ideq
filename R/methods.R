@@ -25,7 +25,7 @@ predict.dstm <- function(x, K = 1, only_K = FALSE, return_ys = TRUE,
   idx <- seq(n_samples) + burnin
 
   # Calculate thetas
-  thetas <- array(NA, dim = c(p, K, n_samples))
+  thetas <- array(NA, dim = c(p, n_samples, K))
 
   # Functions to generate random process error
   get_W_chol <- function(W) lapply(W, function(M) t(chol(M)))
@@ -64,10 +64,10 @@ predict.dstm <- function(x, K = 1, only_K = FALSE, return_ys = TRUE,
       x[["G"]][,,j] %*%
         x[["theta"]][,Tp1,j] + w[,i]
     }
-    thetas[, 1,] <- sapply(seq(n_samples), get_thetas)
+    thetas[,,1] <- sapply(seq(n_samples), get_thetas)
 
   } else { # RW process model
-    thetas[, 1,] <- x[["theta"]][,Tp1,idx] + w
+    thetas[,,1] <- x[["theta"]][,Tp1,idx] + w
   }
 
   # Sample for T+2 up to T+K
@@ -86,11 +86,11 @@ predict.dstm <- function(x, K = 1, only_K = FALSE, return_ys = TRUE,
       if (attr(x, "proc_model") %in% c("AR", "Full")) {
         get_thetas <- function(i) {
           j <- i + burnin
-          x[["G"]][,, j] %*% thetas[, k-1, j] + w[, i]
+          x[["G"]][,, j] %*% thetas[,i,k-1] + w[, i]
         }
-        thetas[, k,] <- sapply(seq(n_samples), get_thetas)
+        thetas[,,k] <- sapply(seq(n_samples), get_thetas)
       } else { # RW process model
-        thetas[, k,] <- thetas[, k-1,] + w
+        thetas[,,k] <- thetas[,,k-1] + w
       }
     }
   }
@@ -106,7 +106,7 @@ predict.dstm <- function(x, K = 1, only_K = FALSE, return_ys = TRUE,
     }
 
     # Function to get predicted y values for a given time period
-    get_preds <- function(k) x[["F"]] %*% thetas[, k,] + rnorm(n_samples * S, 0, my_sd)
+    get_preds <- function(k) x[["F"]] %*% thetas[,,k] + rnorm(n_samples * S, 0, my_sd)
 
     # Get predicted y values for requested time period
     if (only_K || K < 2) {
@@ -114,15 +114,15 @@ predict.dstm <- function(x, K = 1, only_K = FALSE, return_ys = TRUE,
     }
     # Get predicted y values for all time period <= T+K
     else {
-      ys <- array(NA, dim = c(S, K, n_samples))
-      for (i in seq(K)) {
-        ys[, i, ] <- get_preds(i)
+      ys <- array(NA, dim = c(S,n_samples,K))
+      for (k in seq(K)) {
+        ys[,,k] <- get_preds(k)
       }
     }
 
     # Create output list depending on whether user wants thetas
     if (return_thetas) {
-      if (only_K || K < 2) thetas <- thetas[, K,]
+      if (only_K || K < 2) thetas <- thetas[,,K]
       results <- list(ys = ys, thetas = thetas)
     } else {
       results <- ys
@@ -131,7 +131,7 @@ predict.dstm <- function(x, K = 1, only_K = FALSE, return_ys = TRUE,
   # Create output for case when user does not want ys
   } else {
     if (only_K || K < 2) {
-    results <- thetas[, K, ]
+    results <- thetas[,,K]
     }
     else {
     results <- thetas
