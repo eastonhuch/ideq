@@ -1,6 +1,8 @@
   // [[Rcpp::depends(RcppArmadillo)]]
 
 #include <RcppArmadillo.h>
+#include <exception>
+
 using namespace Rcpp;
 
 void Kalman(const arma::mat & Y, const arma::mat & F, const arma::mat & G,
@@ -68,7 +70,16 @@ void KalmanDiscount(const arma::mat & Y, const arma::mat & F, const arma::mat & 
                               solve(Q, F * R_inv.slice(t));
 
     // Invert R for sampling
-    R_inv.slice(t) = arma::inv_sympd(R_inv.slice(t));
+    try {
+      R_inv.slice(t) = arma::inv_sympd(R_inv.slice(t));
+    }
+    catch (std::runtime_error e)
+    {
+      Rcout << "Failed to invert R using inv_sympd" << std::endl;
+      Rcout << "Forcing symmetry using (R + R')/2 and trying again" << std::endl;
+      arma::mat R_sym = ( R_inv.slice(t) + R_inv.slice(t).t() ) / 2;
+      R_inv.slice(t) = arma::inv_sympd(R_sym);
+    }
   }
   return;
 };

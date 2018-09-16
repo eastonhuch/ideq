@@ -192,6 +192,10 @@ dstm <- function(Y, obs_model = "EOF", proc_model = "RW",
     # Run the model
     results <- dstm_discount(Y, F_, G_0, Sigma_G_inv, m_0, C_0,
                   scalar_params, proc_model, n_samples, verbose)
+    results[["lambda"]] <- as.numeric(results[["lambda"]])
+    if ("sigma2" %in% names(results)) {
+      results[["sigma2"]] <- as.numeric(results[["sigma2"]])
+    }
   }
   else if (proc_error == "IW") {
     # C_W
@@ -220,6 +224,9 @@ dstm <- function(Y, obs_model = "EOF", proc_model = "RW",
     scalar_params <- c(df_W, alpha_sigma2, beta_sigma2, sigma2)
     results <- dstm_IW(Y, F_, G_0, Sigma_G_inv, m_0, C_0, C_W,
                        scalar_params, proc_model, n_samples, verbose)
+    if ("sigma2" %in% names(results)) {
+      results[["sigma2"]] <- as.numeric(results[["sigma2"]])
+    }
   }
   else {
     stop("I don't know that type of process error")

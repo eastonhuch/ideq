@@ -38,7 +38,7 @@ List dstm_discount(arma::mat Y, arma::mat F, arma::mat G_0, arma::mat Sigma_G_in
   Y.insert_cols(0, 1); // make Y true-indexed; i.e. index 1 is t_1
   arma::cube theta(p, T + 1, n_samples), G;
   arma::mat a(p, T + 1), m(p, T + 1);
-  arma::cube R_inv(p, p, T + 1), C(p, p, T + 1), C_T(p, p, n_samples), W_inv;
+  arma::cube R_inv(p, p, T + 1), C(p, p, T + 1), C_T(p, p, n_samples+1), W_inv;
   m.col(0) = m_0;
   C.slice(0) = C_0;
 
@@ -82,7 +82,7 @@ List dstm_discount(arma::mat Y, arma::mat F, arma::mat G_0, arma::mat Sigma_G_in
     // FFBS
     if (sample_sigma2) sigma2_i = sigma2(i);
     KalmanDiscount(Y, F, G.slice(G_idx), m, C, a, R_inv, sigma2_i, lambda(i));
-    C_T.slice(i) = C.slice(T); // Save for predictions
+    C_T.slice(i+1) = C.slice(T); // Save for predictions
     BackwardSample(theta, m, a, C, G.slice(G_idx), R_inv, 1, i, verbose);
 
     // G
@@ -111,6 +111,8 @@ List dstm_discount(arma::mat Y, arma::mat F, arma::mat G_0, arma::mat Sigma_G_in
   results["lambda"] = lambda;
   if (sample_sigma2) {
     results["sigma2"] = sigma2;
+  } else {
+    results["sigma2"] = sigma2_i;
   }
   if (AR || FULL) {
     results["G"] = G;
@@ -214,6 +216,8 @@ List dstm_IW(arma::mat Y, arma::mat F, arma::mat G_0, arma::mat Sigma_G_inv,
   results["theta"]  = theta;
   if (sample_sigma2) {
     results["sigma2"] = sigma2;
+  } else {
+    results["sigma2"] = sigma2_i;
   }
   if (AR || FULL) {
     results["G"] = G;
