@@ -47,6 +47,32 @@ dstm <- function(Y, obs_model = "EOF", proc_model = "RW",
     }
   else if (obs_model == "IDE") {
     stop("IDE model not implemented")
+    # The function makePhi returns the matrix Phi used as the observation matrix
+    # The number of total bass function is J^2+1, L is the range of the Fourier approximation
+    # and s are the centered/scaled spatial locations
+
+    # Need to do: (1) error calls for parameters not given, (2) centering/scaling the spatial locations
+    # (3) automating the calculation of L. To be safe should be twice the range of the spatial data
+    makePhi <- function(J,L,s){
+      freqs <- 2*pi*(1:J)/L
+      w <- cbind(rep(freqs,length(freqs)),rep(freqs,each=length(freqs)))
+      Jmat <- outer(s[,1],w[,1]) + outer(s[,2],w[,2])
+      Phi <- L^(-.5)*cbind(.5,cos(Jmat),sin(Jmat))
+    }
+    # The function makeB returns the matrix B used as part of the process matrix
+    # mu and Sigma are the parameters of the IDE kernel
+    makeB <- function(J,L,s,mu,Sigma){
+      freqs <- 2*pi*(1:J)/L
+      w <- cbind(rep(freqs,length(freqs)),rep(freqs,each=length(freqs)))
+      Jmat1 <- outer(s[,1]+mu[1],w[,1]) + outer(s[,2]+mu[2],w[,2])
+      Jvec <- w[,1]^2*Sigma[1,1] + w[,2]^2*Sigma[2,2] + w[,1]*w[,2]*Sigma[1,2]
+      Jmat2 <- kronecker(rep(1,nrow(s)),t(Jvec))
+      B <- L^(-.5)*cbind(exp(-.5*Jmat2[,1]),exp(-.5*Jmat2)*cos(Jmat1),exp(-.5*Jmat2)*sin(Jmat1))
+    }
+    F_ <- makePhi(J,L,s)
+    B <- makeB(J,L,s,mu,Sigma)
+    M <- solve(t(Phi)%*%Phi,t(Phi)%*%B)
+
   }
   else {
     stop("obs_model is invalid")
