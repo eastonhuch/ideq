@@ -38,14 +38,13 @@ List dstm_discount(arma::mat Y, arma::mat F, arma::mat G_0, arma::mat Sigma_G_in
   Y.insert_cols(0, 1); // make Y true-indexed; i.e. index 1 is t_1
   arma::cube theta(p, T + 1, n_samples), G;
   arma::mat a(p, T + 1), m(p, T + 1);
-  arma::cube R_inv(p, p, T + 1), C(p, p, T + 1), C_T(p, p, n_samples+1), W_inv;
+  arma::cube R_inv(p, p, T + 1), C(p, p, T + 1), C_T(p, p, n_samples+1);
   m.col(0) = m_0;
   C.slice(0) = C_0;
 
   if (AR || FULL) {
     G.set_size(p, p, n_samples + 1);
     G.zeros();
-    W_inv.set_size(p, p, T + 1);
   } else {
     G.set_size(p, p, 1);
   }
@@ -163,10 +162,10 @@ List dstm_IW(arma::mat Y, arma::mat F, arma::mat G_0, arma::mat Sigma_G_inv,
   Y.insert_cols(0, 1); // make Y true-indexed; i.e. index 1 is t_1
   arma::cube theta(p, T + 1, n_samples), G;
   arma::mat a(p, T + 1), m(p, T + 1);
-  arma::cube R_inv(p, p, T + 1), C(p, p, T + 1), W_inv(p, p, n_samples + 1);
+  arma::cube R_inv(p, p, T + 1), C(p, p, T + 1), W(p, p, n_samples + 1);
   m.col(0) = m_0;
   C.slice(0) = C_0;
-  W_inv.slice(0) = df_W * C_W;
+  W.slice(0) = df_W * C_W;
 
   if (AR || FULL) {
     G.set_size(p, p, n_samples + 1);
@@ -190,7 +189,7 @@ List dstm_IW(arma::mat Y, arma::mat F, arma::mat G_0, arma::mat Sigma_G_inv,
 
     // FFBS
     if (sample_sigma2) sigma2_i = sigma2(i);
-    Kalman(Y, F, G.slice(G_idx), W_inv.slice(i), m, C, a, R_inv, sigma2_i);
+    Kalman(Y, F, G.slice(G_idx), W.slice(i), m, C, a, R_inv, sigma2_i);
     BackwardSample(theta, m, a, C, G.slice(G_idx), R_inv, 1, i, verbose);
 
     // G
@@ -209,7 +208,7 @@ List dstm_IW(arma::mat Y, arma::mat F, arma::mat G_0, arma::mat Sigma_G_inv,
     }
 
     // W
-    SampleW_inv(theta.slice(i), G.slice(G_idx), W_inv.slice(i + 1), C_W, df_W, T);
+    SampleW(theta.slice(i), G.slice(G_idx), W.slice(i + 1), C_W, df_W, T);
   }
 
   List results;
@@ -223,7 +222,7 @@ List dstm_IW(arma::mat Y, arma::mat F, arma::mat G_0, arma::mat Sigma_G_inv,
     results["G"] = G;
   }
   results["F"] = F;
-  results["W_inv"] = W_inv;
+  results["W"] = W;
   return results;
 }
 

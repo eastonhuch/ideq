@@ -153,12 +153,11 @@ void SampleV_inv (arma::mat & Y, arma::mat & F, arma::cube & theta,
   return;
 }
 
-void SampleW_inv (arma::mat & theta, arma::mat & G, arma::mat & W,
-                  arma::mat & C_W, const int & df_W, const int & T) {
+void SampleW (arma::mat & theta, arma::mat & G, arma::mat & W,
+              arma::mat & C_W, const int & df_W, const int & T) {
   arma::mat C_new = theta.cols(1, T) -
                     G * theta.cols(0, T - 1);
   C_new = C_new * C_new.t() + df_W * C_W;
-  C_new = arma::inv_sympd(C_new);
   int df_new = df_W + T;
   W = rgen::rwishart(df_new, C_new);
   return;

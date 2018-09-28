@@ -32,7 +32,7 @@ void SampleV_inv (arma::mat & Y, arma::mat & F, arma::cube & theta,
                   arma::cube & V, arma::mat & C_V, const int & df_V,
                   int & i, const int & T);
 
-void SampleW_inv (arma::mat & theta, arma::mat & G, arma::mat & W,
-                  arma::mat & C_W, const int & df_W, const int & T);
+void SampleW (arma::mat & theta, arma::mat & G, arma::mat & W,
+              arma::mat & C_W, const int & df_W, const int & T);
 
 #endif

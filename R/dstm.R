@@ -40,8 +40,8 @@ dstm <- function(Y, obs_model = "EOF", proc_model = "RW",
       C_0 <- params[["C_0"]]
     }
     else {
-      message("No prior was provided for C_0 so I am using an identity matrix ")
-      C_0 <- diag(p)
+      message("No prior was provided for C_0 so I am using 1000I")
+      C_0 <- 1000*diag(p)
     }
 
     }
@@ -146,8 +146,8 @@ dstm <- function(Y, obs_model = "EOF", proc_model = "RW",
         stop("Sigma_G_inv must be symmetric positive definite matrix")
       }
     } else {
-      message("Sigma_G_inv was not provided, so I am using an identity matrix")
-      Sigma_G_inv <- diag(p)
+      message("Sigma_G_inv was not provided, so I am using 1000I")
+      Sigma_G_inv <- 1000*diag(p)
     }
 
   }
@@ -176,8 +176,8 @@ dstm <- function(Y, obs_model = "EOF", proc_model = "RW",
       }
     }
     else {
-      message("Sigma_G_inv was not provided, so I am using an identity matrix")
-      Sigma_G_inv <- diag(p^2)
+      message("Sigma_G_inv was not provided, so I am using 1000I")
+      Sigma_G_inv <- 1000*diag(p^2)
     }
 
   }
@@ -197,8 +197,8 @@ dstm <- function(Y, obs_model = "EOF", proc_model = "RW",
       }
     }
     else {
-      message("alpha_lambda was not provided so I am using 2.25")
-      alpha_lambda <- 2.25
+      alpha_lambda <- 1.01
+      message(paste("alpha_lambda was not provided so I am using", alpha_lambda))
     }
 
     if ("beta_lambda" %in% names(params)) {
@@ -208,8 +208,8 @@ dstm <- function(Y, obs_model = "EOF", proc_model = "RW",
       }
     }
     else {
-      message("beta_lambda was not provided so I am using 0.0625")
-      beta_lambda <- 0.0625
+      beta_lambda <- 0.01
+      message(paste("beta_lambda was not provided so I am using 0.0625", beta_lambda))
     }
 
     # Group scalar params into vector

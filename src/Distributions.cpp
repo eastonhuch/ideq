@@ -28,10 +28,9 @@ arma::colvec mvnorm(const arma::colvec & mean, const arma::mat & Sigma) {
   {
     Rcout << "Failed to calculate sqrt(Sigma) using sqrtmat_sympd" << std::endl;
     Rcout << "Forcing symmetry using (Sigma + Sigma')/2 and trying again" << std::endl;
-    Rcout << Sigma << std::endl;
     arma::mat Sigma_sym = ( Sigma + Sigma.t() ) / 2;
     Rcout << Sigma_sym << std::endl;
-    arma::mat Sigma_sqrt = arma::sqrtmat_sympd(Sigma_sym);
+    Sigma_sqrt = arma::sqrtmat_sympd(Sigma_sym);
     Rcout << Sigma_sqrt << std::endl;
   }
 
@@ -39,7 +38,6 @@ arma::colvec mvnorm(const arma::colvec & mean, const arma::mat & Sigma) {
   return x;
 };
 
-// Should this be the scale or rate parameterization?
 double rigamma(const double a, const double scl) {
   return (1 / R::rgamma(a, 1/scl));
 }
