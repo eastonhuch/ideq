@@ -4,16 +4,16 @@ predict.dstm <- function(x, K = 1, only_K = FALSE, return_ys = TRUE,
                          return_thetas = FALSE, burnin = NULL) {
   if (is.null(burnin)) {
     if (is.null(x$burnin)) {
-      message("INFO: Using all samples except starting values")
+      #message("INFO: Using all samples except starting values")
       burnin <- 1
     } else {
       burnin <- x$burnin
-      message(paste("INFO: Not using first x$burnin =", burnin,
-                    "samples (including starting values)"))
+      #message(paste("INFO: Not using first x$burnin =", burnin,
+      #              "samples (including starting values)"))
     }
   } else {
-    message(paste("INFO: Not using first" , burnin,
-                  "samples (including starting values)"))
+    #message(paste("INFO: Not using first" , burnin,
+    #              "samples (including starting values)"))
   }
 
   # NOTE: burnin is 1 by default to remove starting values
