@@ -11,7 +11,7 @@
 #' @export
 #' @examples
 #' # Duhh...nothing yet
-dstm <- function(Y, obs_model = "EOF", proc_model = "RW",
+dstm <- function(Y, locs=NULL, obs_model = "EOF", proc_model = "RW",
                  proc_error = "discount", p = 10L,
                  n_samples = 1L, sample_sigma2 = TRUE,
                  verbose = FALSE, params = NULL) {
@@ -46,7 +46,10 @@ dstm <- function(Y, obs_model = "EOF", proc_model = "RW",
 
     }
   else if (obs_model == "IDE") {
-    stop("IDE model not implemented")
+    if (is.null(locs)) {
+      stop("locs must be specified for obs_model == IDE")
+    }
+
     # The function makePhi returns the matrix Phi used as the observation matrix
     # The number of total bass function is J^2+1, L is the range of the Fourier approximation
     # and s are the centered/scaled spatial locations
