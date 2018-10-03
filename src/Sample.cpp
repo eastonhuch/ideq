@@ -149,7 +149,7 @@ void SampleV_inv (arma::mat & Y, arma::mat & F, arma::cube & theta,
   C_new = C_new * C_new.t() + df_V * C_V;
   C_new = arma::inv_sympd(C_new);
   int df_new = df_V + T;
-  V.slice(i) = rgen::rwishart(df_new, C_new);
+  V.slice(i) = rgen::riwishart(df_new, C_new);
   return;
 }
 
@@ -159,6 +159,6 @@ void SampleW (arma::mat & theta, arma::mat & G, arma::mat & W,
                     G * theta.cols(0, T - 1);
   C_new = C_new * C_new.t() + df_W * C_W;
   int df_new = df_W + T;
-  W = rgen::rwishart(df_new, C_new);
+  W = rgen::riwishart(df_new, C_new);
   return;
 }

@@ -33,7 +33,7 @@ predict.dstm <- function(x, K = 1, only_K = FALSE, return_ys = TRUE,
 
   # Calculate W
   if (attr(x, "proc_error") == "IW") {
-    W <- lapply(seq(n_samples), function(i) chol2inv(x[["W_inv"]][,,i+burnin]))
+    W <- lapply(idx, function(i) x[["W"]][,,i])
   }
   else if (attr(x, "proc_error") == "discount") {
     if (attr(x, "proc_model") %in% c("AR", "Full")) {
@@ -73,10 +73,10 @@ predict.dstm <- function(x, K = 1, only_K = FALSE, return_ys = TRUE,
   # Sample for T+2 up to T+K
   if (K > 1) {
     for (k in seq(2, K)) {
-      # Need to recalculate W if using discount factors
+      # Need to recalculate W_chol if using discount factors
       if (attr(x, "proc_error") == "discount") {
-        W <- lapply(seq_along(W), function(i) x[["lambda"]][i+burnin] * W[[i]])
-        W_chol <- get_W_chol(W)
+        discount_W_chol <- function(i) sqrt(x[["lambda"]][i+burnin]) * W_chol[[i]]
+        W_chol <- lapply(seq_along(W_chol), discount_W_chol)
       }
 
       # New process error
@@ -98,7 +98,9 @@ predict.dstm <- function(x, K = 1, only_K = FALSE, return_ys = TRUE,
   # Calculate ys
   if (return_ys) {
     # Calculate standard deviation for observation model
-    if (attr(x, "sample_sigma2")) {
+    sample_sigma2 <- is.logical(attr(x, "sample_sigma2")) &&
+                     attr(x, "sample_sigma2")
+    if (sample_sigma2) {
       my_sd <- rep(sqrt(x[["sigma2"]][idx]), each = p)
     }
     else {
