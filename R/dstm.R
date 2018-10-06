@@ -86,11 +86,9 @@ dstm <- function(Y, locs=NULL, obs_model = "EOF", proc_model = "RW",
     }
 
     # The function makePhi returns the matrix Phi used as the observation matrix
-    # The number of total basis function is J^2+1, L is the range of the Fourier approximation
-    # and locs are the centered/scaled spatial locations
-
-    # Need to do: (1) error calls for parameters not given, (2) centering/scaling the spatial locations
-    # (3) automating the calculation of L. To be safe should be twice the range of the spatial data
+    # The number of total basis function is J^2+1
+    # L is the range of the Fourier approximation
+    # locs are the centered/scaled spatial locations
 
     makePhi <- function(J, L, locs){
       freqs <- 2*pi/L * seq(J)
@@ -100,54 +98,7 @@ dstm <- function(Y, locs=NULL, obs_model = "EOF", proc_model = "RW",
       Phi
     }
 
-    # The function makeB returns the matrix B used as part of the process matrix
-    # mu and Sigma are the parameters of the IDE kernel
-
-    # mu
-    locs_dim <- ncol(locs)
-    if ("mu_kernel" %in% names(params)) {
-      mu_kernel <- params[["mu_kernel"]]
-      if (!is.numeric(mu_kernel) || length(mu_kernel)!=locs_dim) {
-        stop("mu_kernel must be numeric with length==ncol(locs)")
-      }
-      mu_kernel <- matrix(mu_kernel, nrow=locs_dim, ncol=1)
-    }
-    else {
-      mu_kernel <- matrix(0, nrow=locs_dim, ncol=1)
-      message("mu_kernel was not provided so I am using a vector of zeroes")
-    }
-
-    # Sigma
-    if ("Sigma_kernel" %in% names(params)) {
-      Sigma_kernel <- params[["Sigma_kernel"]]
-      if (!is.positive.definite(Sigma_kernel) ||
-          any(dim(Sigma) != locs_dim)) {
-        stop("Sigma_kernel must be positive definite with dimensions == ncol(locs)")
-      }
-    }
-    else {
-      Sigma_kernel <- diag(locs_dim)
-      message("Sigma_kernel was not provided so I am using an identity matrix")
-    }
-
-    makeB <- function(J, L, locs, mu, Sigma){
-      freqs <- 2*pi/L * seq(J)
-      w <- expand.grid(freqs, freqs)
-      Jmat1 <- outer(locs[, 1] + mu[1], w[, 1]) +
-               outer(locs[, 2] + mu[2], w[, 2])
-      Jvec <- Sigma[1, 1] * w[, 1]^2 +
-              Sigma[2, 2] * w[, 2]^2+
-              Sigma[1, 2] * w[, 1] * w[,2]
-      Jmat2 <- rep(1,nrow(s)) %x% t(Jvec)
-      B <- L^(-.5) *
-           cbind(exp(-.5*Jmat2[,1]),
-                 exp(-.5*Jmat2)*cos(Jmat1),
-                 exp(-.5*Jmat2)*sin(Jmat1))
-      B
-    }
     F_ <- makePhi(J, L, locs)
-    B <- makeB(J, L, locs, mu_kernel, Sigma_kernel)
-    M <- solve(crossprod(F_), t(F_) %*% B)
   }
   else {
     stop("obs_model is invalid")
@@ -256,6 +207,55 @@ dstm <- function(Y, locs=NULL, obs_model = "EOF", proc_model = "RW",
     }
 
   }
+  else if (obs_model  == "IDE") {
+    # The function makeB returns the matrix B used as part of the process matrix
+    # mu_kernel and Sigma_kernel are the parameters of the IDE kernel
+
+    locs_dim <- ncol(locs)
+    if ("mu_kernel" %in% names(params)) {
+      mu_kernel <- params[["mu_kernel"]]
+      if (!is.numeric(mu_kernel) || length(mu_kernel)!=locs_dim) {
+        stop("mu_kernel must be numeric with length==ncol(locs)")
+      }
+      mu_kernel <- matrix(mu_kernel, nrow=locs_dim, ncol=1)
+    }
+    else {
+      mu_kernel <- matrix(0, nrow=locs_dim, ncol=1)
+      message("mu_kernel was not provided so I am using a vector of zeroes")
+    }
+
+    if ("Sigma_kernel" %in% names(params)) {
+      Sigma_kernel <- params[["Sigma_kernel"]]
+      if (!is.positive.definite(Sigma_kernel) ||
+          any(dim(Sigma) != locs_dim)) {
+        stop("Sigma_kernel must be positive definite with dimensions == ncol(locs)")
+      }
+    }
+    else {
+      Sigma_kernel <- diag(locs_dim)
+      message("Sigma_kernel was not provided so I am using an identity matrix")
+    }
+
+    makeB <- function(J, L, locs, mu, Sigma){
+      freqs <- 2*pi/L * seq(J)
+      w <- expand.grid(freqs, freqs)
+      Jmat1 <- outer(locs[, 1] + mu[1], w[, 1]) +
+               outer(locs[, 2] + mu[2], w[, 2])
+      Jvec <- Sigma[1, 1] * w[, 1]^2 +
+              Sigma[2, 2] * w[, 2]^2+
+              Sigma[1, 2] * w[, 1] * w[,2]
+      Jmat2 <- rep(1,nrow(s)) %x% t(Jvec)
+      B <- L^(-.5) *
+           cbind(exp(-.5*Jmat2[,1]),
+                 exp(-.5*Jmat2)*cos(Jmat1),
+                 exp(-.5*Jmat2)*sin(Jmat1))
+      B
+    }
+
+    B  <- makeB(J, L, locs, mu_kernel, Sigma_kernel)
+    G  <- solve(crossprod(F_), t(F_) %*% B)
+
+  }
   else {
     stop("proc_model not supported")
   }
@@ -328,6 +328,9 @@ dstm <- function(Y, locs=NULL, obs_model = "EOF", proc_model = "RW",
     if ("sigma2" %in% names(results)) {
       results[["sigma2"]] <- as.numeric(results[["sigma2"]])
     }
+  }
+  else if (obs_model  == "IDE") {
+
   }
   else {
     stop("I don't know that type of process error")
