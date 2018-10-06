@@ -40,8 +40,8 @@ predict.dstm <- function(x, K = 1, only_K = FALSE, return_ys = TRUE,
       get_W <- function(i) {
         x[["lambda"]][i] *
           x[["G"]][,,i] %*% x[["C_T"]][,,i] %*% t(x[["G"]][,,i])
-      W <- lapply(idx, get_W)
       }
+      W <- lapply(idx, get_W)
     }
     else { # RW process model
       get_W <- function(i) x[["lambda"]][i] * x[["C_T"]][,,i]

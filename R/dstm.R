@@ -46,36 +46,108 @@ dstm <- function(Y, locs=NULL, obs_model = "EOF", proc_model = "RW",
 
     }
   else if (obs_model == "IDE") {
+
+    if ("J" %in% names(params)) {
+      J <- params[["J"]]
+      J <- as.integer(J)
+      if (! (is.numeric(J) || J>0) ) {
+        stop("J must an integer > 0")
+      }
+    }
+    else {
+      J <- 10
+      message(paste("J was not provided, so I am using"), J)
+    }
+
+    if ("L" %in% names(params)) {
+      L <- params[["L"]]
+      L <- as.numeric(L)
+      if (! (is.numeric(L) || L>0) ) {
+        stop("L must be numeric > 0")
+      }
+    }
+    else {
+      L <- 10
+      message(paste("L was not provided so I am using L="), L,
+              " and centering and scaling locs")
+      center_col <- function(x, L) {
+        x_range <- diff(range(x))
+        x <- L/x_range * x
+        x <- x + (L/2 - max(x))
+        x
+      }
+      for ( i in seq(ncol(locs)) ) {
+        locs[, i] <- center_col(locs[, i], L)
+      }
+    }
+
     if (is.null(locs)) {
       stop("locs must be specified for obs_model == IDE")
     }
 
     # The function makePhi returns the matrix Phi used as the observation matrix
-    # The number of total bass function is J^2+1, L is the range of the Fourier approximation
-    # and s are the centered/scaled spatial locations
+    # The number of total basis function is J^2+1, L is the range of the Fourier approximation
+    # and locs are the centered/scaled spatial locations
 
     # Need to do: (1) error calls for parameters not given, (2) centering/scaling the spatial locations
     # (3) automating the calculation of L. To be safe should be twice the range of the spatial data
-    makePhi <- function(J,L,s){
-      freqs <- 2*pi*(1:J)/L
-      w <- cbind(rep(freqs,length(freqs)),rep(freqs,each=length(freqs)))
-      Jmat <- outer(s[,1],w[,1]) + outer(s[,2],w[,2])
-      Phi <- L^(-.5)*cbind(.5,cos(Jmat),sin(Jmat))
+
+    makePhi <- function(J, L, locs){
+      freqs <- 2*pi/L * seq(J)
+      w <- expand.grid(freqs, freqs)
+      Jmat <- outer(locs[, 1], w[, 1]) + outer(locs[, 2], w[, 2])
+      Phi <- L^(-1/2) * cbind( 1/2, cos(Jmat), sin(Jmat) )
+      Phi
     }
+
     # The function makeB returns the matrix B used as part of the process matrix
     # mu and Sigma are the parameters of the IDE kernel
-    makeB <- function(J,L,s,mu,Sigma){
-      freqs <- 2*pi*(1:J)/L
-      w <- cbind(rep(freqs,length(freqs)),rep(freqs,each=length(freqs)))
-      Jmat1 <- outer(s[,1]+mu[1],w[,1]) + outer(s[,2]+mu[2],w[,2])
-      Jvec <- w[,1]^2*Sigma[1,1] + w[,2]^2*Sigma[2,2] + w[,1]*w[,2]*Sigma[1,2]
-      Jmat2 <- kronecker(rep(1,nrow(s)),t(Jvec))
-      B <- L^(-.5)*cbind(exp(-.5*Jmat2[,1]),exp(-.5*Jmat2)*cos(Jmat1),exp(-.5*Jmat2)*sin(Jmat1))
-    }
-    F_ <- makePhi(J,L,s)
-    B <- makeB(J,L,s,mu,Sigma)
-    M <- solve(t(Phi)%*%Phi,t(Phi)%*%B)
 
+    # mu
+    locs_dim <- ncol(locs)
+    if ("mu_kernel" %in% names(params)) {
+      mu_kernel <- params[["mu_kernel"]]
+      if (!is.numeric(mu_kernel) || length(mu_kernel)!=locs_dim) {
+        stop("mu_kernel must be numeric with length==ncol(locs)")
+      }
+      mu_kernel <- matrix(mu_kernel, nrow=locs_dim, ncol=1)
+    }
+    else {
+      mu_kernel <- matrix(0, nrow=locs_dim, ncol=1)
+      message("mu_kernel was not provided so I am using a vector of zeroes")
+    }
+
+    # Sigma
+    if ("Sigma_kernel" %in% names(params)) {
+      Sigma_kernel <- params[["Sigma_kernel"]]
+      if (!is.positive.definite(Sigma_kernel) ||
+          any(dim(Sigma) != locs_dim)) {
+        stop("Sigma_kernel must be positive definite with dimensions == ncol(locs)")
+      }
+    }
+    else {
+      Sigma_kernel <- diag(locs_dim)
+      message("Sigma_kernel was not provided so I am using an identity matrix")
+    }
+
+    makeB <- function(J, L, locs, mu, Sigma){
+      freqs <- 2*pi/L * seq(J)
+      w <- expand.grid(freqs, freqs)
+      Jmat1 <- outer(locs[, 1] + mu[1], w[, 1]) +
+               outer(locs[, 2] + mu[2], w[, 2])
+      Jvec <- Sigma[1, 1] * w[, 1]^2 +
+              Sigma[2, 2] * w[, 2]^2+
+              Sigma[1, 2] * w[, 1] * w[,2]
+      Jmat2 <- rep(1,nrow(s)) %x% t(Jvec)
+      B <- L^(-.5) *
+           cbind(exp(-.5*Jmat2[,1]),
+                 exp(-.5*Jmat2)*cos(Jmat1),
+                 exp(-.5*Jmat2)*sin(Jmat1))
+      B
+    }
+    F_ <- makePhi(J, L, locs)
+    B <- makeB(J, L, locs, mu_kernel, Sigma_kernel)
+    M <- solve(crossprod(F_), t(F_) %*% B)
   }
   else {
     stop("obs_model is invalid")
