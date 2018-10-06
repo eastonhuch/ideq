@@ -99,6 +99,8 @@ dstm <- function(Y, locs=NULL, obs_model = "EOF", proc_model = "RW",
     }
 
     F_ <- makePhi(J, L, locs)
+
+    # FIXME: Add code for error checking m_0 and C_0
   }
   else {
     stop("obs_model is invalid")
@@ -330,7 +332,14 @@ dstm <- function(Y, locs=NULL, obs_model = "EOF", proc_model = "RW",
     }
   }
   else if (obs_model  == "IDE") {
+    # FIXME: Add code to to specify process error in IDE model
+    alpha_tau2 <- 1
+    beta_tau2 <- 1
 
+    scalar_params <- c(alpha_sigma2, beta_sigma2, sigma2, alpha_tau2, beta_tau2)
+    results <- dstm_IW(Y, F_, G,
+                       m_0, C_0, scalar_params,
+                       n_samples, verbose)
   }
   else {
     stop("I don't know that type of process error")

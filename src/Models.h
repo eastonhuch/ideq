@@ -14,6 +14,8 @@ List dstm_IW(arma::mat Y, arma::mat F, arma::mat G_0, arma::mat Sigma_G_inv,
              NumericVector params, CharacterVector proc_model,
              const int n_samples, const bool verbose);
 
-List dstm_IDE(void);
+List dstm_IDE(arma::mat Y, arma::mat F, arma::mat G,
+              arma::colvec m_0, arma::mat C_0, NumericVector params,
+              const int n_samples, const bool verbose);
 
 #endif
