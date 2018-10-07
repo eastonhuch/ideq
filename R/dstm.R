@@ -47,6 +47,7 @@ dstm <- function(Y, locs=NULL, obs_model = "EOF", proc_model = "RW",
     }
   else if (obs_model == "IDE") {
 
+    # Error checking for J, L, locs
     if ("J" %in% names(params)) {
       J <- params[["J"]]
       J <- as.integer(J)
@@ -55,8 +56,8 @@ dstm <- function(Y, locs=NULL, obs_model = "EOF", proc_model = "RW",
       }
     }
     else {
-      J <- 10
-      message(paste("J was not provided, so I am using"), J)
+      J <- 3
+      message(paste("J was not provided, so I am using "), J)
     }
 
     if ("L" %in% names(params)) {
@@ -85,7 +86,7 @@ dstm <- function(Y, locs=NULL, obs_model = "EOF", proc_model = "RW",
       stop("locs must be specified for obs_model == IDE")
     }
 
-    # The function makePhi returns the matrix Phi used as the observation matrix
+    # Observation matrix
     # The number of total basis function is J^2+1
     # L is the range of the Fourier approximation
     # locs are the centered/scaled spatial locations
@@ -100,7 +101,32 @@ dstm <- function(Y, locs=NULL, obs_model = "EOF", proc_model = "RW",
 
     F_ <- makePhi(J, L, locs)
 
-    # FIXME: Add code for error checking m_0 and C_0
+    # Error checking for m_0, C_0
+    locs_dim <- ncol(locs)
+    if ("m_0" %in% names(params)) {
+      m_0 <- params[["m_0"]]
+      m_0 <- as.vector(m_0)
+      if (!is.numeric(m_0) || length(m_0)!=locs_dim) {
+        stop("m_0 must be numeric with length==ncol(locs)")
+      }
+    }
+    else {
+      m_0 <- rep(0, locs_dim)
+      message("m_0 was not provided so I am using a vector of zeroes")
+    }
+
+    if ("C_0" %in% names(params)) {
+      C_0 <- params[["C_0"]]
+      if (!is.positive.definite(C_0) ||
+          any(dim(Sigma) != locs_dim)) {
+        stop("C_0 must be positive definite with dimensions == ncol(locs)")
+      }
+    }
+    else {
+      C_0 <- diag(locs_dim)
+      message("C_0 was not provided so I am using an identity matrix")
+    }
+
   }
   else {
     stop("obs_model is invalid")
@@ -211,32 +237,7 @@ dstm <- function(Y, locs=NULL, obs_model = "EOF", proc_model = "RW",
   }
   else if (obs_model  == "IDE") {
     # The function makeB returns the matrix B used as part of the process matrix
-    # mu_kernel and Sigma_kernel are the parameters of the IDE kernel
-
-    locs_dim <- ncol(locs)
-    if ("mu_kernel" %in% names(params)) {
-      mu_kernel <- params[["mu_kernel"]]
-      if (!is.numeric(mu_kernel) || length(mu_kernel)!=locs_dim) {
-        stop("mu_kernel must be numeric with length==ncol(locs)")
-      }
-      mu_kernel <- matrix(mu_kernel, nrow=locs_dim, ncol=1)
-    }
-    else {
-      mu_kernel <- matrix(0, nrow=locs_dim, ncol=1)
-      message("mu_kernel was not provided so I am using a vector of zeroes")
-    }
-
-    if ("Sigma_kernel" %in% names(params)) {
-      Sigma_kernel <- params[["Sigma_kernel"]]
-      if (!is.positive.definite(Sigma_kernel) ||
-          any(dim(Sigma) != locs_dim)) {
-        stop("Sigma_kernel must be positive definite with dimensions == ncol(locs)")
-      }
-    }
-    else {
-      Sigma_kernel <- diag(locs_dim)
-      message("Sigma_kernel was not provided so I am using an identity matrix")
-    }
+    # m_0 and C_0 are the parameters of the IDE kernel
 
     makeB <- function(J, L, locs, mu, Sigma){
       freqs <- 2*pi/L * seq(J)
@@ -246,7 +247,7 @@ dstm <- function(Y, locs=NULL, obs_model = "EOF", proc_model = "RW",
       Jvec <- Sigma[1, 1] * w[, 1]^2 +
               Sigma[2, 2] * w[, 2]^2+
               Sigma[1, 2] * w[, 1] * w[,2]
-      Jmat2 <- rep(1,nrow(s)) %x% t(Jvec)
+      Jmat2 <- rep(1,nrow(locs)) %x% t(Jvec)
       B <- L^(-.5) *
            cbind(exp(-.5*Jmat2[,1]),
                  exp(-.5*Jmat2)*cos(Jmat1),
@@ -254,8 +255,8 @@ dstm <- function(Y, locs=NULL, obs_model = "EOF", proc_model = "RW",
       B
     }
 
-    B  <- makeB(J, L, locs, mu_kernel, Sigma_kernel)
-    G  <- solve(crossprod(F_), t(F_) %*% B)
+    B <- makeB(J, L, locs, m_0, C_0)
+    G <- solve(crossprod(F_), t(F_) %*% B)
 
   }
   else {
@@ -337,7 +338,7 @@ dstm <- function(Y, locs=NULL, obs_model = "EOF", proc_model = "RW",
     beta_tau2 <- 1
 
     scalar_params <- c(alpha_sigma2, beta_sigma2, sigma2, alpha_tau2, beta_tau2)
-    results <- dstm_IW(Y, F_, G,
+    results <- dstm_IDE(Y, F_, G,
                        m_0, C_0, scalar_params,
                        n_samples, verbose)
   }
