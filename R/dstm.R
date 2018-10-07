@@ -334,13 +334,27 @@ dstm <- function(Y, locs=NULL, obs_model = "EOF", proc_model = "RW",
   }
   else if (obs_model  == "IDE") {
     # FIXME: Add code to to specify process error in IDE model
-    alpha_tau2 <- 1
-    beta_tau2 <- 1
+    if ("alpha_tau2" %in% names(params)) {
+      alpha_tau2 <- params[["alpha_tau2"]]
+    }
+    else {
+      alpha_tau2 <- 1
+      message(paste("alpha_tau2 was not provided so I am using", alpha_tau2))
+    }
+    if ("beta_tau" %in% names(params)) {
+      beta_tau2 <- params[["beta_tau2"]]
+    }
+    else {
+      beta_tau2 <- 1
+      message(paste("beta_tau2 was not provided so I am using", beta_tau2))
+    }
 
-    scalar_params <- c(alpha_sigma2, beta_sigma2, sigma2, alpha_tau2, beta_tau2)
+    scalar_params <- c(alpha_sigma2=alpha_sigma2, beta_sigma2=beta_sigma2,
+                       sigma2=sigma2,
+                       alpha_tau2=alpha_tau2, beta_tau2=beta_tau2)
     results <- dstm_IDE(Y, F_, G,
-                       m_0, C_0, scalar_params,
-                       n_samples, verbose)
+                        m_0, C_0, scalar_params,
+                        n_samples, verbose)
   }
   else {
     stop("I don't know that type of process error")

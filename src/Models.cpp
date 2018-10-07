@@ -238,6 +238,12 @@ List dstm_IW(arma::mat Y, arma::mat F, arma::mat G_0, arma::mat Sigma_G_inv,
 List dstm_IDE(arma::mat Y, arma::mat F, arma::mat G,
               arma::colvec m_0, arma::mat C_0, NumericVector params,
               const int n_samples, const bool verbose) {
+  const double alpha_sigma2 = params["alpha_sigma2"];
+  const double beta_sigma2 = params["beta_sigma2"];
+  const bool   sample_sigma2 = params["sigma2"] == NA_REAL;
+  const double alpha_tau = params["alpha_tau"];
+  const double beta_tau = params["alpha_tau"];
+
   Rcout << "The answer is 42" << std::endl;
   List results;
   results["answer"] = 42;
