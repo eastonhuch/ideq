@@ -105,7 +105,7 @@ void SampleG(arma::mat & G, arma::cube & W_inv, arma::mat & theta,
   arma::mat V_g = kron1.t() * W_tilde_inv * kron1 + Sigma_g_inv;
   V_g = arma::inv_sympd(V_g);
   arma::colvec a_g = kron1.t() * W_tilde_inv *
-                     arma::resize(theta.cols(1, T), T * p, 1) +
+                     arma::reshape(theta.cols(1, T), T * p, 1) +
                      Sigma_g_inv * mu_g;
 
   arma::mat g = mvnorm(V_g * a_g, V_g);

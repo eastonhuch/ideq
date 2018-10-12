@@ -200,8 +200,8 @@ dstm <- function(Y, locs=NULL, obs_model = "EOF", proc_model = "RW",
         stop("Sigma_G_inv must be symmetric positive definite matrix")
       }
     } else {
-      message("Sigma_G_inv was not provided, so I am using 1000I")
-      Sigma_G_inv <- 1000*diag(p)
+      message("Sigma_G_inv was not provided, so I am using 10I")
+      Sigma_G_inv <- 10*diag(p)
     }
 
   }
@@ -230,8 +230,8 @@ dstm <- function(Y, locs=NULL, obs_model = "EOF", proc_model = "RW",
       }
     }
     else {
-      message("Sigma_G_inv was not provided, so I am using 1000I")
-      Sigma_G_inv <- 1000*diag(p^2)
+      message("Sigma_G_inv was not provided, so I am using 10I")
+      Sigma_G_inv <- 10*diag(p^2)
     }
 
   }
