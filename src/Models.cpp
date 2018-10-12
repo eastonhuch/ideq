@@ -165,22 +165,26 @@ List dstm_IW(arma::mat Y, arma::mat F, arma::mat G_0, arma::mat Sigma_G_inv,
   // Create matrices and cubes for FFBS
   Y.insert_cols(0, 1); // make Y true-indexed; i.e. index 1 is t_1
   arma::cube theta(p, T + 1, n_samples), G;
-  arma::mat a(p, T + 1), m(p, T + 1);
+  arma::mat a(p, T + 1), m(p, T + 1), tmp;
   arma::cube R_inv(p, p, T + 1), C(p, p, T + 1), W(p, p, n_samples + 1);
   m.col(0) = m_0;
   C.slice(0) = C_0;
   W.slice(0) = df_W * C_W;
 
-  if (AR || FULL) {
+  if (AR) {
     G.set_size(p, p, n_samples + 1);
     G.zeros();
+    G.slice(0).diag() = mvnorm(G_0.diag(), arma::inv_sympd(Sigma_G_inv));
+  } else if (FULL) {
+    G.set_size(p, p, n_samples + 1);
+    G_0.reshape(p*p, 1);
+    tmp = mvnorm(G_0, arma::inv_sympd(Sigma_G_inv));
+    tmp.reshape(p, p);
+    G.slice(0) = tmp;
+    Rcout << G.slice(0) << std::endl;
   } else {
     G.set_size(p, p, 1);
-  }
-  G.slice(0) = G_0;
-
-  if (FULL) {
-    G_0.reshape(p * p, 1);
+    G.slice(0) = G_0;
   }
 
   // Begin MCMC
