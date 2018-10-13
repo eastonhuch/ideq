@@ -4,10 +4,8 @@
 #include <RcppArmadillo.h>
 using namespace Rcpp;
 
-void BackwardSample(arma::cube & theta, arma::mat & m, arma::mat & a,
-                    arma::cube & C, arma::mat & G, arma::cube & R_inv,
-                    const int & n_samples, int & start_slice,
-                    const bool & verbose);
+void BackwardSample(arma::mat & theta, const arma::mat & m, const arma::mat & a,
+                    const arma::cube & C, const arma::mat & G, const arma::cube & R_inv);
 
 void SampleSigma2(double & sigma2_new, const double & alpha_sigma2, const double & beta_sigma2,
                   const arma::mat & Y, const arma::mat & F, const arma::mat & theta);

@@ -75,16 +75,20 @@ List dstm_discount(arma::mat Y, arma::mat F, arma::mat G_0, arma::mat Sigma_G_in
   // Begin MCMC
   int G_idx = 0; // This value is incremented each iteration for AR and Full models
   for (int i=0; i<n_samples; ++i) {
-    if (verbose) {
-      Rcout << "Filtering sample number " << i + 1 << std::endl;
-    }
     checkUserInterrupt();
 
     // FFBS
+    if (verbose) {
+      Rcout << "Filtering sample number " << i + 1 << std::endl;
+    }
     if (sample_sigma2) sigma2_i = sigma2(i);
-    KalmanDiscount(Y, F, G.slice(G_idx), m, C, a, R_inv, sigma2_i, lambda(i));
+    KalmanDiscount(m, C, a, R_inv, Y, F, G.slice(G_idx), sigma2_i, lambda(i));
     C_T.slice(i+1) = C.slice(T); // Save for predictions
-    BackwardSample(theta, m, a, C, G.slice(G_idx), R_inv, 1, i, verbose);
+
+    if (verbose) {
+      Rcout << "Drawing sample number " << i + 1 << std::endl;
+    }
+    BackwardSample(theta.slice(i), m, a, C, G.slice(G_idx), R_inv);
 
     // Sigma2
     if (sample_sigma2) {
@@ -187,15 +191,19 @@ List dstm_IW(arma::mat Y, arma::mat F, arma::mat G_0, arma::mat Sigma_G_inv,
   // Begin MCMC
   int G_idx = 0; // This value is incremented each iteration for AR and Full models
   for (int i = 0; i < n_samples; ++i) {
-    if (verbose) {
-      Rcout << "Filtering sample number " << i + 1 << std::endl;
-    }
     checkUserInterrupt();
 
     // FFBS
+    if (verbose) {
+      Rcout << "Filtering sample number " << i + 1 << std::endl;
+    }
     if (sample_sigma2) sigma2_i = sigma2(i);
-    Kalman(Y, F, G.slice(G_idx), W.slice(i), m, C, a, R_inv, sigma2_i);
-    BackwardSample(theta, m, a, C, G.slice(G_idx), R_inv, 1, i, verbose);
+    Kalman(m, C, a, R_inv, Y, F, G.slice(G_idx), W.slice(i), sigma2_i);
+
+    if (verbose) {
+      Rcout << "Drawing sample number " << i + 1 << std::endl;
+    }
+    BackwardSample(theta.slice(i), m, a, C, G.slice(G_idx), R_inv);
 
     // Sigma2
     if (sample_sigma2) {

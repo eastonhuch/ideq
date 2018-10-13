@@ -8,35 +8,25 @@
 
 using namespace Rcpp;
 
-void BackwardSample(arma::cube & theta, arma::mat & m, arma::mat & a,
-                    arma::cube & C, arma::mat & G, arma::cube & R_inv,
-                    const int & n_samples, int & start_slice,
-                    const bool & verbose) {
-  const int T = theta.n_cols - 1;
+void BackwardSample(arma::mat & theta, const arma::mat & m, const arma::mat & a,
+                    const arma::cube & C, const arma::mat & G, const arma::cube & R_inv) {
+  const int T = theta.n_cols-1;
   const int p = theta.n_rows;
-
   arma::colvec h_t(p);
   arma::mat H_t(p, p);
 
-  // NOTE: n_samples is how many samples we want to draw on this function call
-  for (int s = start_slice; s < (start_slice + n_samples); ++s) {
-    if (verbose) {
-      Rcout << "Drawing sample number " << s + 1 << std::endl;
-    }
-    checkUserInterrupt();
-    theta.slice(s).col(T) = mvnorm(m.col(T), C.slice(T)); // draw theta_T
-    // Draw values for theta_{T-1} down to theta_0
-    for (int t = T-1; t >= 0; --t) {
-      // Mean and variance of theta_t
-      h_t = m.col(t) + C.slice(t) * G.t() * R_inv.slice(t + 1) *
-            (theta.slice(s).col(t + 1) - a.col(t + 1));
+  theta.col(T) = mvnorm(m.col(T), C.slice(T)); // draw theta_T
+  // Draw values for theta_{T-1} down to theta_0
+  for (int t = T-1; t >= 0; --t) {
+    // Mean and variance of theta_t
+    h_t = m.col(t) + C.slice(t) * G.t() * R_inv.slice(t + 1) *
+          (theta.col(t + 1) - a.col(t + 1));
 
-      H_t = C.slice(t) - C.slice(t) * G.t() *
-            R_inv.slice(t + 1) * G * C.slice(t);
+    H_t = C.slice(t) - C.slice(t) * G.t() *
+          R_inv.slice(t + 1) * G * C.slice(t);
 
-      // Draw value for theta_t
-      theta.slice(s).col(t) = mvnorm(h_t, H_t);
-    }
+    // Draw value for theta_t
+    theta.col(t) = mvnorm(h_t, H_t);
   }
   return;
 }

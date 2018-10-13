@@ -40,8 +40,8 @@ dstm <- function(Y, locs=NULL, obs_model = "EOF", proc_model = "RW",
       C_0 <- params[["C_0"]]
     }
     else {
-      message("No prior was provided for C_0 so I am using 1000I")
-      C_0 <- 1000*diag(p)
+      message("No prior was provided for C_0 so I am using I")
+      C_0 <- diag(p)
     }
 
     }
@@ -188,8 +188,8 @@ dstm <- function(Y, locs=NULL, obs_model = "EOF", proc_model = "RW",
 
     }
     else {
-      message("mu_G was not provided, so I am using an identity matrix")
-      G_0 <- diag(p)
+      message("mu_G was not provided, so I am using 0.9I")
+      G_0 <- diag(0.9, p)
     }
 
     if ("Sigma_G_inv" %in% names(params)) {
@@ -200,8 +200,8 @@ dstm <- function(Y, locs=NULL, obs_model = "EOF", proc_model = "RW",
         stop("Sigma_G_inv must be symmetric positive definite matrix")
       }
     } else {
-      message("Sigma_G_inv was not provided, so I am using 10I")
-      Sigma_G_inv <- 10*diag(p)
+      message("Sigma_G_inv was not provided, so I am using 100I")
+      Sigma_G_inv <- 100*diag(p)
     }
 
   }
@@ -230,8 +230,8 @@ dstm <- function(Y, locs=NULL, obs_model = "EOF", proc_model = "RW",
       }
     }
     else {
-      message("Sigma_G_inv was not provided, so I am using 10I")
-      Sigma_G_inv <- 10*diag(p^2)
+      message("Sigma_G_inv was not provided, so I am using 100I")
+      Sigma_G_inv <- 100*diag(p^2)
     }
 
   }
@@ -263,7 +263,7 @@ dstm <- function(Y, locs=NULL, obs_model = "EOF", proc_model = "RW",
     stop("proc_model not supported")
   }
 
-  # Process Error; creates all necessary params (e.g., alpha_lambda, sigma2)
+  # Process Error; creates all necessary params (e.g., alpha_lambda)
   if (proc_error == "discount") {
 
     # Set prior for lambda
@@ -275,7 +275,7 @@ dstm <- function(Y, locs=NULL, obs_model = "EOF", proc_model = "RW",
       }
     }
     else {
-      alpha_lambda <- 1.01
+      alpha_lambda <- 3
       message(paste("alpha_lambda was not provided so I am using", alpha_lambda))
     }
 
@@ -286,8 +286,8 @@ dstm <- function(Y, locs=NULL, obs_model = "EOF", proc_model = "RW",
       }
     }
     else {
-      beta_lambda <- 0.01
-      message(paste("beta_lambda was not provided so I am using 0.0625", beta_lambda))
+      beta_lambda <- 4
+      message(paste("beta_lambda was not provided so I am using", beta_lambda))
     }
 
     # Group scalar params into vector
