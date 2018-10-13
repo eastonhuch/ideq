@@ -75,11 +75,10 @@ void SampleLambda(double & lambda_new, const double & alpha_lambda, const double
 
 // NOTE: This update formula comes from Cressie and Wikle p. 457
 // Equation (8.54)
-void SampleG(arma::mat & G, arma::cube & W_inv, arma::mat & theta,
-             arma::mat & Sigma_g_inv, arma::mat & mu_g, const int & p,
-             const int & T, const bool Discount = false,
-             const double lambda = 0.0) {
-
+void SampleG(arma::mat & G, const arma::cube & W_inv, const arma::mat & theta,
+             const arma::mat & Sigma_g_inv, const arma::mat & mu_g,
+             const bool Discount = false, const double lambda = 0.0) {
+  const int p = theta.n_rows, T = theta.n_cols-1;
   // NOTE: mu_g is arma::reshape(G_0, p * p, 1)
   // Create W_tilde_inv
   arma::mat W_tilde_inv = arma::zeros(T * p, T * p);
@@ -112,10 +111,10 @@ void SampleG(arma::mat & G, arma::cube & W_inv, arma::mat & theta,
   return;
 };
 
-void SampleAR(arma::mat & G, arma::cube & W_inv, arma::mat & theta,
-              arma::mat & Sigma_G_inv, arma::mat & mu_G,
+void SampleAR(arma::mat & G, const arma::cube & W_inv, const arma::mat & theta,
+              const arma::mat & Sigma_G_inv, const arma::mat & mu_G,
               const bool Discount = false, const double lambda = 0.0) {
-  const int T = theta.n_cols - 1;
+  const int T = theta.n_cols-1;
   const int p = G.n_rows;
   arma::mat tmp = arma::zeros(p, p);
   arma::mat sum = tmp;
@@ -157,8 +156,8 @@ void SampleV(arma::mat & Y, arma::mat & F, arma::mat & theta,
   return;
 }
 
-void SampleW (arma::mat & theta, arma::mat & G, arma::mat & W,
-              arma::mat & C_W, const int df_W) {
+void SampleW (arma::mat & W, const arma::mat & theta, const arma::mat & G,
+              const arma::mat & C_W, const int df_W) {
   const int T = theta.n_cols - 1;
   const int p = theta.n_rows;
   arma::mat theta_diffs = theta.cols(1, T) -

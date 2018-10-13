@@ -86,17 +86,6 @@ List dstm_discount(arma::mat Y, arma::mat F, arma::mat G_0, arma::mat Sigma_G_in
     C_T.slice(i+1) = C.slice(T); // Save for predictions
     BackwardSample(theta, m, a, C, G.slice(G_idx), R_inv, 1, i, verbose);
 
-    // G
-    if (AR) {
-      SampleAR(G.slice(G_idx+1), R_inv, theta.slice(i),
-               Sigma_G_inv, G_0, true, lambda(i));
-      ++ G_idx;
-    } else if (FULL) {
-      SampleG(G.slice(i+1), R_inv, theta.slice(i), Sigma_G_inv, G_0,
-              p, T, true, lambda(i));
-      ++ G_idx;
-    }
-
     // Sigma2
     if (sample_sigma2) {
       SampleSigma2(sigma2(i+1), alpha_sigma2, beta_sigma2, Y, F, theta.slice(i));
@@ -105,6 +94,17 @@ List dstm_discount(arma::mat Y, arma::mat F, arma::mat G_0, arma::mat Sigma_G_in
     // Lambda (W)
     SampleLambda(lambda(i+1), alpha_lambda, beta_lambda,
                  G.slice(G_idx), C, theta.slice(i));
+
+    // G
+    if (AR) {
+      SampleAR(G.slice(G_idx+1), R_inv, theta.slice(i),
+               Sigma_G_inv, G_0, true, lambda(i+1));
+      ++G_idx;
+    } else if (FULL) {
+      SampleG(G.slice(G_idx+1), R_inv, theta.slice(i),
+              Sigma_G_inv, G_0, true, lambda(i+1));
+      ++G_idx;
+    }
   }
 
   List results;
@@ -197,23 +197,23 @@ List dstm_IW(arma::mat Y, arma::mat F, arma::mat G_0, arma::mat Sigma_G_inv,
     Kalman(Y, F, G.slice(G_idx), W.slice(i), m, C, a, R_inv, sigma2_i);
     BackwardSample(theta, m, a, C, G.slice(G_idx), R_inv, 1, i, verbose);
 
-    // G
-    if (AR) {
-      SampleAR(G.slice(G_idx+1), R_inv, theta.slice(i),
-               Sigma_G_inv, G_0);
-      ++ G_idx;
-    } else if (FULL) {
-      SampleG(G.slice(i+1), R_inv, theta.slice(i), Sigma_G_inv, G_0, p, T);
-      ++ G_idx;
-    }
-
     // Sigma2
     if (sample_sigma2) {
       SampleSigma2(sigma2(i+1), alpha_sigma2, beta_sigma2, Y, F, theta.slice(i));
     }
 
     // W
-    SampleW(theta.slice(i), G.slice(G_idx), W.slice(i + 1), C_W, df_W);
+    SampleW(W.slice(i+1), theta.slice(i), G.slice(G_idx), C_W, df_W);
+
+    // G
+    if (AR) {
+      SampleAR(G.slice(G_idx+1), W.slices(i+1, i+1), theta.slice(i), Sigma_G_inv, G_0);
+      ++G_idx;
+    } else if (FULL) {
+      SampleG(G.slice(G_idx+1), W.slices(i+1, i+1), theta.slice(i), Sigma_G_inv, G_0);
+      ++G_idx;
+    }
+
   }
 
   List results;
