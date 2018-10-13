@@ -43,8 +43,8 @@ void BackwardSample(arma::cube & theta, arma::mat & m, arma::mat & a,
 
 void SampleSigma2(double & sigma2_new, const double & alpha_sigma2, const double & beta_sigma2,
                   const arma::mat & Y, const arma::mat & F, const arma::mat & theta) {
-  const int S = Y.n_rows, T = Y.n_cols;
-  const double alpha_new = alpha_sigma2 + S * T / 2;
+  const int S = Y.n_rows, T = Y.n_cols-1;
+  const double alpha_new = alpha_sigma2 + S*T/2;
   double total = 0;
   for (int t = 1; t <= T; ++t) {
     arma::colvec x = Y.col(t) - F * theta.col(t);
