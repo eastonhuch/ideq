@@ -43,16 +43,15 @@ List dstm_discount(arma::mat Y, arma::mat F, arma::mat G_0, arma::mat Sigma_G_in
   C.slice(0) = C_0;
 
   if (AR) {
-    G.set_size(p, p, n_samples + 1);
+    G.set_size(p, p, n_samples+1);
     G.zeros();
     G.slice(0).diag() = mvnorm(G_0.diag(), arma::inv_sympd(Sigma_G_inv));
   } else if (FULL) {
-    G.set_size(p, p, n_samples + 1);
+    G.set_size(p, p, n_samples+1);
     G_0.reshape(p*p, 1);
     tmp = mvnorm(G_0, arma::inv_sympd(Sigma_G_inv));
     tmp.reshape(p, p);
     G.slice(0) = tmp;
-    Rcout << G.slice(0) << std::endl;
   } else {
     G.set_size(p, p, 1);
     G.slice(0) = G_0;
@@ -76,7 +75,7 @@ List dstm_discount(arma::mat Y, arma::mat F, arma::mat G_0, arma::mat Sigma_G_in
 
   // Begin MCMC
   int G_idx = 0; // This value is incremented each iteration for AR and Full models
-  for (int i = 0; i < n_samples; ++i) {
+  for (int i=0; i<n_samples; ++i) {
     if (verbose) {
       Rcout << "Filtering sample number " << i + 1 << std::endl;
     }
@@ -91,7 +90,7 @@ List dstm_discount(arma::mat Y, arma::mat F, arma::mat G_0, arma::mat Sigma_G_in
     // G
     if (AR) {
       SampleAR(G.slice(G_idx + 1), R_inv, theta.slice(i),
-               Sigma_G_inv, G_0, T, true, lambda(i));
+               Sigma_G_inv, G_0, true, lambda(i));
       ++ G_idx;
     } else if (FULL) {
       SampleG(G.slice(i + 1), R_inv, theta.slice(i), Sigma_G_inv, G_0,
@@ -202,7 +201,7 @@ List dstm_IW(arma::mat Y, arma::mat F, arma::mat G_0, arma::mat Sigma_G_inv,
     // G
     if (AR) {
       SampleAR(G.slice(G_idx + 1), R_inv, theta.slice(i),
-               Sigma_G_inv, G_0, T);
+               Sigma_G_inv, G_0);
       ++ G_idx;
     } else if (FULL) {
       SampleG(G.slice(i + 1), R_inv, theta.slice(i), Sigma_G_inv, G_0, p, T);

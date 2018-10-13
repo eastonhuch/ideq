@@ -25,8 +25,8 @@ void SampleG(arma::mat & G, arma::cube & W_inv, arma::mat & theta,
              const double lambda = 0.0);
 
 void SampleAR(arma::mat & G, arma::cube & W_inv, arma::mat & theta,
-              arma::mat & Sigma_G_inv, arma::mat & mu_G, const int & T,
-              const int Discount = false, const double lambda = 0.0);
+              arma::mat & Sigma_G_inv, arma::mat & mu_G,
+              const bool Discount = false, const double lambda = 0.0);
 
 void SampleV(arma::mat & Y, arma::mat & F, arma::cube & theta,
              arma::mat & V, arma::mat & C_V, const int df_V);
