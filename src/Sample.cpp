@@ -142,22 +142,31 @@ void SampleAR(arma::mat & G, arma::cube & W_inv, arma::mat & theta,
   return;
 };
 
-void SampleV_inv (arma::mat & Y, arma::mat & F, arma::cube & theta,
-                  arma::cube & V, arma::mat & C_V, const int & df_V,
-                  int & i, const int & T) {
-  arma::mat C_new = Y.cols(1, T) - F * theta.slice(i).cols(1, T);
-  C_new = C_new * C_new.t() + df_V * C_V;
-  C_new = arma::inv_sympd(C_new);
+// Not currently being used
+void SampleV(arma::mat & Y, arma::mat & F, arma::mat & theta,
+             arma::mat & V, arma::mat & C_V, const int df_V) {
+  const int T = theta.n_cols - 1;
+  const int p = theta.n_rows;
+  arma::mat Y_diffs = Y.cols(1, T) - F * theta.cols(1, T);
+  arma::mat C_new = df_V * C_V;
+  for (int i=0; i<T; ++i) {
+    C_new += Y_diffs.col(i) * Y_diffs.col(i).t();
+  }
   int df_new = df_V + T;
-  V.slice(i) = rgen::riwishart(df_new, C_new);
+  V = rgen::riwishart(df_new, C_new);
   return;
 }
 
 void SampleW (arma::mat & theta, arma::mat & G, arma::mat & W,
-              arma::mat & C_W, const int & df_W, const int & T) {
-  arma::mat C_new = theta.cols(1, T) -
-                    G * theta.cols(0, T - 1);
-  C_new = C_new * C_new.t() + df_W * C_W;
+              arma::mat & C_W, const int df_W) {
+  const int T = theta.n_cols - 1;
+  const int p = theta.n_rows;
+  arma::mat theta_diffs = theta.cols(1, T) -
+                          G * theta.cols(0, T - 1);
+  arma::mat C_new = df_W * C_W;
+  for (int i=0; i<T; ++i) {
+    C_new += theta_diffs.col(i) * theta_diffs.col(i).t();
+  }
   int df_new = df_W + T;
   W = rgen::riwishart(df_new, C_new);
   return;

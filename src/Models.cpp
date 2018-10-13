@@ -181,7 +181,6 @@ List dstm_IW(arma::mat Y, arma::mat F, arma::mat G_0, arma::mat Sigma_G_inv,
     tmp = mvnorm(G_0, arma::inv_sympd(Sigma_G_inv));
     tmp.reshape(p, p);
     G.slice(0) = tmp;
-    Rcout << G.slice(0) << std::endl;
   } else {
     G.set_size(p, p, 1);
     G.slice(0) = G_0;
@@ -216,7 +215,7 @@ List dstm_IW(arma::mat Y, arma::mat F, arma::mat G_0, arma::mat Sigma_G_inv,
     }
 
     // W
-    SampleW(theta.slice(i), G.slice(G_idx), W.slice(i + 1), C_W, df_W, T);
+    SampleW(theta.slice(i), G.slice(G_idx), W.slice(i + 1), C_W, df_W);
   }
 
   List results;
