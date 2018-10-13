@@ -41,38 +41,35 @@ void BackwardSample(arma::cube & theta, arma::mat & m, arma::mat & a,
   return;
 }
 
-
-void SampleSigma2(const double & alpha_sigma2, const double & beta_sigma2,
-                 const int & S, const int & T, int i,
-                 arma::mat & Y, arma::mat & F_,
-                 arma::cube & theta, arma::colvec & sigma2) {
+void SampleSigma2(double & sigma2_new, const double & alpha_sigma2, const double & beta_sigma2,
+                  const arma::mat & Y, const arma::mat & F, const arma::mat & theta) {
+  const int S = Y.n_rows, T = Y.n_cols;
   const double alpha_new = alpha_sigma2 + S * T / 2;
   double total = 0;
   for (int t = 1; t <= T; ++t) {
-    arma::colvec x = Y.col(t) - F_ * theta.slice(i).col(t);
+    arma::colvec x = Y.col(t) - F * theta.col(t);
     total += dot(x, x);
   }
   const double beta_new = beta_sigma2 + total / 2;
-  sigma2[i + 1] = rigamma(alpha_new, beta_new);
+  sigma2_new = rigamma(alpha_new, beta_new);
   return;
 }
 
-void SampleLambda(const double & alpha_lambda, const double & beta_lambda,
-                  const int & p, const int & T, int i,
-                  arma::mat & G, arma::cube & C,
-                  arma::cube & theta, arma::colvec & lambda) {
+void SampleLambda(double & lambda_new, const double & alpha_lambda, const double & beta_lambda,
+                  const arma::mat & G, const arma::cube & C, const arma::mat & theta) {
+  const int p = G.n_cols, T = theta.n_cols-1;
   const double alpha_new = alpha_lambda + p*T/2;
   arma::mat P(p, p);
   arma::mat tmp(1, 1);
   double total = 0;
   for (int t = 1; t <= T; ++t) {
     P = G * C.slice(t - 1) * G.t();
-    arma::colvec x = theta.slice(i).col(t) - G * theta.slice(i).col(t-1);
+    arma::colvec x = theta.col(t) - G * theta.col(t-1);
     tmp = (x.t() * solve(P, x));
     total += tmp(0);
   }
   const double beta_new = beta_lambda + total / 2;
-  lambda[i+1] = rigamma(alpha_new, beta_new);
+  lambda_new = rigamma(alpha_new, beta_new);
   return;
 }
 

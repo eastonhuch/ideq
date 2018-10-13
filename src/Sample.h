@@ -9,15 +9,11 @@ void BackwardSample(arma::cube & theta, arma::mat & m, arma::mat & a,
                     const int & n_samples, int & start_slice,
                     const bool & verbose);
 
-void SampleSigma2(const double & alpha_sigma2, const double & beta_sigma2,
-                 const int & S, const int & T, int i,
-                 arma::mat & Y, arma::mat & F_,
-                 arma::cube & theta, arma::colvec & sigma2);
+void SampleSigma2(double & sigma2_new, const double & alpha_sigma2, const double & beta_sigma2,
+                  const arma::mat & Y, const arma::mat & F, const arma::mat & theta);
 
-void SampleLambda(const double & alpha_lambda, const double & beta_lambda,
-                 const int & p, const int & T, int i,
-                 arma::mat & G, arma::cube & C,
-                 arma::cube & theta, arma::colvec & lambda);
+void SampleLambda(double & lambda_new, const double & alpha_lambda, const double & beta_lambda,
+                  const arma::mat & G, const arma::cube & C, const arma::mat & theta);
 
 void SampleG(arma::mat & G, arma::cube & W_inv, arma::mat & theta,
              arma::mat & Sigma_g_inv, arma::mat & mu_g, const int & p,

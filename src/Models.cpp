@@ -24,8 +24,7 @@ using namespace Rcpp;
 // [[Rcpp::export]]
 List dstm_discount(arma::mat Y, arma::mat F, arma::mat G_0, arma::mat Sigma_G_inv,
                    arma::colvec m_0, arma::mat C_0, NumericVector params,
-                   CharacterVector proc_model, const int n_samples,
-                   const bool verbose) {
+                   CharacterVector proc_model, const int n_samples, const bool verbose) {
   // Create high-level model parameters
   bool AR = proc_model(0) == "AR";
   bool FULL = proc_model(0) == "Full";
@@ -89,23 +88,23 @@ List dstm_discount(arma::mat Y, arma::mat F, arma::mat G_0, arma::mat Sigma_G_in
 
     // G
     if (AR) {
-      SampleAR(G.slice(G_idx + 1), R_inv, theta.slice(i),
+      SampleAR(G.slice(G_idx+1), R_inv, theta.slice(i),
                Sigma_G_inv, G_0, true, lambda(i));
       ++ G_idx;
     } else if (FULL) {
-      SampleG(G.slice(i + 1), R_inv, theta.slice(i), Sigma_G_inv, G_0,
+      SampleG(G.slice(i+1), R_inv, theta.slice(i), Sigma_G_inv, G_0,
               p, T, true, lambda(i));
       ++ G_idx;
     }
 
     // Sigma2
     if (sample_sigma2) {
-      SampleSigma2(alpha_sigma2, beta_sigma2, S, T, i, Y, F, theta, sigma2);
+      SampleSigma2(sigma2(i+1), alpha_sigma2, beta_sigma2, Y, F, theta.slice(i));
     }
 
     // Lambda (W)
-    SampleLambda(alpha_lambda, beta_lambda, p, T, i,
-                 G.slice(G_idx), C, theta, lambda);
+    SampleLambda(lambda(i+1), alpha_lambda, beta_lambda,
+                 G.slice(G_idx), C, theta.slice(i));
   }
 
   List results;
@@ -200,17 +199,17 @@ List dstm_IW(arma::mat Y, arma::mat F, arma::mat G_0, arma::mat Sigma_G_inv,
 
     // G
     if (AR) {
-      SampleAR(G.slice(G_idx + 1), R_inv, theta.slice(i),
+      SampleAR(G.slice(G_idx+1), R_inv, theta.slice(i),
                Sigma_G_inv, G_0);
       ++ G_idx;
     } else if (FULL) {
-      SampleG(G.slice(i + 1), R_inv, theta.slice(i), Sigma_G_inv, G_0, p, T);
+      SampleG(G.slice(i+1), R_inv, theta.slice(i), Sigma_G_inv, G_0, p, T);
       ++ G_idx;
     }
 
     // Sigma2
     if (sample_sigma2) {
-      SampleSigma2(alpha_sigma2, beta_sigma2, S, T, i, Y, F, theta, sigma2);
+      SampleSigma2(sigma2(i+1), alpha_sigma2, beta_sigma2, Y, F, theta.slice(i));
     }
 
     // W
