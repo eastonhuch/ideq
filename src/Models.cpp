@@ -4,6 +4,7 @@
 #include "Kalman.h"
 #include "Sample.h"
 #include "Distributions.h"
+#include "IDE_helpers.h"
 
 using namespace Rcpp;
 

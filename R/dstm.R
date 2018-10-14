@@ -19,7 +19,8 @@ dstm <- function(Y, locs=NULL, obs_model = "EOF", proc_model = "RW",
 
   # Observation Model; creates F, m_0, C_0
   if (obs_model == "EOF") {
-    F_ <-eigen(cov(t(Y)))$vectors[, 1:p]
+    e <- eigen(cov(t(Y)))
+    F_ <-e$vectors[, 1:p]
     # Set m_0
     m_0 <- NULL
     if ("m_0" %in% names(params)) {
@@ -40,8 +41,10 @@ dstm <- function(Y, locs=NULL, obs_model = "EOF", proc_model = "RW",
       C_0 <- params[["C_0"]]
     }
     else {
-      message("No prior was provided for C_0 so I am using I")
-      C_0 <- diag(p)
+      message("No prior was provided for C_0 so I am using diag(eigenvalues)")
+      C_0 <- diag(e$values[1:p])
+      #message("No prior was provided for C_0 so I am using I")
+      #C_0 <- diag(p)
     }
 
     }
@@ -188,8 +191,8 @@ dstm <- function(Y, locs=NULL, obs_model = "EOF", proc_model = "RW",
 
     }
     else {
-      message("mu_G was not provided, so I am using 0.9I")
-      G_0 <- diag(0.9, p)
+      message("mu_G was not provided, so I am using I")
+      G_0 <- diag(p)
     }
 
     if ("Sigma_G_inv" %in% names(params)) {
