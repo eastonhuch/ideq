@@ -7,7 +7,6 @@
 #' @param verbose boolean; controls verbosity
 #' @param sample_sigma2 whether boolean; to sample \eqn{\sigma^2}
 #'
-#' @keyword IDE, Kalman, Filter
 #' @export
 #' @examples
 #' # Duhh...nothing yet
@@ -18,7 +17,8 @@ dstm <- function(Y, locs=NULL, obs_model = "EOF", proc_model = "RW",
   results <- "No output...whoops"
 
   # Observation Model; creates F, m_0, C_0
-  if (obs_model == "IDE") {
+  IDE = obs_model == "IDE"
+  if (IDE) {
     # Error checking for J, L, locs
     if ("J" %in% names(params)) {
       J <- params[["J"]]
@@ -95,7 +95,7 @@ dstm <- function(Y, locs=NULL, obs_model = "EOF", proc_model = "RW",
 
   # Observation Error; creates alpha_sigma2, beta_sigma2, sigma2
   # NOTE: We could also draw this from a Wishart distribution...nah
-  alpha_sigma2 <- beta_sigma2 <- sigma2 <- NULL
+  alpha_sigma2 <- beta_sigma2 <- sigma2 <- NA
   if (sample_sigma2) {
     if ("alpha_sigma2" %in% names(params)) {
       alpha_sigma2 <- params[["alpha_sigma2"]]
@@ -237,7 +237,7 @@ dstm <- function(Y, locs=NULL, obs_model = "EOF", proc_model = "RW",
       alpha_lambda <- 1
       message(paste("alpha_lambda was not provided so I am using", alpha_lambda))
     }
-    if ("beta_tau" %in% names(params)) {
+    if ("beta_lambda" %in% names(params)) {
       beta_lambda <- params[["beta_lambda"]]
     }
     else {
@@ -246,9 +246,9 @@ dstm <- function(Y, locs=NULL, obs_model = "EOF", proc_model = "RW",
     }
 
     scalar_params <- c(alpha_sigma2=alpha_sigma2, beta_sigma2=beta_sigma2,
-                       sigma2=sigma2,
+                       sigma2=sigma2, J=J, L=L,
                        alpha_lambda=alpha_lambda, beta_lambda=beta_lambda)
-    results <- dstm_IDE(Y, m_0, C_0, scalar_params,
+    results <- dstm_IDE(Y, locs, m_0, C_0, scalar_params,
                         n_samples, verbose)
   }
   else if (proc_error == "discount") {

@@ -4,8 +4,8 @@
 \alias{dstm_IW}
 \title{Fits a DSTM using a wishart prior for W}
 \usage{
-dstm_IW(Y, F, G_0, Sigma_G_inv, m_0, C_0, C_W, params, proc_model, n_samples,
-  verbose)
+dstm_IW(Y, F, G_0, Sigma_G_inv, m_0, C_0, C_W, params, proc_model,
+  n_samples, verbose)
 }
 \description{
 Fits a DSTM using a wishart prior for W

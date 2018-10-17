@@ -3,7 +3,6 @@
 
 #' Samples from a multivariate normal distribution
 #'
-#' @keyword Normal, Multivariate, Sample, Random
 #' @export
 #' @examples
 #' # Duhh...nothing yet
@@ -21,7 +20,6 @@ mvnorm <- function(mean, Sigma) {
 #' @param verbose boolean; controls verbosity
 #' @param sample_sigma2 whether boolean; to sample \eqn{\sigma^2}
 #'
-#' @keyword IDE, Kalman, Filter
 #' @export
 #' @examples
 #' # Duhh...nothing yet
@@ -33,7 +31,6 @@ dstm_discount <- function(Y, F, G_0, Sigma_G_inv, m_0, C_0, params, proc_model, 
 
 #' Fits a DSTM using a wishart prior for W
 #'
-#' @keyword Kalman, Filter, FFBS, Wishart
 #' @export
 #' @examples
 #' # Duhh...nothing yet
@@ -45,13 +42,12 @@ dstm_IW <- function(Y, F, G_0, Sigma_G_inv, m_0, C_0, C_W, params, proc_model, n
 
 #' Fits a integrodifference equation model (IDE)
 #'
-#' @keyword IDE, Kalman, Filter
 #' @export
 #' @examples
 #' # Duhh...nothing yet
 #' @importFrom Rcpp sourceCpp evalCpp
 #' @useDynLib ideq
-dstm_IDE <- function(Y, m_0, C_0, params, n_samples, verbose) {
-    .Call('_ideq_dstm_IDE', PACKAGE = 'ideq', Y, m_0, C_0, params, n_samples, verbose)
+dstm_IDE <- function(Y, locs, m_0, C_0, params, n_samples, verbose) {
+    .Call('_ideq_dstm_IDE', PACKAGE = 'ideq', Y, locs, m_0, C_0, params, n_samples, verbose)
 }
 

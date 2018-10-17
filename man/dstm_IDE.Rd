@@ -4,7 +4,7 @@
 \alias{dstm_IDE}
 \title{Fits a integrodifference equation model (IDE)}
 \usage{
-dstm_IDE()
+dstm_IDE(Y, locs, m_0, C_0, params, n_samples, verbose)
 }
 \description{
 Fits a integrodifference equation model (IDE)

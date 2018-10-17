@@ -4,8 +4,8 @@
 \alias{dstm_discount}
 \title{Fits a dynamic spatio-temporal model (DSTM) with a discount factor}
 \usage{
-dstm_discount(Y, F, G_0, Sigma_G_inv, m_0, C_0, params, proc_model, n_samples,
-  verbose)
+dstm_discount(Y, F, G_0, Sigma_G_inv, m_0, C_0, params, proc_model,
+  n_samples, verbose)
 }
 \arguments{
 \item{Y}{S by T matrix containing response variable at S spatial locations and T time points}

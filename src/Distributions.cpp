@@ -5,7 +5,6 @@ using namespace Rcpp;
 
 //' Samples from a multivariate normal distribution
 //'
-//' @keyword Normal, Multivariate, Sample, Random
 //' @export
 //' @examples
 //' # Duhh...nothing yet

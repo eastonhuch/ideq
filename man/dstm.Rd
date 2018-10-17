@@ -4,9 +4,9 @@
 \alias{dstm}
 \title{Fits a dynamic spatio-temporal model (DSTM)}
 \usage{
-dstm(Y, obs_model = "EOF", proc_model = "RW", proc_error = "discount",
-  p = 10L, n_samples = 1L, sample_sigma2 = TRUE, verbose = FALSE,
-  params = NULL)
+dstm(Y, locs = NULL, obs_model = "EOF", proc_model = "RW",
+  proc_error = "discount", p = 10L, n_samples = 1L,
+  sample_sigma2 = TRUE, verbose = FALSE, params = NULL)
 }
 \arguments{
 \item{Y}{S by T matrix containing response variable at S spatial locations and T time points}
