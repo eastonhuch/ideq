@@ -5,6 +5,21 @@
 
 using namespace Rcpp;
 
+arma::mat makePhi(const arma::mat & locs, const int J, const int L) {
+  arma::colvec freqs = 2*PI/L * arma::regspace(1, J);
+  arma::mat w(J*J, 2);
+  w.col(0) = arma::repmat(freqs, J, 1);
+  w.col(1) = arma::repelem(freqs, J, 1);
+  arma::mat Jmat = locs.col(0) * w.col(0).t() +
+                    locs.col(1) * w.col(1).t();
+  arma::mat Phi(Jmat.n_rows, 2*J*J + 1);
+  Phi.col(0).fill(0.5);
+  Phi.cols(1, L*L) = arma::cos(Jmat);
+  Phi.cols(L*L + 1, 2*L*L) = arma::sin(Jmat);
+  Phi /= std::sqrt(L);
+  return Phi;
+}
+
 arma::mat makeB(arma::colvec mu, arma::mat Sigma,
                 const arma::mat & locs, const int J, const int L) {
   arma::colvec freqs = 2*PI/L * arma::regspace(1, J);
@@ -22,6 +37,6 @@ arma::mat makeB(arma::colvec mu, arma::mat Sigma,
   B.col(0) = Jmat2.col(0);
   B.cols(1, L*L) = Jmat2 % arma::cos(Jmat1);
   B.cols(L*L + 1, 2*L*L) = Jmat2 % arma::sin(Jmat1);
-  B /= sqrt(L);
+  B /= std::sqrt(L);
   return B;
 };
