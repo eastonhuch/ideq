@@ -249,8 +249,7 @@ List dstm_IW(arma::mat Y, arma::mat F, arma::mat G_0, arma::mat Sigma_G_inv,
 //' @importFrom Rcpp sourceCpp evalCpp
 //' @useDynLib ideq
 // [[Rcpp::export]]
-List dstm_IDE(arma::mat Y, arma::mat F, arma::mat G,
-              arma::colvec m_0, arma::mat C_0, NumericVector params,
+List dstm_IDE(arma::mat Y, arma::colvec m_0, arma::mat C_0, NumericVector params,
               const int n_samples, const bool verbose) {
   const double alpha_sigma2 = params["alpha_sigma2"];
   const double beta_sigma2 = params["beta_sigma2"];

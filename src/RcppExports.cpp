@@ -60,20 +60,18 @@ BEGIN_RCPP
 END_RCPP
 }
 // dstm_IDE
-List dstm_IDE(arma::mat Y, arma::mat F, arma::mat G, arma::colvec m_0, arma::mat C_0, NumericVector params, const int n_samples, const bool verbose);
-RcppExport SEXP _ideq_dstm_IDE(SEXP YSEXP, SEXP FSEXP, SEXP GSEXP, SEXP m_0SEXP, SEXP C_0SEXP, SEXP paramsSEXP, SEXP n_samplesSEXP, SEXP verboseSEXP) {
+List dstm_IDE(arma::mat Y, arma::colvec m_0, arma::mat C_0, NumericVector params, const int n_samples, const bool verbose);
+RcppExport SEXP _ideq_dstm_IDE(SEXP YSEXP, SEXP m_0SEXP, SEXP C_0SEXP, SEXP paramsSEXP, SEXP n_samplesSEXP, SEXP verboseSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< arma::mat >::type Y(YSEXP);
-    Rcpp::traits::input_parameter< arma::mat >::type F(FSEXP);
-    Rcpp::traits::input_parameter< arma::mat >::type G(GSEXP);
     Rcpp::traits::input_parameter< arma::colvec >::type m_0(m_0SEXP);
     Rcpp::traits::input_parameter< arma::mat >::type C_0(C_0SEXP);
     Rcpp::traits::input_parameter< NumericVector >::type params(paramsSEXP);
     Rcpp::traits::input_parameter< const int >::type n_samples(n_samplesSEXP);
     Rcpp::traits::input_parameter< const bool >::type verbose(verboseSEXP);
-    rcpp_result_gen = Rcpp::wrap(dstm_IDE(Y, F, G, m_0, C_0, params, n_samples, verbose));
+    rcpp_result_gen = Rcpp::wrap(dstm_IDE(Y, m_0, C_0, params, n_samples, verbose));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -82,7 +80,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_ideq_mvnorm", (DL_FUNC) &_ideq_mvnorm, 2},
     {"_ideq_dstm_discount", (DL_FUNC) &_ideq_dstm_discount, 10},
     {"_ideq_dstm_IW", (DL_FUNC) &_ideq_dstm_IW, 11},
-    {"_ideq_dstm_IDE", (DL_FUNC) &_ideq_dstm_IDE, 8},
+    {"_ideq_dstm_IDE", (DL_FUNC) &_ideq_dstm_IDE, 6},
     {NULL, NULL, 0}
 };
 

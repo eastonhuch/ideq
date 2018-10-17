@@ -5,6 +5,10 @@
 
 using namespace Rcpp;
 
+// Observation matrix
+// The number of total basis function is J^2+1
+// L is the range of the Fourier approximation
+// locs are the centered/scaled spatial locations
 arma::mat makePhi(const arma::mat & locs, const int J, const int L) {
   arma::colvec freqs = 2*PI/L * arma::regspace(1, J);
   arma::mat w(J*J, 2);
@@ -20,6 +24,9 @@ arma::mat makePhi(const arma::mat & locs, const int J, const int L) {
   return Phi;
 }
 
+
+// The function makeB returns the matrix B used as part of the process matrix
+// mu and Sigma are the parameters of the IDE kernel
 arma::mat makeB(arma::colvec mu, arma::mat Sigma,
                 const arma::mat & locs, const int J, const int L) {
   arma::colvec freqs = 2*PI/L * arma::regspace(1, J);

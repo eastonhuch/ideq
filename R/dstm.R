@@ -18,38 +18,7 @@ dstm <- function(Y, locs=NULL, obs_model = "EOF", proc_model = "RW",
   results <- "No output...whoops"
 
   # Observation Model; creates F, m_0, C_0
-  if (obs_model == "EOF") {
-    e <- eigen(cov(t(Y)))
-    F_ <-e$vectors[, 1:p]
-    # Set m_0
-    m_0 <- NULL
-    if ("m_0" %in% names(params)) {
-      if(length(params[["m_0"]]) != p) stop("m_0 must have length p")
-      m_0 <- params[["m_0"]]
-    }
-    else {
-      message("No prior was provided for m_0 so I am using a vector of zeros")
-      m_0 <- rep(0, p)
-    }
-
-    # Set C_0
-    C_0 <- matrix()
-    if ("C_0" %in% names(params)) {
-      if (!is.matrix(params[["C_0"]]) || any(dim(params[["C_0"]]) != c(p, p))){
-        stop("C_0 must be a p by p matrix")
-      }
-      C_0 <- params[["C_0"]]
-    }
-    else {
-      message("No prior was provided for C_0 so I am using diag(eigenvalues)")
-      C_0 <- diag(e$values[1:p])
-      #message("No prior was provided for C_0 so I am using I")
-      #C_0 <- diag(p)
-    }
-
-    }
-  else if (obs_model == "IDE") {
-
+  if (obs_model == "IDE") {
     # Error checking for J, L, locs
     if ("J" %in% names(params)) {
       J <- params[["J"]]
@@ -89,48 +58,37 @@ dstm <- function(Y, locs=NULL, obs_model = "EOF", proc_model = "RW",
       stop("locs must be specified for obs_model == IDE")
     }
 
-    # Observation matrix
-    # The number of total basis function is J^2+1
-    # L is the range of the Fourier approximation
-    # locs are the centered/scaled spatial locations
-
-    makePhi <- function(J, L, locs){
-      freqs <- 2*pi/L * seq(J)
-      w <- expand.grid(freqs, freqs)
-      Jmat <- outer(locs[, 1], w[, 1]) + outer(locs[, 2], w[, 2])
-      Phi <- L^(-1/2) * cbind( 1/2, cos(Jmat), sin(Jmat) )
-      Phi
-    }
-
-    F_ <- makePhi(J, L, locs)
-
-    # Error checking for m_0, C_0
-    locs_dim <- ncol(locs)
-    if ("m_0" %in% names(params)) {
-      m_0 <- params[["m_0"]]
-      m_0 <- as.vector(m_0)
-      if (!is.numeric(m_0) || length(m_0)!=locs_dim) {
-        stop("m_0 must be numeric with length==ncol(locs)")
-      }
-    }
-    else {
-      m_0 <- rep(0, locs_dim)
-      message("m_0 was not provided so I am using a vector of zeroes")
-    }
-
-    if ("C_0" %in% names(params)) {
-      C_0 <- params[["C_0"]]
-      if (!is.positive.definite(C_0) ||
-          any(dim(Sigma) != locs_dim)) {
-        stop("C_0 must be positive definite with dimensions == ncol(locs)")
-      }
-    }
-    else {
-      C_0 <- diag(locs_dim)
-      message("C_0 was not provided so I am using an identity matrix")
-    }
-
   }
+  else if (obs_model == "EOF") {
+    e <- eigen(cov(t(Y)))
+    F_ <-e$vectors[, 1:p]
+    # Set m_0
+    m_0 <- NULL
+    if ("m_0" %in% names(params)) {
+      if(length(params[["m_0"]]) != p) stop("m_0 must have length p")
+      m_0 <- params[["m_0"]]
+    }
+    else {
+      message("No prior was provided for m_0 so I am using a vector of zeros")
+      m_0 <- rep(0, p)
+    }
+
+    # Set C_0
+    C_0 <- matrix()
+    if ("C_0" %in% names(params)) {
+      if (!is.matrix(params[["C_0"]]) || any(dim(params[["C_0"]]) != c(p, p))){
+        stop("C_0 must be a p by p matrix")
+      }
+      C_0 <- params[["C_0"]]
+    }
+    else {
+      message("No prior was provided for C_0 so I am using diag(eigenvalues)")
+      C_0 <- diag(e$values[1:p])
+      #message("No prior was provided for C_0 so I am using I")
+      #C_0 <- diag(p)
+    }
+
+    }
   else {
     stop("obs_model is invalid")
   }
@@ -176,7 +134,34 @@ dstm <- function(Y, locs=NULL, obs_model = "EOF", proc_model = "RW",
 
   # Process Model; creates G_0 (mu_G) and Sigma_G_inv
   Sigma_G_inv <- matrix()
-  if (proc_model == "RW") {
+  if (IDE) {
+    # Error checking for m_0, C_0: the priors for the kernel parameters
+    locs_dim <- ncol(locs)
+    if ("m_0" %in% names(params)) {
+      m_0 <- params[["m_0"]]
+      m_0 <- as.vector(m_0)
+      if (!is.numeric(m_0) || length(m_0)!=locs_dim) {
+        stop("m_0 must be numeric with length==ncol(locs)")
+      }
+    }
+    else {
+      m_0 <- rep(0, locs_dim)
+      message("m_0 was not provided so I am using a vector of zeroes")
+    }
+
+    if ("C_0" %in% names(params)) {
+      C_0 <- params[["C_0"]]
+      if (!is.positive.definite(C_0) ||
+          any(dim(Sigma) != locs_dim)) {
+        stop("C_0 must be positive definite with dimensions == ncol(locs)")
+      }
+    }
+    else {
+      C_0 <- diag(locs_dim)
+      message("C_0 was not provided so I am using an identity matrix")
+    }
+  }
+  else if (proc_model == "RW") {
     G_0 <- diag(p)
   }
   else if (proc_model == "AR") {
@@ -238,36 +223,35 @@ dstm <- function(Y, locs=NULL, obs_model = "EOF", proc_model = "RW",
     }
 
   }
-  else if (obs_model  == "IDE") {
-    # The function makeB returns the matrix B used as part of the process matrix
-    # m_0 and C_0 are the parameters of the IDE kernel
-
-    makeB <- function(J, L, locs, mu, Sigma){
-      freqs <- 2*pi/L * seq(J)
-      w <- expand.grid(freqs, freqs)
-      Jmat1 <- outer(locs[, 1] + mu[1], w[, 1]) +
-               outer(locs[, 2] + mu[2], w[, 2])
-      Jvec <- Sigma[1, 1] * w[, 1]^2 +
-              Sigma[2, 2] * w[, 2]^2+
-              Sigma[1, 2] * w[, 1] * w[,2]
-      Jmat2 <- rep(1,nrow(locs)) %x% t(Jvec)
-      B <- L^(-.5) *
-           cbind(exp(-.5*Jmat2[,1]),
-                 exp(-.5*Jmat2)*cos(Jmat1),
-                 exp(-.5*Jmat2)*sin(Jmat1))
-      B
-    }
-
-    B <- makeB(J, L, locs, m_0, C_0)
-    G <- solve(crossprod(F_), t(F_) %*% B)
-
-  }
   else {
     stop("proc_model not supported")
   }
 
   # Process Error; creates all necessary params (e.g., alpha_lambda)
-  if (proc_error == "discount") {
+  if (IDE) {
+    # FIXME: Add code to to specify process error in IDE model
+    if ("alpha_lambda" %in% names(params)) {
+      alpha_lambda <- params[["alpha_lambda"]]
+    }
+    else {
+      alpha_lambda <- 1
+      message(paste("alpha_lambda was not provided so I am using", alpha_lambda))
+    }
+    if ("beta_tau" %in% names(params)) {
+      beta_lambda <- params[["beta_lambda"]]
+    }
+    else {
+      beta_lambda <- 1
+      message(paste("beta_lambda was not provided so I am using", beta_lambda))
+    }
+
+    scalar_params <- c(alpha_sigma2=alpha_sigma2, beta_sigma2=beta_sigma2,
+                       sigma2=sigma2,
+                       alpha_lambda=alpha_lambda, beta_lambda=beta_lambda)
+    results <- dstm_IDE(Y, m_0, C_0, scalar_params,
+                        n_samples, verbose)
+  }
+  else if (proc_error == "discount") {
 
     # Set prior for lambda
     alpha_lambda <- beta_lambda <- NULL
@@ -334,30 +318,6 @@ dstm <- function(Y, locs=NULL, obs_model = "EOF", proc_model = "RW",
     if ("sigma2" %in% names(results)) {
       results[["sigma2"]] <- as.numeric(results[["sigma2"]])
     }
-  }
-  else if (obs_model  == "IDE") {
-    # FIXME: Add code to to specify process error in IDE model
-    if ("alpha_tau2" %in% names(params)) {
-      alpha_tau2 <- params[["alpha_tau2"]]
-    }
-    else {
-      alpha_tau2 <- 1
-      message(paste("alpha_tau2 was not provided so I am using", alpha_tau2))
-    }
-    if ("beta_tau" %in% names(params)) {
-      beta_tau2 <- params[["beta_tau2"]]
-    }
-    else {
-      beta_tau2 <- 1
-      message(paste("beta_tau2 was not provided so I am using", beta_tau2))
-    }
-
-    scalar_params <- c(alpha_sigma2=alpha_sigma2, beta_sigma2=beta_sigma2,
-                       sigma2=sigma2,
-                       alpha_tau2=alpha_tau2, beta_tau2=beta_tau2)
-    results <- dstm_IDE(Y, F_, G,
-                        m_0, C_0, scalar_params,
-                        n_samples, verbose)
   }
   else {
     stop("I don't know that type of process error")
