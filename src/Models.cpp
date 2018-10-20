@@ -253,7 +253,8 @@ List dstm_IDE(arma::mat Y, arma::mat locs, arma::colvec m_0, arma::mat C_0,
   const double L  = params["L"];
   const double alpha_sigma2  = params["alpha_sigma2"];
   const double beta_sigma2   = params["beta_sigma2"];
-  const bool   sample_sigma2 = params["sigma2"] == NA_LOGICAL;
+  double       sigma2_i      = params["sigma2"];
+  const bool   sample_sigma2 = sigma2_i == NA_LOGICAL;
   const double alpha_lambda  = params["alpha_lambda"];
   const double beta_lambda   = params["alpha_lambda"];
   const int locs_dim = locs.n_cols;
@@ -275,6 +276,44 @@ List dstm_IDE(arma::mat Y, arma::mat locs, arma::colvec m_0, arma::mat C_0,
   arma::mat FtFiFt = arma::solve(F.t() * F, F.t());
   arma::mat B = makeB(m_0, C_0, locs, w_for_B, J, L);
   G.slice(0) = FtFiFt * B;
+
+  // Create variance parameters
+  arma::vec sigma2, lambda(n_samples + 1);
+  lambda[0] = rigamma(alpha_lambda, beta_lambda);
+  if (sample_sigma2) {
+    sigma2.set_size(n_samples+1);
+    sigma2[0] = rigamma(alpha_sigma2, beta_sigma2);
+  }
+
+  // Begin MCMC
+  for (int i = 0; i < n_samples; ++i) {
+    checkUserInterrupt();
+
+    // FFBS
+    if (verbose) {
+      Rcout << "Filtering sample number " << i + 1 << std::endl;
+    }
+    if (sample_sigma2) sigma2_i = sigma2(i);
+    KalmanDiscount(m, C, a, R_inv, Y, F, G.slice(i), sigma2_i, lambda(i));
+
+    if (verbose) {
+      Rcout << "Drawing sample number " << i + 1 << std::endl;
+    }
+    BackwardSample(theta.slice(i), m, a, C, G.slice(i), R_inv);
+
+    // Sigma2
+    if (sample_sigma2) {
+      SampleSigma2(sigma2(i+1), alpha_sigma2, beta_sigma2, Y, F, theta.slice(i));
+    }
+
+    // Lambda (W)
+    SampleLambda(lambda(i+1), alpha_lambda, beta_lambda,
+                 G.slice(i), C, theta.slice(i));
+
+    // Sample values for mu, Sigma
+    arma::mat B = makeB(m_0, C_0, locs, w_for_B, J, L);
+    G.slice(0) = FtFiFt * B;
+  }
 
   Rcout << "The answer is 42" << std::endl;
   List results;
