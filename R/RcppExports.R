@@ -43,11 +43,11 @@ dstm_IW <- function(Y, F, G_0, Sigma_G_inv, m_0, C_0, C_W, params, proc_model, n
 #' Fits a integrodifference equation model (IDE)
 #'
 #' @export
-#' @examples
+#' @examples @importFrom Rcpp sour
 #' # Duhh...nothing yet
-#' @importFrom Rcpp sourceCpp evalCpp
+#'ceCpp evalCpp
 #' @useDynLib ideq
-dstm_IDE <- function(Y, locs, m_0, C_0, params, n_samples, verbose) {
-    .Call('_ideq_dstm_IDE', PACKAGE = 'ideq', Y, locs, m_0, C_0, params, n_samples, verbose)
+dstm_IDE <- function(Y, locs, m_0, C_0, m_kernel, C_kernel, params, n_samples, verbose) {
+    .Call('_ideq_dstm_IDE', PACKAGE = 'ideq', Y, locs, m_0, C_0, m_kernel, C_kernel, params, n_samples, verbose)
 }
 

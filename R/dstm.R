@@ -17,9 +17,14 @@ dstm <- function(Y, locs=NULL, obs_model = "EOF", proc_model = "RW",
   results <- "No output...whoops"
 
   # Observation Model; creates F, m_0, C_0
+  message("Observation model")
   IDE = obs_model == "IDE"
   if (IDE) {
     # Error checking for J, L, locs
+    if (is.null(locs)) {
+      stop("locs must be specified for obs_model == IDE")
+    }
+
     if ("J" %in% names(params)) {
       J <- params[["J"]]
       J <- as.integer(J)
@@ -28,7 +33,7 @@ dstm <- function(Y, locs=NULL, obs_model = "EOF", proc_model = "RW",
       }
     }
     else {
-      J <- 3
+      J <- 5
       message(paste("J was not provided, so I am using "), J)
     }
 
@@ -54,10 +59,30 @@ dstm <- function(Y, locs=NULL, obs_model = "EOF", proc_model = "RW",
       }
     }
 
-    if (is.null(locs)) {
-      stop("locs must be specified for obs_model == IDE")
+    # Set m_0
+    p <- 2*J^2 + 1
+    m_0 <- NULL
+    if ("m_0" %in% names(params)) {
+      if(length(params[["m_0"]]) != p) stop("m_0 must have length p")
+      m_0 <- params[["m_0"]]
+    }
+    else {
+      message("No prior was provided for m_0 so I am using a vector of zeros")
+      m_0 <- rep(0, p)
     }
 
+    # Set C_0
+    C_0 <- matrix()
+    if ("C_0" %in% names(params)) {
+      if (!is.matrix(params[["C_0"]]) || any(dim(params[["C_0"]]) != c(p, p))){
+        stop("C_0 must be a p by p matrix")
+      }
+      C_0 <- params[["C_0"]]
+    }
+    else {
+      message("No prior was provided for C_0 so I am using I")
+      C_0 <- diag(p)
+    }
   }
   else if (obs_model == "EOF") {
     e <- eigen(cov(t(Y)))
@@ -95,6 +120,7 @@ dstm <- function(Y, locs=NULL, obs_model = "EOF", proc_model = "RW",
 
   # Observation Error; creates alpha_sigma2, beta_sigma2, sigma2
   # NOTE: We could also draw this from a Wishart distribution...nah
+  message("Observation error")
   alpha_sigma2 <- beta_sigma2 <- sigma2 <- NA
   if (sample_sigma2) {
     if ("alpha_sigma2" %in% names(params)) {
@@ -133,32 +159,33 @@ dstm <- function(Y, locs=NULL, obs_model = "EOF", proc_model = "RW",
   }
 
   # Process Model; creates G_0 (mu_G) and Sigma_G_inv
+  message("Process model")
   Sigma_G_inv <- matrix()
   if (IDE) {
-    # Error checking for m_0, C_0: the priors for the kernel parameters
+    # Error checking for m_kernel, C_kernel: the priors for the kernel parameters
     locs_dim <- ncol(locs)
-    if ("m_0" %in% names(params)) {
-      m_0 <- params[["m_0"]]
-      m_0 <- as.vector(m_0)
-      if (!is.numeric(m_0) || length(m_0)!=locs_dim) {
-        stop("m_0 must be numeric with length==ncol(locs)")
+    if ("m_kernel" %in% names(params)) {
+      m_kernel <- params[["m_kernel"]]
+      m_kernel <- as.vector(m_kernel)
+      if (!is.numeric(m_kernel) || length(m_kernel)!=locs_dim) {
+        stop("m_kernel must be numeric with length==ncol(locs)")
       }
     }
     else {
-      m_0 <- rep(0, locs_dim)
-      message("m_0 was not provided so I am using a vector of zeroes")
+      m_kernel <- rep(0, locs_dim)
+      message("m_kernel was not provided so I am using a vector of zeroes")
     }
 
-    if ("C_0" %in% names(params)) {
-      C_0 <- params[["C_0"]]
-      if (!is.positive.definite(C_0) ||
+    if ("C_kernel" %in% names(params)) {
+      C_kernel <- params[["C_kernel"]]
+      if (!is.positive.definite(C_kernel) ||
           any(dim(Sigma) != locs_dim)) {
-        stop("C_0 must be positive definite with dimensions == ncol(locs)")
+        stop("C_kernel must be positive definite with dimensions == ncol(locs)")
       }
     }
     else {
-      C_0 <- diag(locs_dim)
-      message("C_0 was not provided so I am using an identity matrix")
+      C_kernel <- diag(locs_dim)
+      message("C_kernel was not provided so I am using I")
     }
   }
   else if (proc_model == "RW") {
@@ -228,13 +255,14 @@ dstm <- function(Y, locs=NULL, obs_model = "EOF", proc_model = "RW",
   }
 
   # Process Error; creates all necessary params (e.g., alpha_lambda)
+  message("Process error")
   if (IDE) {
     # FIXME: Add code to to specify process error in IDE model
     if ("alpha_lambda" %in% names(params)) {
       alpha_lambda <- params[["alpha_lambda"]]
     }
     else {
-      alpha_lambda <- 1
+      alpha_lambda <- 10
       message(paste("alpha_lambda was not provided so I am using", alpha_lambda))
     }
     if ("beta_lambda" %in% names(params)) {
@@ -248,8 +276,8 @@ dstm <- function(Y, locs=NULL, obs_model = "EOF", proc_model = "RW",
     scalar_params <- c(alpha_sigma2=alpha_sigma2, beta_sigma2=beta_sigma2,
                        sigma2=sigma2, J=J, L=L,
                        alpha_lambda=alpha_lambda, beta_lambda=beta_lambda)
-    results <- dstm_IDE(Y, locs, m_0, C_0, scalar_params,
-                        n_samples, verbose)
+    results <- dstm_IDE(Y, locs, m_0, C_0, m_kernel, C_kernel,
+                        scalar_params, n_samples, verbose)
   }
   else if (proc_error == "discount") {
 

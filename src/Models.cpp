@@ -28,7 +28,7 @@ List dstm_discount(arma::mat Y, arma::mat F, arma::mat G_0, arma::mat Sigma_G_in
   // Create high-level model parameters
   bool AR = proc_model(0) == "AR";
   bool FULL = proc_model(0) == "Full";
-  bool sample_sigma2 = params[4] != NA_LOGICAL;
+  bool sample_sigma2 = params[4] != NA_REAL;
   const int p = G_0.n_rows;
   const int T = Y.n_cols;
   const int S = Y.n_rows;
@@ -150,7 +150,7 @@ List dstm_IW(arma::mat Y, arma::mat F, arma::mat G_0, arma::mat Sigma_G_inv,
   arma::vec sigma2;
   double alpha_sigma2, beta_sigma2, sigma2_i;
   bool sample_sigma2;
-  if (params[3] == NA_LOGICAL) {
+  if (params[3] == NA_REAL) {
     sample_sigma2 = false;
     sigma2_i = params[3];
   }
@@ -247,6 +247,7 @@ List dstm_IW(arma::mat Y, arma::mat F, arma::mat G_0, arma::mat Sigma_G_inv,
 //' @useDynLib ideq
 // [[Rcpp::export]]
 List dstm_IDE(arma::mat Y, arma::mat locs, arma::colvec m_0, arma::mat C_0,
+              arma::colvec m_kernel, arma::mat C_kernel,
               NumericVector params, const int n_samples, const bool verbose) {
   // Extract scalar parameters
   const double J  = params["J"];
@@ -254,9 +255,9 @@ List dstm_IDE(arma::mat Y, arma::mat locs, arma::colvec m_0, arma::mat C_0,
   const double alpha_sigma2  = params["alpha_sigma2"];
   const double beta_sigma2   = params["beta_sigma2"];
   double       sigma2_i      = params["sigma2"];
-  const bool   sample_sigma2 = sigma2_i == NA_LOGICAL;
+  const bool   sample_sigma2 = sigma2_i == NA;
   const double alpha_lambda  = params["alpha_lambda"];
-  const double beta_lambda   = params["alpha_lambda"];
+  const double beta_lambda   = params["beta_lambda"];
   const int locs_dim = locs.n_cols;
   const int p = 2*J*J + 1;
   const int T = Y.n_cols;
@@ -264,9 +265,9 @@ List dstm_IDE(arma::mat Y, arma::mat locs, arma::colvec m_0, arma::mat C_0,
 
   // Create matrices and cubes for FFBS
   Y.insert_cols(0, 1); // make Y true-indexed; i.e. index 1 is t_1
-  arma::cube theta(p, T + 1, n_samples), G(p, p, n_samples+1);
-  arma::mat a(p, T + 1), m(locs_dim, T + 1);
-  arma::cube R_inv(p, p, T + 1), C(locs_dim, locs_dim, T + 1), C_T(p, p, n_samples+1);
+  arma::cube theta(p, T+1, n_samples), G(p, p, n_samples+1);
+  arma::mat a(p, T+1), m(p, T+1);
+  arma::cube R_inv(p, p, T+1), C(p, p, T+1), C_T(p, p, n_samples+1);
   m.col(0) = m_0;
   C.slice(0) = C_0;
 
@@ -274,11 +275,11 @@ List dstm_IDE(arma::mat Y, arma::mat locs, arma::colvec m_0, arma::mat C_0,
   arma::mat w_for_B = make_w_for_B(locs, J, L);
   arma::mat F = makeF(locs, w_for_B, J, L);
   arma::mat FtFiFt = arma::solve(F.t() * F, F.t());
-  arma::mat B = makeB(m_0, C_0, locs, w_for_B, J, L);
+  arma::mat B = makeB(m_kernel, C_kernel, locs, w_for_B, J, L);
   G.slice(0) = FtFiFt * B;
 
   // Create variance parameters
-  arma::vec sigma2, lambda(n_samples + 1);
+  arma::vec sigma2, lambda(n_samples+1);
   lambda[0] = rigamma(alpha_lambda, beta_lambda);
   if (sample_sigma2) {
     sigma2.set_size(n_samples+1);
@@ -326,8 +327,16 @@ List dstm_IDE(arma::mat Y, arma::mat locs, arma::colvec m_0, arma::mat C_0,
     G.slice(i) = FtFiFt * B;
   }
 
-  Rcout << "The answer is 42" << std::endl;
   List results;
-  results["answer"] = 42;
+  results["theta"]  = theta;
+  results["lambda"] = lambda;
+  if (sample_sigma2) {
+    results["sigma2"] = sigma2;
+  } else {
+    results["sigma2"] = sigma2_i;
+  }
+  results["G"] = G;
+  results["F"] = F;
+  results["C_T"] = C_T;
   return results;
 }
