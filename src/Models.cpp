@@ -241,9 +241,9 @@ List dstm_IW(arma::mat Y, arma::mat F, arma::mat G_0, arma::mat Sigma_G_inv,
 //' Fits a integrodifference equation model (IDE)
 //'
 //' @export
-//' @examples
+//' @examples @importFrom Rcpp sour
 //' # Duhh...nothing yet
-//' @importFrom Rcpp sourceCpp evalCpp
+//'ceCpp evalCpp
 //' @useDynLib ideq
 // [[Rcpp::export]]
 List dstm_IDE(arma::mat Y, arma::mat locs, arma::colvec m_0, arma::mat C_0,
@@ -300,6 +300,7 @@ List dstm_IDE(arma::mat Y, arma::mat locs, arma::colvec m_0, arma::mat C_0,
       Rcout << "Drawing sample number " << i + 1 << std::endl;
     }
     BackwardSample(theta.slice(i), m, a, C, G.slice(i), R_inv);
+    C_T.slice(i+1) = C.slice(T); // Save for predictions
 
     // Sigma2
     if (sample_sigma2) {
@@ -310,9 +311,19 @@ List dstm_IDE(arma::mat Y, arma::mat locs, arma::colvec m_0, arma::mat C_0,
     SampleLambda(lambda(i+1), alpha_lambda, beta_lambda,
                  G.slice(i), C, theta.slice(i));
 
-    // Sample values for mu, Sigma
-    arma::mat B = makeB(m_0, C_0, locs, w_for_B, J, L);
-    G.slice(0) = FtFiFt * B;
+    // MH step for mu
+    // Sample proposal value
+    // Create new B and G matrix from value
+    // Likelihood looks something like this
+    // (theta_t - G * theta_{t-1})' (lambda * C)^{-1} (theta_t - G * theta_{t-1})
+    // Where C comes from the filtering recursions
+
+    // MH step for Sigma
+    // Similar to portion for mu
+
+    // Make new process matrix
+    //arma::mat B = makeB(m_0, C_0, locs, w_for_B, J, L);
+    G.slice(i) = FtFiFt * B;
   }
 
   Rcout << "The answer is 42" << std::endl;
