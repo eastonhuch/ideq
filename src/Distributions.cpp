@@ -1,6 +1,6 @@
+#include <RcppArmadillo.h>
   // [[Rcpp::depends(RcppArmadillo)]]
 
-#include <RcppArmadillo.h>
 using namespace Rcpp;
 
 //' Samples from a multivariate normal distribution

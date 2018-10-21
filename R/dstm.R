@@ -80,8 +80,8 @@ dstm <- function(Y, locs=NULL, obs_model = "EOF", proc_model = "RW",
       C_0 <- params[["C_0"]]
     }
     else {
-      message("No prior was provided for C_0 so I am using I")
-      C_0 <- diag(p)
+      message("No prior was provided for C_0 so I am using 100I")
+      C_0 <- 100*diag(p)
     }
   }
   else if (obs_model == "EOF") {
@@ -262,14 +262,14 @@ dstm <- function(Y, locs=NULL, obs_model = "EOF", proc_model = "RW",
       alpha_lambda <- params[["alpha_lambda"]]
     }
     else {
-      alpha_lambda <- 10
+      alpha_lambda <- 4
       message(paste("alpha_lambda was not provided so I am using", alpha_lambda))
     }
     if ("beta_lambda" %in% names(params)) {
       beta_lambda <- params[["beta_lambda"]]
     }
     else {
-      beta_lambda <- 1
+      beta_lambda <- 3
       message(paste("beta_lambda was not provided so I am using", beta_lambda))
     }
 

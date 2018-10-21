@@ -15,13 +15,9 @@ void BackwardSample(arma::mat & theta, const arma::mat & m, const arma::mat & a,
   arma::colvec h_t(p);
   arma::mat H_t(p, p);
 
-  Rcout << m.col(T) << std::endl;
-  Rcout << C.slice(T) << std::endl;
   theta.col(T) = mvnorm(m.col(T), C.slice(T)); // draw theta_T
   // Draw values for theta_{T-1} down to theta_0
   for (int t = T-1; t >= 0; --t) {
-    Rcout << m.col(t) << std::endl;
-    Rcout << C.slice(t) << std::endl;
     // Mean and variance of theta_t
     h_t = m.col(t) + C.slice(t) * G.t() * R_inv.slice(t + 1) *
           (theta.col(t + 1) - a.col(t + 1));

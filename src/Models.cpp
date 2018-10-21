@@ -36,6 +36,7 @@ List dstm_discount(arma::mat Y, arma::mat F, arma::mat G_0, arma::mat Sigma_G_in
   // Create matrices and cubes for FFBS
   Y.insert_cols(0, 1); // make Y true-indexed; i.e. index 1 is t_1
   arma::cube theta(p, T + 1, n_samples), G;
+  theta.slice(0).zeros();
   arma::mat a(p, T + 1), m(p, T + 1), tmp;
   arma::cube R_inv(p, p, T + 1), C(p, p, T + 1), C_T(p, p, n_samples+1);
   m.col(0) = m_0;
@@ -60,14 +61,14 @@ List dstm_discount(arma::mat Y, arma::mat F, arma::mat G_0, arma::mat Sigma_G_in
   double alpha_lambda = params[0];
   double beta_lambda  = params[1];
   arma::vec sigma2, lambda(n_samples + 1);
-  lambda[0] = rigamma(alpha_lambda, beta_lambda);
+  lambda.at(0) = rigamma(alpha_lambda, beta_lambda);
 
   double alpha_sigma2, beta_sigma2, sigma2_i;
   if (sample_sigma2) {
     alpha_sigma2 = params[2];
     beta_sigma2  = params[3];
     sigma2.set_size(n_samples + 1);
-    sigma2[0] = rigamma(alpha_sigma2, beta_sigma2);
+    SampleSigma2(sigma2(0), alpha_sigma2, beta_sigma2, Y, F, theta.slice(0));
   } else {
     sigma2_i = params[4];
   }
@@ -81,8 +82,8 @@ List dstm_discount(arma::mat Y, arma::mat F, arma::mat G_0, arma::mat Sigma_G_in
     if (verbose) {
       Rcout << "Filtering sample number " << i + 1 << std::endl;
     }
-    if (sample_sigma2) sigma2_i = sigma2(i);
-    KalmanDiscount(m, C, a, R_inv, Y, F, G.slice(G_idx), sigma2_i, lambda(i));
+    if (sample_sigma2) sigma2_i = sigma2.at(i);
+    KalmanDiscount(m, C, a, R_inv, Y, F, G.slice(G_idx), sigma2_i, lambda.at(i));
     C_T.slice(i+1) = C.slice(T); // Save for predictions
 
     if (verbose) {
@@ -92,21 +93,21 @@ List dstm_discount(arma::mat Y, arma::mat F, arma::mat G_0, arma::mat Sigma_G_in
 
     // Sigma2
     if (sample_sigma2) {
-      SampleSigma2(sigma2(i+1), alpha_sigma2, beta_sigma2, Y, F, theta.slice(i));
+      SampleSigma2(sigma2.at(i+1), alpha_sigma2, beta_sigma2, Y, F, theta.slice(i));
     }
 
     // Lambda (W)
-    SampleLambda(lambda(i+1), alpha_lambda, beta_lambda,
+    SampleLambda(lambda.at(i+1), alpha_lambda, beta_lambda,
                  G.slice(G_idx), C, theta.slice(i));
 
     // G
     if (AR) {
       SampleAR(G.slice(G_idx+1), R_inv, theta.slice(i),
-               Sigma_G_inv, G_0, true, lambda(i+1));
+               Sigma_G_inv, G_0, true, lambda.at(i+1));
       ++G_idx;
     } else if (FULL) {
       SampleG(G.slice(G_idx+1), R_inv, theta.slice(i),
-              Sigma_G_inv, G_0, true, lambda(i+1));
+              Sigma_G_inv, G_0, true, lambda.at(i+1));
       ++G_idx;
     }
   }
@@ -146,30 +147,15 @@ List dstm_IW(arma::mat Y, arma::mat F, arma::mat G_0, arma::mat Sigma_G_inv,
   const int T = Y.n_cols;
   const int S = Y.n_rows;
 
-  // Create variance parameters
-  arma::vec sigma2;
-  double alpha_sigma2, beta_sigma2, sigma2_i;
-  bool sample_sigma2;
-  if (params[3] == NA_REAL) {
-    sample_sigma2 = false;
-    sigma2_i = params[3];
-  }
-  else {
-    sample_sigma2 = true;
-    alpha_sigma2 = params[1];
-    beta_sigma2  = params[2];
-    sigma2.set_size(n_samples + 1);
-    sigma2[0] = rigamma(alpha_sigma2, beta_sigma2);
-  }
-  const double df_W = params[0];
-
   // Create matrices and cubes for FFBS
   Y.insert_cols(0, 1); // make Y true-indexed; i.e. index 1 is t_1
   arma::cube theta(p, T + 1, n_samples), G;
+  theta.slice(0).zeros();
   arma::mat a(p, T + 1), m(p, T + 1), tmp;
   arma::cube R_inv(p, p, T + 1), C(p, p, T + 1), W(p, p, n_samples + 1);
   m.col(0) = m_0;
   C.slice(0) = C_0;
+  const double df_W = params[0];
   W.slice(0) = df_W * C_W;
 
   if (AR) {
@@ -187,6 +173,24 @@ List dstm_IW(arma::mat Y, arma::mat F, arma::mat G_0, arma::mat Sigma_G_inv,
     G.slice(0) = G_0;
   }
 
+
+  // Create variance parameters
+  arma::vec sigma2;
+  double alpha_sigma2, beta_sigma2, sigma2_i;
+  bool sample_sigma2;
+  if (params[3] == NA_REAL) {
+    sample_sigma2 = false;
+    sigma2_i = params[3];
+  }
+  else {
+    sample_sigma2 = true;
+    alpha_sigma2 = params[1];
+    beta_sigma2  = params[2];
+    sigma2.set_size(n_samples + 1);
+    //sigma2[0] = rigamma(alpha_sigma2, beta_sigma2);
+    SampleSigma2(sigma2.at(0), alpha_sigma2, beta_sigma2, Y, F, theta.slice(0));
+  }
+
   // Begin MCMC
   int G_idx = 0; // This value is incremented each iteration for AR and Full models
   for (int i = 0; i < n_samples; ++i) {
@@ -196,7 +200,7 @@ List dstm_IW(arma::mat Y, arma::mat F, arma::mat G_0, arma::mat Sigma_G_inv,
     if (verbose) {
       Rcout << "Filtering sample number " << i + 1 << std::endl;
     }
-    if (sample_sigma2) sigma2_i = sigma2(i);
+    if (sample_sigma2) sigma2_i = sigma2.at(i);
     Kalman(m, C, a, R_inv, Y, F, G.slice(G_idx), W.slice(i), sigma2_i);
 
     if (verbose) {
@@ -206,7 +210,7 @@ List dstm_IW(arma::mat Y, arma::mat F, arma::mat G_0, arma::mat Sigma_G_inv,
 
     // Sigma2
     if (sample_sigma2) {
-      SampleSigma2(sigma2(i+1), alpha_sigma2, beta_sigma2, Y, F, theta.slice(i));
+      SampleSigma2(sigma2.at(i+1), alpha_sigma2, beta_sigma2, Y, F, theta.slice(i));
     }
 
     // W
@@ -266,6 +270,7 @@ List dstm_IDE(arma::mat Y, arma::mat locs, arma::colvec m_0, arma::mat C_0,
   // Create matrices and cubes for FFBS
   Y.insert_cols(0, 1); // make Y true-indexed; i.e. index 1 is t_1
   arma::cube theta(p, T+1, n_samples), G(p, p, n_samples+1);
+  theta.slice(0).zeros();
   arma::mat a(p, T+1), m(p, T+1);
   arma::cube R_inv(p, p, T+1), C(p, p, T+1), C_T(p, p, n_samples+1);
   m.col(0) = m_0;
@@ -274,16 +279,19 @@ List dstm_IDE(arma::mat Y, arma::mat locs, arma::colvec m_0, arma::mat C_0,
   // Create observation matrix (F) and initial process matrix (G)
   arma::mat w_for_B = make_w_for_B(locs, J, L);
   arma::mat F = makeF(locs, w_for_B, J, L);
-  arma::mat FtFiFt = arma::solve(F.t() * F, F.t());
+  const arma::mat FtFiFt = arma::solve(F.t() * F, F.t());
   arma::mat B = makeB(m_kernel, C_kernel, locs, w_for_B, J, L);
   G.slice(0) = FtFiFt * B;
 
   // Create variance parameters
   arma::vec sigma2, lambda(n_samples+1);
-  lambda[0] = rigamma(alpha_lambda, beta_lambda);
+  lambda.at(0) = rigamma(alpha_lambda, beta_lambda);
   if (sample_sigma2) {
     sigma2.set_size(n_samples+1);
-    sigma2[0] = rigamma(alpha_sigma2, beta_sigma2);
+    //sigma2[0] = rigamma(alpha_sigma2, beta_sigma2);
+    SampleSigma2(sigma2.at(0), alpha_sigma2, beta_sigma2, Y, F, theta.slice(0));
+    sigma2.at(0) *= 100; // Hack for numerical stability
+    Rcout << "Sigma2 is " << sigma2.at(0) << std::endl;
   }
 
   // Begin MCMC
@@ -294,8 +302,8 @@ List dstm_IDE(arma::mat Y, arma::mat locs, arma::colvec m_0, arma::mat C_0,
     if (verbose) {
       Rcout << "Filtering sample number " << i + 1 << std::endl;
     }
-    if (sample_sigma2) sigma2_i = sigma2(i);
-    KalmanDiscount(m, C, a, R_inv, Y, F, G.slice(i), sigma2_i, lambda(i));
+    if (sample_sigma2) sigma2_i = sigma2.at(i);
+    KalmanDiscount(m, C, a, R_inv, Y, F, G.slice(i), sigma2_i, lambda.at(i));
 
     if (verbose) {
       Rcout << "Drawing sample number " << i + 1 << std::endl;
@@ -305,11 +313,11 @@ List dstm_IDE(arma::mat Y, arma::mat locs, arma::colvec m_0, arma::mat C_0,
 
     // Sigma2
     if (sample_sigma2) {
-      SampleSigma2(sigma2(i+1), alpha_sigma2, beta_sigma2, Y, F, theta.slice(i));
+      SampleSigma2(sigma2.at(i+1), alpha_sigma2, beta_sigma2, Y, F, theta.slice(i));
     }
 
     // Lambda (W)
-    SampleLambda(lambda(i+1), alpha_lambda, beta_lambda,
+    SampleLambda(lambda.at(i+1), alpha_lambda, beta_lambda,
                  G.slice(i), C, theta.slice(i));
 
     // MH step for mu
@@ -324,10 +332,12 @@ List dstm_IDE(arma::mat Y, arma::mat locs, arma::colvec m_0, arma::mat C_0,
 
     // Make new process matrix
     //arma::mat B = makeB(m_0, C_0, locs, w_for_B, J, L);
-    G.slice(i) = FtFiFt * B;
+    G.slice(i+1) = FtFiFt * B;
   }
 
   List results;
+  results["m"] = m;
+  results["C"] = C;
   results["theta"]  = theta;
   results["lambda"] = lambda;
   if (sample_sigma2) {

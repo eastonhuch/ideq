@@ -1,5 +1,6 @@
   // [[Rcpp::depends(RcppArmadillo)]]
 
+#include "misc_helpers.h"
 #include <RcppArmadillo.h>
 #include <exception>
 
@@ -32,6 +33,7 @@ void Kalman(arma::mat & m, arma::cube & C, arma::mat & a, arma::cube & R_inv,
                           solve(Q, (Y.col(t) - f));
     C.slice(t) = R_inv.slice(t) - R_inv.slice(t) * F.t() *
                                   solve(Q, F * R_inv.slice(t));
+    make_symmetric(C.slice(t));
 
     // Invert R for sampling
     R_inv.slice(t) = arma::inv_sympd(R_inv.slice(t));
@@ -55,30 +57,24 @@ void KalmanDiscount(arma::mat & m, arma::cube & C, arma::mat & a, arma::cube & R
     // One step ahead predictive distribution of theta
     a.col(t) = G * m.col(t - 1);
     R_inv.slice(t) = (1 + lambda) * G * C.slice(t - 1) * G.t();
+    make_symmetric(R_inv.slice(t));
     // NOTE: R is inverted at the end of this loop
 
     // One step ahead predictive distribution of Y_t
     f = F * a.col(t);
     Q = F * R_inv.slice(t) * F.t();
     Q.diag() += sigma2;
+    make_symmetric(Q);
 
     // Filtering distribution of theta
     m.col(t) = a.col(t) + R_inv.slice(t) * F.t() *
                           solve(Q, (Y.col(t) - f));
     C.slice(t) = R_inv.slice(t) - R_inv.slice(t) * F.t() *
-                              solve(Q, F * R_inv.slice(t));
+                 solve(Q, F * R_inv.slice(t).t(), arma::solve_opts::equilibrate);
+    make_symmetric(C.slice(t));
 
     // Invert R for sampling
-    try {
-      R_inv.slice(t) = arma::inv_sympd(R_inv.slice(t));
-    }
-    catch (std::runtime_error e)
-    {
-      Rcout << "Failed to invert R using inv_sympd" << std::endl;
-      Rcout << "Forcing symmetry using (R + R')/2 and trying again" << std::endl;
-      arma::mat R_sym = ( R_inv.slice(t) + R_inv.slice(t).t() ) / 2;
-      R_inv.slice(t) = arma::inv_sympd(R_sym);
-    }
+    R_inv.slice(t) = arma::inv_sympd(R_inv.slice(t));
   }
   return;
 };
