@@ -35,10 +35,10 @@ List dstm_discount(arma::mat Y, arma::mat F, arma::mat G_0, arma::mat Sigma_G_in
 
   // Create matrices and cubes for FFBS
   Y.insert_cols(0, 1); // make Y true-indexed; i.e. index 1 is t_1
-  arma::cube theta(p, T + 1, n_samples), G;
+  arma::cube theta(p, T+1, n_samples), G;
   theta.slice(0).zeros();
-  arma::mat a(p, T + 1), m(p, T + 1), tmp;
-  arma::cube R_inv(p, p, T + 1), C(p, p, T + 1), C_T(p, p, n_samples+1);
+  arma::mat a(p, T+1), m(p, T+1), tmp;
+  arma::cube R_inv(p, p, T+1), C(p, p, T+1), C_T(p, p, n_samples+1);
   m.col(0) = m_0;
   C.slice(0) = C_0;
 
@@ -60,7 +60,7 @@ List dstm_discount(arma::mat Y, arma::mat F, arma::mat G_0, arma::mat Sigma_G_in
   // Create parameters for sampling lambda and sigma2
   double alpha_lambda = params[0];
   double beta_lambda  = params[1];
-  arma::vec sigma2, lambda(n_samples + 1);
+  arma::vec sigma2, lambda(n_samples+1);
   lambda.at(0) = rigamma(alpha_lambda, beta_lambda);
 
   double alpha_sigma2, beta_sigma2, sigma2_i;
@@ -68,7 +68,7 @@ List dstm_discount(arma::mat Y, arma::mat F, arma::mat G_0, arma::mat Sigma_G_in
     alpha_sigma2 = params[2];
     beta_sigma2  = params[3];
     sigma2.set_size(n_samples + 1);
-    SampleSigma2(sigma2(0), alpha_sigma2, beta_sigma2, Y, F, theta.slice(0));
+    SampleSigma2(sigma2.at(0), alpha_sigma2, beta_sigma2, Y, F, theta.slice(0));
   } else {
     sigma2_i = params[4];
   }
@@ -290,23 +290,22 @@ List dstm_IDE(arma::mat Y, arma::mat locs, arma::colvec m_0, arma::mat C_0,
     sigma2.set_size(n_samples+1);
     //sigma2[0] = rigamma(alpha_sigma2, beta_sigma2);
     SampleSigma2(sigma2.at(0), alpha_sigma2, beta_sigma2, Y, F, theta.slice(0));
-    sigma2.at(0) *= 100; // Hack for numerical stability
-    Rcout << "Sigma2 is " << sigma2.at(0) << std::endl;
   }
 
   // Begin MCMC
-  for (int i = 0; i < n_samples; ++i) {
+  for (int i=0; i<n_samples; ++i) {
     checkUserInterrupt();
 
     // FFBS
     if (verbose) {
-      Rcout << "Filtering sample number " << i + 1 << std::endl;
+      Rcout << "Filtering sample number " << i+1 << std::endl;
     }
     if (sample_sigma2) sigma2_i = sigma2.at(i);
     KalmanDiscount(m, C, a, R_inv, Y, F, G.slice(i), sigma2_i, lambda.at(i));
+    break;
 
     if (verbose) {
-      Rcout << "Drawing sample number " << i + 1 << std::endl;
+      Rcout << "Drawing sample number " << i+1 << std::endl;
     }
     BackwardSample(theta.slice(i), m, a, C, G.slice(i), R_inv);
     C_T.slice(i+1) = C.slice(T); // Save for predictions
@@ -338,6 +337,7 @@ List dstm_IDE(arma::mat Y, arma::mat locs, arma::colvec m_0, arma::mat C_0,
   List results;
   results["m"] = m;
   results["C"] = C;
+  results["a"] = a;
   results["theta"]  = theta;
   results["lambda"] = lambda;
   if (sample_sigma2) {
