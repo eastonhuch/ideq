@@ -28,7 +28,7 @@ List dstm_discount(arma::mat Y, arma::mat F, arma::mat G_0, arma::mat Sigma_G_in
   // Create high-level model parameters
   bool AR = proc_model(0) == "AR";
   bool FULL = proc_model(0) == "Full";
-  bool sample_sigma2 = params[4] != NA_REAL;
+  bool sample_sigma2 = params["sigma2"] != NA_REAL;
   const int p = G_0.n_rows;
   const int T = Y.n_cols;
   const int S = Y.n_rows;
@@ -58,19 +58,19 @@ List dstm_discount(arma::mat Y, arma::mat F, arma::mat G_0, arma::mat Sigma_G_in
   }
 
   // Create parameters for sampling lambda and sigma2
-  double alpha_lambda = params[0];
-  double beta_lambda  = params[1];
+  double alpha_lambda = params["alpha_lambda"];
+  double beta_lambda  = params["beta_lambda"];
   arma::vec sigma2, lambda(n_samples+1);
   lambda.at(0) = rigamma(alpha_lambda, beta_lambda);
 
   double alpha_sigma2, beta_sigma2, sigma2_i;
   if (sample_sigma2) {
-    alpha_sigma2 = params[2];
-    beta_sigma2  = params[3];
-    sigma2.set_size(n_samples + 1);
+    alpha_sigma2 = params["alpha_sigma2"];
+    beta_sigma2  = params["beta_sigma2"];
+    sigma2.set_size(n_samples+1);
     SampleSigma2(sigma2.at(0), alpha_sigma2, beta_sigma2, Y, F, theta.slice(0));
   } else {
-    sigma2_i = params[4];
+    sigma2_i = params["sigma2"];
   }
 
   // Begin MCMC
@@ -80,14 +80,14 @@ List dstm_discount(arma::mat Y, arma::mat F, arma::mat G_0, arma::mat Sigma_G_in
 
     // FFBS
     if (verbose) {
-      Rcout << "Filtering sample number " << i + 1 << std::endl;
+      Rcout << "Filtering sample number " << i+1 << std::endl;
     }
     if (sample_sigma2) sigma2_i = sigma2.at(i);
     KalmanDiscount(m, C, a, R_inv, Y, F, G.slice(G_idx), sigma2_i, lambda.at(i));
     C_T.slice(i+1) = C.slice(T); // Save for predictions
 
     if (verbose) {
-      Rcout << "Drawing sample number " << i + 1 << std::endl;
+      Rcout << "Drawing sample number " << i+1 << std::endl;
     }
     BackwardSample(theta.slice(i), m, a, C, G.slice(G_idx), R_inv);
 
@@ -149,21 +149,21 @@ List dstm_IW(arma::mat Y, arma::mat F, arma::mat G_0, arma::mat Sigma_G_inv,
 
   // Create matrices and cubes for FFBS
   Y.insert_cols(0, 1); // make Y true-indexed; i.e. index 1 is t_1
-  arma::cube theta(p, T + 1, n_samples), G;
+  arma::cube theta(p, T+1, n_samples), G;
   theta.slice(0).zeros();
-  arma::mat a(p, T + 1), m(p, T + 1), tmp;
-  arma::cube R_inv(p, p, T + 1), C(p, p, T + 1), W(p, p, n_samples + 1);
+  arma::mat a(p, T+1), m(p, T+1), tmp;
+  arma::cube R_inv(p, p, T+1), C(p, p, T+1), W(p, p, n_samples+1);
   m.col(0) = m_0;
   C.slice(0) = C_0;
-  const double df_W = params[0];
+  const double df_W = params["df_W"];
   W.slice(0) = df_W * C_W;
 
   if (AR) {
-    G.set_size(p, p, n_samples + 1);
+    G.set_size(p, p, n_samples+1);
     G.zeros();
     G.slice(0).diag() = mvnorm(G_0.diag(), arma::inv_sympd(Sigma_G_inv));
   } else if (FULL) {
-    G.set_size(p, p, n_samples + 1);
+    G.set_size(p, p, n_samples+1);
     G_0.reshape(p*p, 1);
     tmp = mvnorm(G_0, arma::inv_sympd(Sigma_G_inv));
     tmp.reshape(p, p);
@@ -178,15 +178,15 @@ List dstm_IW(arma::mat Y, arma::mat F, arma::mat G_0, arma::mat Sigma_G_inv,
   arma::vec sigma2;
   double alpha_sigma2, beta_sigma2, sigma2_i;
   bool sample_sigma2;
-  if (params[3] == NA_REAL) {
+  if (params["sigma2"] == NA_REAL) {
     sample_sigma2 = false;
-    sigma2_i = params[3];
+    sigma2_i = params["sigma2"];
   }
   else {
     sample_sigma2 = true;
-    alpha_sigma2 = params[1];
-    beta_sigma2  = params[2];
-    sigma2.set_size(n_samples + 1);
+    alpha_sigma2 = params["alpha_sigma2"];
+    beta_sigma2  = params["beta_sigma2"];
+    sigma2.set_size(n_samples+1);
     //sigma2[0] = rigamma(alpha_sigma2, beta_sigma2);
     SampleSigma2(sigma2.at(0), alpha_sigma2, beta_sigma2, Y, F, theta.slice(0));
   }
@@ -198,13 +198,13 @@ List dstm_IW(arma::mat Y, arma::mat F, arma::mat G_0, arma::mat Sigma_G_inv,
 
     // FFBS
     if (verbose) {
-      Rcout << "Filtering sample number " << i + 1 << std::endl;
+      Rcout << "Filtering sample number " << i+1 << std::endl;
     }
     if (sample_sigma2) sigma2_i = sigma2.at(i);
     Kalman(m, C, a, R_inv, Y, F, G.slice(G_idx), W.slice(i), sigma2_i);
 
     if (verbose) {
-      Rcout << "Drawing sample number " << i + 1 << std::endl;
+      Rcout << "Drawing sample number " << i+1 << std::endl;
     }
     BackwardSample(theta.slice(i), m, a, C, G.slice(G_idx), R_inv);
 
@@ -263,7 +263,7 @@ List dstm_IDE(arma::mat Y, arma::mat locs, arma::colvec m_0, arma::mat C_0,
   const double alpha_lambda  = params["alpha_lambda"];
   const double beta_lambda   = params["beta_lambda"];
   const int locs_dim = locs.n_cols;
-  const int p = 2*J*J + 1;
+  const int p = 2*J*J+1;
   const int T = Y.n_cols;
   const int S = Y.n_rows;
 
