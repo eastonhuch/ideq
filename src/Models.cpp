@@ -25,13 +25,17 @@ using namespace Rcpp;
 List dstm_discount(arma::mat Y, arma::mat F, arma::mat G_0, arma::mat Sigma_G_inv,
                    arma::colvec m_0, arma::mat C_0, NumericVector params,
                    CharacterVector proc_model, const int n_samples, const bool verbose) {
-  // Create high-level model parameters
+  // Extract scalar parameters
   bool AR = proc_model(0) == "AR";
   bool FULL = proc_model(0) == "Full";
-  bool sample_sigma2 = params["sigma2"] != NA_REAL;
   const int p = G_0.n_rows;
   const int T = Y.n_cols;
   const int S = Y.n_rows;
+  const double alpha_sigma2 = params["alpha_sigma2"];
+  const double beta_sigma2  = params["beta_sigma2"];
+  const bool sample_sigma2  = params["sample_sigma2"] > 0;
+  double alpha_lambda = params["alpha_lambda"];
+  double beta_lambda  = params["beta_lambda"];
 
   // Create matrices and cubes for FFBS
   Y.insert_cols(0, 1); // make Y true-indexed; i.e. index 1 is t_1
@@ -57,21 +61,20 @@ List dstm_discount(arma::mat Y, arma::mat F, arma::mat G_0, arma::mat Sigma_G_in
     G.slice(0) = G_0;
   }
 
-  // Create parameters for sampling lambda and sigma2
-  double alpha_lambda = params["alpha_lambda"];
-  double beta_lambda  = params["beta_lambda"];
-  arma::vec sigma2, lambda(n_samples+1);
-  lambda.at(0) = rigamma(alpha_lambda, beta_lambda);
-
-  double alpha_sigma2, beta_sigma2, sigma2_i;
+  // Create variance parameters
+  arma::vec sigma2;
+  double sigma2_i;
   if (sample_sigma2) {
-    alpha_sigma2 = params["alpha_sigma2"];
-    beta_sigma2  = params["beta_sigma2"];
     sigma2.set_size(n_samples+1);
     SampleSigma2(sigma2.at(0), alpha_sigma2, beta_sigma2, Y, F, theta.slice(0));
-  } else {
+  }
+  else {
     sigma2_i = params["sigma2"];
   }
+
+  // Create parameters for sampling lambda
+  arma::vec lambda(n_samples+1);
+  lambda.at(0) = rigamma(alpha_lambda, beta_lambda);
 
   // Begin MCMC
   int G_idx = 0; // This value is incremented each iteration for AR and Full models
@@ -140,12 +143,15 @@ List dstm_IW(arma::mat Y, arma::mat F, arma::mat G_0, arma::mat Sigma_G_inv,
              arma::colvec m_0, arma::mat C_0, arma::mat C_W,
              NumericVector params, CharacterVector proc_model,
              const int n_samples, const bool verbose) {
-  // Create high-level model parameters
+  // Extract scalar parameters
   bool AR = proc_model(0) == "AR";
   bool FULL = proc_model(0) == "Full";
   const int p = G_0.n_rows;
   const int T = Y.n_cols;
   const int S = Y.n_rows;
+  const double alpha_sigma2 = params["alpha_sigma2"];
+  const double beta_sigma2  = params["beta_sigma2"];
+  const bool sample_sigma2  = params["sample_sigma2"] > 0;
 
   // Create matrices and cubes for FFBS
   Y.insert_cols(0, 1); // make Y true-indexed; i.e. index 1 is t_1
@@ -173,22 +179,15 @@ List dstm_IW(arma::mat Y, arma::mat F, arma::mat G_0, arma::mat Sigma_G_inv,
     G.slice(0) = G_0;
   }
 
-
   // Create variance parameters
   arma::vec sigma2;
-  double alpha_sigma2, beta_sigma2, sigma2_i;
-  bool sample_sigma2;
-  if (params["sigma2"] == NA_REAL) {
-    sample_sigma2 = false;
-    sigma2_i = params["sigma2"];
+  double sigma2_i;
+  if (sample_sigma2) {
+    sigma2.set_size(n_samples+1);
+    SampleSigma2(sigma2.at(0), alpha_sigma2, beta_sigma2, Y, F, theta.slice(0));
   }
   else {
-    sample_sigma2 = true;
-    alpha_sigma2 = params["alpha_sigma2"];
-    beta_sigma2  = params["beta_sigma2"];
-    sigma2.set_size(n_samples+1);
-    //sigma2[0] = rigamma(alpha_sigma2, beta_sigma2);
-    SampleSigma2(sigma2.at(0), alpha_sigma2, beta_sigma2, Y, F, theta.slice(0));
+    sigma2_i = params["sigma2"];
   }
 
   // Begin MCMC
@@ -226,11 +225,9 @@ List dstm_IW(arma::mat Y, arma::mat F, arma::mat G_0, arma::mat Sigma_G_inv,
     }
 
   }
-
   List results;
   results["theta"]  = theta;
-  if (sample_sigma2) {
-    results["sigma2"] = sigma2;
+  if (sample_sigma2) {    results["sigma2"] = sigma2;
   } else {
     results["sigma2"] = sigma2_i;
   }

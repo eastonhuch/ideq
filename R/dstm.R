@@ -274,7 +274,7 @@ dstm <- function(Y, locs=NULL, obs_model = "EOF", proc_model = "RW",
     }
 
     scalar_params <- c(alpha_sigma2=alpha_sigma2, beta_sigma2=beta_sigma2,
-                       sigma2=sigma2, J=J, L=L,
+                       sample_sigma2=as.numeric(sample_sigma2), sigma2=sigma2, J=J, L=L,
                        alpha_lambda=alpha_lambda, beta_lambda=beta_lambda)
     results <- dstm_IDE(Y, locs, m_0, C_0, m_kernel, C_kernel,
                         scalar_params, n_samples, verbose)
@@ -308,7 +308,7 @@ dstm <- function(Y, locs=NULL, obs_model = "EOF", proc_model = "RW",
     # Group scalar params into vector
     scalar_params <- c(alpha_lambda=alpha_lambda, beta_lambda=beta_lambda,
                        alpha_sigma2=alpha_sigma2, beta_sigma2=beta_sigma2,
-                       sigma2=sigma2)
+                       sigma2=sigma2, sample_sigma2=as.numeric(sample_sigma2))
 
     # Run the model
     results <- dstm_discount(Y, F_, G_0, Sigma_G_inv, m_0, C_0,
@@ -342,8 +342,8 @@ dstm <- function(Y, locs=NULL, obs_model = "EOF", proc_model = "RW",
       df_W <- p
     }
 
-    scalar_params <- c(df_W=df_W, sigma2=sigma2,
-                       alpha_sigma2=alpha_sigma2, beta_sigma2=beta_sigma2)
+    scalar_params <- c(df_W=df_W, alpha_sigma2=alpha_sigma2, beta_sigma2=beta_sigma2,
+                       sigma2=sigma2, sample_sigma2=as.numeric(sample_sigma2))
     results <- dstm_IW(Y, F_, G_0, Sigma_G_inv, m_0, C_0, C_W,
                        scalar_params, proc_model, n_samples, verbose)
     if ("sigma2" %in% names(results)) {
