@@ -184,7 +184,7 @@ dstm <- function(Y, locs=NULL, obs_model = "EOF", proc_model = "RW",
       }
     }
     else {
-      C_kernel <- diag(locs_dim)
+      C_kernel <- diag(locs_dim)*.2
       message("C_kernel was not provided so I am using I")
     }
   }
