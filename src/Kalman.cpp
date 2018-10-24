@@ -36,7 +36,7 @@ void Kalman(arma::mat & m, arma::cube & C, arma::mat & a, arma::cube & R_inv,
     RF_t = FR.t();
     m.col(t) = a.col(t) + RF_t * Q_inv * (Y.col(t) - f);
     C.slice(t) = R_t - RF_t * Q_inv * FR;
-    make_symmetric(C.slice(t));
+    //make_symmetric(C.slice(t));
 
     // Invert R for sampling
     R_inv.slice(t) = arma::inv_sympd(R_t);
@@ -74,7 +74,7 @@ void KalmanDiscount(arma::mat & m, arma::cube & C, arma::mat & a, arma::cube & R
     RF_t = FR.t();
     m.col(t) = a.col(t) + RF_t * Q_inv * (Y.col(t) - f);
     C.slice(t) = R_t - RF_t * Q_inv * FR;
-    make_symmetric(C.slice(t));
+    //make_symmetric(C.slice(t));
 
     // Invert R for sampling
     R_inv.slice(t) = arma::inv_sympd(R_t);
