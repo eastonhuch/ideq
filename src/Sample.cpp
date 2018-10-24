@@ -107,6 +107,7 @@ void SampleAR(arma::mat & G, const arma::cube & W_inv, const arma::mat & theta,
   const int T = theta.n_cols-1;
   const int p = G.n_rows;
   arma::mat tmp = arma::zeros(p, p);
+  arma::colvec sum2 = arma::zeros(p,1);
   arma::mat sum = tmp;
   int W_inv_idx = 0;
   const bool dynamic_W = (W_inv.n_slices > 1);
@@ -115,8 +116,9 @@ void SampleAR(arma::mat & G, const arma::cube & W_inv, const arma::mat & theta,
     if (dynamic_W) {
       ++W_inv_idx;
     }
-    tmp.diag() = theta.col(t);
+    tmp.diag() = theta.col(t-1);
     sum += tmp * W_inv.slice(W_inv_idx) * tmp;
+    sum2 += tmp * W_inv.slice(W_inv_idx) * theta.col(t);
   }
 
   if (Discount) {
@@ -124,10 +126,8 @@ void SampleAR(arma::mat & G, const arma::cube & W_inv, const arma::mat & theta,
   }
 
   arma::mat Sigma_G_new = arma::inv_sympd(sum + Sigma_G_inv);
-  tmp = Sigma_G_new * sum + Sigma_G_inv * mu_G;
 
-  // should Sigma_G_new be inverted?
-  G.diag() = mvnorm(tmp.diag(), Sigma_G_new);
+  G.diag() = mvnorm(Sigma_G_new * sum2 + Sigma_G_inv * mu_G.diag(), Sigma_G_new);
   return;
 };
 

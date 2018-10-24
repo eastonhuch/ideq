@@ -300,7 +300,7 @@ List dstm_IDE(arma::mat Y, arma::mat locs, arma::colvec m_0, arma::mat C_0,
     }
     if (sample_sigma2) sigma2_i = sigma2.at(i);
     KalmanDiscount(m, C, a, R_inv, Y, F, G.slice(i), sigma2_i, lambda.at(i));
-    break;
+
 
     if (verbose) {
       Rcout << "Drawing sample number " << i+1 << std::endl;
