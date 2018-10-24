@@ -86,7 +86,8 @@ List dstm_discount(arma::mat Y, arma::mat F, arma::mat G_0, arma::mat Sigma_G_in
       Rcout << "Filtering sample number " << i+1 << std::endl;
     }
     if (sample_sigma2) sigma2_i = sigma2.at(i);
-    KalmanDiscount(m, C, a, R_inv, Y, F, G.slice(G_idx), sigma2_i, lambda.at(i));
+    Kalman(m, C, a, R_inv, Y, F, G.slice(G_idx), arma::eye(p, p), sigma2_i);
+    //KalmanDiscount(m, C, a, R_inv, Y, F, G.slice(G_idx), sigma2_i, lambda.at(i));
     C_T.slice(i+1) = C.slice(T); // Save for predictions
 
     if (verbose) {

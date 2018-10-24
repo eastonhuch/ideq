@@ -10,7 +10,7 @@ void Kalman(arma::mat & m, arma::cube & C, arma::mat & a, arma::cube & R_inv,
             const arma::mat & Y, const arma::mat & F, const arma::mat & G,
             const arma::mat & W, const double sigma2) {
   // This assumes that V is (sigma2 * I)
-  const int T = Y.n_cols - 1;
+  const int T = Y.n_cols-1;
   const int S = Y.n_rows;
   const int p = G.n_rows;
 
@@ -22,8 +22,8 @@ void Kalman(arma::mat & m, arma::cube & C, arma::mat & a, arma::cube & R_inv,
   for (int t = 1; t <= T; ++t) {
     checkUserInterrupt();
     // One step ahead predictive distribution of theta
-    a.col(t) = G * m.col(t - 1);
-    R_t = G * C.slice(t - 1) * G.t() + W;
+    a.col(t) = G * m.col(t-1);
+    R_t = G * C.slice(t-1) * G.t() + W;
 
     // One step ahead predictive distribution of Y_t
     f = F * a.col(t);
