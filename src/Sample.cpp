@@ -17,13 +17,13 @@ void BackwardSample(arma::mat & theta, const arma::mat & m, const arma::mat & a,
 
   theta.col(T) = mvnorm(m.col(T), C.slice(T)); // draw theta_T
   // Draw values for theta_{T-1} down to theta_0
-  for (int t = T-1; t >= 0; --t) {
+  for (int t = T-1; t>=0; --t) {
     // Mean and variance of theta_t
-    h_t = m.col(t) + C.slice(t) * G.t() * R_inv.slice(t + 1) *
-          (theta.col(t + 1) - a.col(t + 1));
+    h_t = m.col(t) + C.slice(t) * G.t() * R_inv.slice(t+1) *
+          (theta.col(t+1) - a.col(t+1));
 
     H_t = C.slice(t) - C.slice(t) * G.t() *
-          R_inv.slice(t + 1) * G * C.slice(t);
+          R_inv.slice(t+1) * G * C.slice(t);
 
     // Draw value for theta_t
     theta.col(t) = mvnorm(h_t, H_t);

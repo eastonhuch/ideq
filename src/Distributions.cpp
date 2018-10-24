@@ -1,6 +1,6 @@
+#include <RcppArmadillo.h>
   // [[Rcpp::depends(RcppArmadillo)]]
 
-#include <RcppArmadillo.h>
 using namespace Rcpp;
 
 //' Samples from a multivariate normal distribution
@@ -28,9 +28,7 @@ arma::colvec mvnorm(const arma::colvec & mean, const arma::mat & Sigma) {
     Rcout << "Failed to calculate sqrt(Sigma) using sqrtmat_sympd" << std::endl;
     Rcout << "Forcing symmetry using (Sigma + Sigma')/2 and trying again" << std::endl;
     arma::mat Sigma_sym = ( Sigma + Sigma.t() ) / 2;
-    Rcout << Sigma_sym << std::endl;
     Sigma_sqrt = arma::sqrtmat_sympd(Sigma_sym);
-    Rcout << Sigma_sqrt << std::endl;
   }
 
   arma::colvec x = mean + Sigma_sqrt * z;
