@@ -107,10 +107,8 @@ dstm <- function(Y, locs=NULL, obs_model = "EOF", proc_model = "RW",
       C_0 <- params[["C_0"]]
     }
     else {
-      message("No prior was provided for C_0 so I am using diag(eigenvalues)")
-      C_0 <- diag(e$values[1:p])
-      #message("No prior was provided for C_0 so I am using I")
-      #C_0 <- diag(p)
+      message("No prior was provided for C_0 so I am using I")
+      C_0 <- diag(p)
     }
 
     }
