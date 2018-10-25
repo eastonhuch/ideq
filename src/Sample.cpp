@@ -5,6 +5,7 @@
 // [[Rcpp::depends(rgen)]]
 
 #include "Distributions.h"
+#include "misc_helpers.h"
 
 using namespace Rcpp;
 
@@ -24,6 +25,7 @@ void BackwardSample(arma::mat & theta, const arma::mat & m, const arma::mat & a,
 
     H_t = C.slice(t) - C.slice(t) * G.t() *
           R_inv.slice(t+1) * G * C.slice(t);
+    make_symmetric(H_t);
 
     // Draw value for theta_t
     theta.col(t) = mvnorm(h_t, H_t);

@@ -62,13 +62,16 @@ void KalmanDiscount(arma::mat & m, arma::cube & C, arma::mat & a, arma::cube & R
     // One step ahead predictive distribution of theta
     a.col(t) = G * m.col(t-1);
     R_t = (1 + lambda) * G * C.slice(t-1) * G.t();
+    make_symmetric(R_t);
 
     // One step ahead predictive distribution of Y_t
     f = F * a.col(t);
     FR = F * R_t;
     Q = FR * F.t();
+    make_symmetric(Q);
     Q.diag() += sigma2;
     Q_inv = arma::inv_sympd(Q);
+    make_symmetric(Q_inv);
 
     // Filtering distribution of theta
     RF_t = FR.t();

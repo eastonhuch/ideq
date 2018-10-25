@@ -107,8 +107,8 @@ dstm <- function(Y, locs=NULL, obs_model = "EOF", proc_model = "RW",
       C_0 <- params[["C_0"]]
     }
     else {
-      message("No prior was provided for C_0 so I am using I")
-      C_0 <- diag(p)
+      message("No prior was provided for C_0 so I am using I/10000")
+      C_0 <- diag(1/10000, p)
     }
 
     }
