@@ -110,8 +110,8 @@ void SampleAR(arma::mat & G, const arma::cube & W_inv, const arma::mat & theta,
   const int T = theta.n_cols-1;
   const int p = G.n_rows;
   arma::mat tmp = arma::zeros(p, p);
-  arma::colvec sum2 = arma::zeros(p,1);
   arma::mat sum = tmp;
+  arma::colvec sum2 = arma::zeros(p,1);
   int W_inv_idx = 0;
   const bool dynamic_W = (W_inv.n_slices > 1);
 
@@ -120,16 +120,16 @@ void SampleAR(arma::mat & G, const arma::cube & W_inv, const arma::mat & theta,
       ++W_inv_idx;
     }
     tmp.diag() = theta.col(t-1);
-    sum += tmp * W_inv.slice(W_inv_idx) * tmp;
+    sum  += tmp * W_inv.slice(W_inv_idx) * tmp;
     sum2 += tmp * W_inv.slice(W_inv_idx) * theta.col(t);
   }
 
   if (Discount) {
-    sum *= ((1 + lambda) / lambda);
+    sum  *= ((1 + lambda) / lambda);
+    sum2 *= ((1 + lambda) / lambda);
   }
 
   arma::mat Sigma_G_new = arma::inv_sympd(sum + Sigma_G_inv);
-
   G.diag() = mvnorm(Sigma_G_new * sum2 + Sigma_G_inv * mu_G.diag(), Sigma_G_new);
   return;
 };

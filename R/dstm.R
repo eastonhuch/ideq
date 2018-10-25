@@ -213,8 +213,8 @@ dstm <- function(Y, locs=NULL, obs_model = "EOF", proc_model = "RW",
         stop("Sigma_G_inv must be symmetric positive definite matrix")
       }
     } else {
-      message("Sigma_G_inv was not provided, so I am using 100I")
-      Sigma_G_inv <- 100*diag(p)
+      message("Sigma_G_inv was not provided, so I am using 1e6I")
+      Sigma_G_inv <- 1e6*diag(p)
     }
 
   }
