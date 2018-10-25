@@ -80,8 +80,8 @@ dstm <- function(Y, locs=NULL, obs_model = "EOF", proc_model = "RW",
       C_0 <- params[["C_0"]]
     }
     else {
-      message("No prior was provided for C_0 so I am using 100I")
-      C_0 <- 100*diag(p)
+      message("No prior was provided for C_0 so I am using I/9")
+      C_0 <- diag(1/9, p)
     }
   }
   else if (obs_model == "EOF") {
@@ -184,8 +184,8 @@ dstm <- function(Y, locs=NULL, obs_model = "EOF", proc_model = "RW",
       }
     }
     else {
-      C_kernel <- diag(locs_dim)*.2
-      message("C_kernel was not provided so I am using I")
+      C_kernel <- diag(1/9, locs_dim)
+      message("C_kernel was not provided so I am using I/9")
     }
   }
   else if (proc_model == "RW") {
