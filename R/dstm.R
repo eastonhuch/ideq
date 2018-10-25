@@ -107,8 +107,8 @@ dstm <- function(Y, locs=NULL, obs_model = "EOF", proc_model = "RW",
       C_0 <- params[["C_0"]]
     }
     else {
-      message("No prior was provided for C_0 so I am using I/10000")
-      C_0 <- diag(1/10000, p)
+      message("No prior was provided for C_0 so I am using 1e-6*I")
+      C_0 <- diag(1e-6, p)
     }
 
     }
@@ -243,8 +243,8 @@ dstm <- function(Y, locs=NULL, obs_model = "EOF", proc_model = "RW",
       }
     }
     else {
-      message("Sigma_G_inv was not provided, so I am using 100I")
-      Sigma_G_inv <- 100*diag(p^2)
+      message("Sigma_G_inv was not provided, so I am using 1e5I")
+      Sigma_G_inv <- 1e5*diag(p^2)
     }
 
   }
