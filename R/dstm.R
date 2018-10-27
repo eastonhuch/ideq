@@ -160,7 +160,9 @@ dstm <- function(Y, locs=NULL, obs_model = "EOF", proc_model = "RW",
   message("Process model")
   Sigma_G_inv <- matrix()
   if (IDE) {
-    # Error checking for m_kernel, C_kernel: the priors for the kernel parameters
+    # Error checking for m_kernel, C_kernel (the priors for the kernel parameters)
+    # As well as proposal_factor_m and proposal_factor_C which control
+    # The variance of the proposed values
     locs_dim <- ncol(locs)
     if ("m_kernel" %in% names(params)) {
       m_kernel <- params[["m_kernel"]]
@@ -172,6 +174,18 @@ dstm <- function(Y, locs=NULL, obs_model = "EOF", proc_model = "RW",
     else {
       m_kernel <- rep(0, locs_dim)
       message("m_kernel was not provided so I am using a vector of zeroes")
+    }
+    
+    if ("proposal_factor_m" %in% names(params)) {
+      proposal_factor_m <- params[["proposal_factor_m"]]
+      if (!is.numeric(proposal_factor_m) || proposal_factor_m <= 0) {
+        stop("proposal_factor_m must be numeric > 0")
+      }
+    }
+    else {
+      proposal_factor_m <- 1/5
+      message(paste("proposal_factor_m was not provided so I am using", 
+              proposal_factor_m))
     }
 
     if ("C_kernel" %in% names(params)) {
@@ -185,6 +199,19 @@ dstm <- function(Y, locs=NULL, obs_model = "EOF", proc_model = "RW",
       C_kernel <- diag(1/9, locs_dim)
       message("C_kernel was not provided so I am using I/9")
     }
+    
+    if ("proposal_factor_C" %in% names(params)) {
+      proposal_factor_C <- params[["proposal_factor_C"]]
+      if (!is.numeric(proposal_factor_C) || proposal_factor_C <= 0) {
+        stop("proposal_factor_C must be numeric > 0")
+      }
+    }
+    else {
+      proposal_factor_C <- 1/5
+      message(paste("proposal_factor_C was not provided so I am using", 
+              proposal_factor_C))
+    }
+    
   }
   else if (proc_model == "RW") {
     G_0 <- diag(p)
@@ -273,7 +300,9 @@ dstm <- function(Y, locs=NULL, obs_model = "EOF", proc_model = "RW",
 
     scalar_params <- c(alpha_sigma2=alpha_sigma2, beta_sigma2=beta_sigma2,
                        sample_sigma2=as.numeric(sample_sigma2), sigma2=sigma2, J=J, L=L,
-                       alpha_lambda=alpha_lambda, beta_lambda=beta_lambda)
+                       alpha_lambda=alpha_lambda, beta_lambda=beta_lambda,
+                       proposal_factor_m=proposal_factor_m,
+                       proposal_factor_C=proposal_factor_C)
     results <- dstm_IDE(Y, locs, m_0, C_0, m_kernel, C_kernel,
                         scalar_params, n_samples, verbose)
   }
