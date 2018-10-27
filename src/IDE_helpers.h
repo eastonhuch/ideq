@@ -4,7 +4,7 @@
 #include <RcppArmadillo.h>
 using namespace Rcpp;
 
-arma::mat make_w_for_B(const arma::mat & locs, const int J, const int L);
+arma::mat makeW(const arma::mat & locs, const int J, const int L);
 
 arma::mat makeF(const arma::mat & locs, const arma::mat & w,
                   const int J, const int L);

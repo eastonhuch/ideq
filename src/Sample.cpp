@@ -55,7 +55,7 @@ void SampleLambda(double & lambda_new, const double & alpha_lambda, const double
   arma::mat tmp(1, 1);
   double total = 0;
   for (int t = 1; t <= T; ++t) {
-    P = G * C.slice(t - 1) * G.t();
+    P = G * C.slice(t-1) * G.t();
     arma::colvec x = theta.col(t) - G * theta.col(t-1);
     tmp = (x.t() * solve(P, x, arma::solve_opts::equilibrate));
     total += tmp(0);

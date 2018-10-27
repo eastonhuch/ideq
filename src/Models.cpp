@@ -265,6 +265,8 @@ List dstm_IDE(arma::mat Y, arma::mat locs, arma::colvec m_0, arma::mat C_0,
   const bool   sample_sigma2 = sigma2_i == NA;
   const double alpha_lambda  = params["alpha_lambda"];
   const double beta_lambda   = params["beta_lambda"];
+  const double proposal_factor_m = params["proposal_factor_m"];
+  const double proposal_factor_C = params["proposal_factor_C"];
   const int locs_dim = locs.n_cols;
   const int p = 2*J*J+1;
   const int T = Y.n_cols;
@@ -280,11 +282,20 @@ List dstm_IDE(arma::mat Y, arma::mat locs, arma::colvec m_0, arma::mat C_0,
   C.slice(0) = C_0;
 
   // Create observation matrix (F) and initial process matrix (G)
-  arma::mat w_for_B = make_w_for_B(locs, J, L);
+  arma::mat w_for_B = makeW(locs, J, L);
   arma::mat F = makeF(locs, w_for_B, J, L);
   const arma::mat FtFiFt = arma::solve(F.t() * F, F.t());
-  arma::mat B = makeB(m_kernel, C_kernel, locs, w_for_B, J, L);
+  arma::mat B(S, 2*J*J + 1);
+  makeB(B, m_kernel, C_kernel, locs, w_for_B, J, L);
   G.slice(0) = FtFiFt * B;
+  
+  // Create objects for storing sampled mu_kernel and Sigma_kernel
+  arma::mat mu_kernel(locs_dim, n_samples+1);
+  arma::cube Sigma_kernel(locs_dim, locs_dim, n_samples+1);
+  mu_kernel.col(0) = m_kernel;
+  Sigma_kernel.slice(0) = C_kernel;
+  arma::colvec mu_kernel_p; // p: proposed
+  arma::mat Sigma_kernel_p;
 
   // Create variance parameters
   arma::vec sigma2, lambda(n_samples+1);
@@ -324,6 +335,8 @@ List dstm_IDE(arma::mat Y, arma::mat locs, arma::colvec m_0, arma::mat C_0,
 
     // MH step for mu
     // Sample proposal value
+    mu_kernel_p = mvnorm(mu_kernel.col(i), proposal_factor_m * C_kernel);
+    
     // Create new B and G matrix from value
     // Likelihood looks something like this
     // (theta_t - G * theta_{t-1})' (lambda * C)^{-1} (theta_t - G * theta_{t-1})
