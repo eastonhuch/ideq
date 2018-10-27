@@ -46,3 +46,18 @@ void makeB(arma::mat & B, const arma::colvec mu, const arma::mat Sigma,
   B /= std::sqrt(L);
   return;
 };
+
+double kernelLikelihood(const arma::mat & G, const arma::mat theta, 
+                        const arma::cube & C) {
+  const int T = theta.n_cols-1;
+  const int p = theta.n_rows;
+  arma::mat tmp = arma::zeros(1, 1);
+  arma::colvec d;
+  
+  for (int t=1; t<=T; ++t) {
+    d = theta.col(t) - G * theta.col(t-1);
+    tmp += d.t() * arma::solve(C.slice(t), d);
+  }
+  
+  return -tmp(0)/2; 
+};

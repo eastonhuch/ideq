@@ -1,3 +1,4 @@
+#include <math.h>
 #include <RcppArmadillo.h>
 // [[Rcpp::depends(RcppArmadillo)]]
 
@@ -294,8 +295,10 @@ List dstm_IDE(arma::mat Y, arma::mat locs, arma::colvec m_0, arma::mat C_0,
   arma::cube Sigma_kernel(locs_dim, locs_dim, n_samples+1);
   mu_kernel.col(0) = m_kernel;
   Sigma_kernel.slice(0) = C_kernel;
-  arma::colvec mu_kernel_p; // p: proposed
-  arma::mat Sigma_kernel_p;
+  arma::colvec mu_kernel_proposal;
+  arma::mat Sigma_kernel_proposal, G_proposal;
+  arma::mat mu_kernel_proposal_var = proposal_factor_C * C_kernel;
+  double mh_ratio;
 
   // Create variance parameters
   arma::vec sigma2, lambda(n_samples+1);
@@ -335,7 +338,22 @@ List dstm_IDE(arma::mat Y, arma::mat locs, arma::colvec m_0, arma::mat C_0,
 
     // MH step for mu
     // Sample proposal value
-    mu_kernel_p = mvnorm(mu_kernel.col(i), proposal_factor_m * C_kernel);
+    mu_kernel_proposal = mvnorm(mu_kernel.col(i), mu_kernel_proposal_var);
+    makeB(B, mu_kernel_proposal, Sigma_kernel.slice(i), locs, w_for_B, J, L);
+    G_proposal = FtFiFt * B; 
+    mh_ratio = 0;
+    mh_ratio += ldmvnorm(mu_kernel_proposal, m_kernel, C_kernel);
+    mh_ratio -= ldmvnorm(mu_kernel.col(i), m_kernel, C_kernel);
+    mh_ratio += kernelLikelihood(G_proposal, theta.slice(i), C);
+    mh_ratio -= kernelLikelihood(G.slice(i), theta.slice(i), C);
+    mh_ratio -= ldmvnorm(mu_kernel_proposal, mu_kernel.col(i), mu_kernel_proposal_var);
+    mh_ratio += ldmvnorm(mu_kernel.col(i), mu_kernel_proposal, mu_kernel_proposal_var);
+    if ( std::log(R::runif(0, 1) ) < mh_ratio) {
+      mu_kernel.col(i+1) = mu_kernel_proposal;
+      G.slice(i+1) = G_proposal;
+    } else {
+      G.slice(i+1) = G.slice(i);
+    }
     
     // Create new B and G matrix from value
     // Likelihood looks something like this

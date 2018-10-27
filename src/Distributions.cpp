@@ -35,6 +35,13 @@ arma::colvec mvnorm(const arma::colvec & mean, const arma::mat & Sigma) {
   return x;
 };
 
+double ldmvnorm(const arma::colvec x, const arma::colvec & mean,
+                const arma::mat & Sigma) {
+  arma::colvec d = x - mean;
+  arma::mat tmp = d.t() * arma::solve(Sigma, d);
+  return -tmp(0)/2;
+}
+
 double rigamma(const double a, const double scl) {
   return (1 / R::rgamma(a, 1/scl));
 }
