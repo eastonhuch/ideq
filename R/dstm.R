@@ -107,8 +107,8 @@ dstm <- function(Y, locs=NULL, obs_model = "EOF", proc_model = "RW",
       C_0 <- params[["C_0"]]
     }
     else {
-      message("No prior was provided for C_0 so I am using 1e-6*I")
-      C_0 <- diag(1e-6, p)
+      message("No prior was provided for C_0 so I am using 1e-6I")
+      C_0 <- diag(1e-3, p)
     }
 
     }
@@ -201,8 +201,8 @@ dstm <- function(Y, locs=NULL, obs_model = "EOF", proc_model = "RW",
 
     }
     else {
-      message("mu_G was not provided, so I am using I")
-      G_0 <- diag(p)
+      message("mu_G was not provided, so I am using 10I")
+      G_0 <- 1e1 * diag(p)
     }
 
     if ("Sigma_G_inv" %in% names(params)) {
@@ -213,8 +213,8 @@ dstm <- function(Y, locs=NULL, obs_model = "EOF", proc_model = "RW",
         stop("Sigma_G_inv must be symmetric positive definite matrix")
       }
     } else {
-      message("Sigma_G_inv was not provided, so I am using 1e6I")
-      Sigma_G_inv <- 1e6*diag(p)
+      message("Sigma_G_inv was not provided, so I am using 1e3I")
+      Sigma_G_inv <- diag(p)
     }
 
   }

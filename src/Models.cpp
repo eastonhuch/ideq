@@ -49,7 +49,10 @@ List dstm_discount(arma::mat Y, arma::mat F, arma::mat G_0, arma::mat Sigma_G_in
   if (AR) {
     G.set_size(p, p, n_samples+1);
     G.zeros();
-    G.slice(0).diag() = mvnorm(G_0.diag(), arma::inv_sympd(Sigma_G_inv));
+    tmp = G_0.diag();
+    G_0.set_size(p, 1);
+    G_0 = tmp;
+    G.slice(0).diag() = mvnorm(G_0, arma::inv_sympd(Sigma_G_inv));
   } else if (FULL) {
     G.set_size(p, p, n_samples+1);
     G_0.reshape(p*p, 1);
@@ -167,7 +170,10 @@ List dstm_IW(arma::mat Y, arma::mat F, arma::mat G_0, arma::mat Sigma_G_inv,
   if (AR) {
     G.set_size(p, p, n_samples+1);
     G.zeros();
-    G.slice(0).diag() = mvnorm(G_0.diag(), arma::inv_sympd(Sigma_G_inv));
+    tmp = G_0.diag();
+    G_0.set_size(p, 1);
+    G_0 = tmp;
+    G.slice(0).diag() = mvnorm(G_0, arma::inv_sympd(Sigma_G_inv));
   } else if (FULL) {
     G.set_size(p, p, n_samples+1);
     G_0.reshape(p*p, 1);
