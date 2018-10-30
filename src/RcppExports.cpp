@@ -60,8 +60,8 @@ BEGIN_RCPP
 END_RCPP
 }
 // dstm_IDE
-List dstm_IDE(arma::mat Y, arma::mat locs, arma::colvec m_0, arma::mat C_0, arma::colvec m_kernel, arma::mat C_kernel, NumericVector params, const int n_samples, const bool verbose);
-RcppExport SEXP _ideq_dstm_IDE(SEXP YSEXP, SEXP locsSEXP, SEXP m_0SEXP, SEXP C_0SEXP, SEXP m_kernelSEXP, SEXP C_kernelSEXP, SEXP paramsSEXP, SEXP n_samplesSEXP, SEXP verboseSEXP) {
+List dstm_IDE(arma::mat Y, arma::mat locs, arma::colvec m_0, arma::mat C_0, arma::colvec mu_kernel_mean, arma::mat mu_kernel_var, arma::mat Sigma_kernel_scale, NumericVector params, const int n_samples, const bool verbose);
+RcppExport SEXP _ideq_dstm_IDE(SEXP YSEXP, SEXP locsSEXP, SEXP m_0SEXP, SEXP C_0SEXP, SEXP mu_kernel_meanSEXP, SEXP mu_kernel_varSEXP, SEXP Sigma_kernel_scaleSEXP, SEXP paramsSEXP, SEXP n_samplesSEXP, SEXP verboseSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -69,12 +69,13 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< arma::mat >::type locs(locsSEXP);
     Rcpp::traits::input_parameter< arma::colvec >::type m_0(m_0SEXP);
     Rcpp::traits::input_parameter< arma::mat >::type C_0(C_0SEXP);
-    Rcpp::traits::input_parameter< arma::colvec >::type m_kernel(m_kernelSEXP);
-    Rcpp::traits::input_parameter< arma::mat >::type C_kernel(C_kernelSEXP);
+    Rcpp::traits::input_parameter< arma::colvec >::type mu_kernel_mean(mu_kernel_meanSEXP);
+    Rcpp::traits::input_parameter< arma::mat >::type mu_kernel_var(mu_kernel_varSEXP);
+    Rcpp::traits::input_parameter< arma::mat >::type Sigma_kernel_scale(Sigma_kernel_scaleSEXP);
     Rcpp::traits::input_parameter< NumericVector >::type params(paramsSEXP);
     Rcpp::traits::input_parameter< const int >::type n_samples(n_samplesSEXP);
     Rcpp::traits::input_parameter< const bool >::type verbose(verboseSEXP);
-    rcpp_result_gen = Rcpp::wrap(dstm_IDE(Y, locs, m_0, C_0, m_kernel, C_kernel, params, n_samples, verbose));
+    rcpp_result_gen = Rcpp::wrap(dstm_IDE(Y, locs, m_0, C_0, mu_kernel_mean, mu_kernel_var, Sigma_kernel_scale, params, n_samples, verbose));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -83,7 +84,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_ideq_mvnorm", (DL_FUNC) &_ideq_mvnorm, 2},
     {"_ideq_dstm_discount", (DL_FUNC) &_ideq_dstm_discount, 10},
     {"_ideq_dstm_IW", (DL_FUNC) &_ideq_dstm_IW, 11},
-    {"_ideq_dstm_IDE", (DL_FUNC) &_ideq_dstm_IDE, 9},
+    {"_ideq_dstm_IDE", (DL_FUNC) &_ideq_dstm_IDE, 10},
     {NULL, NULL, 0}
 };
 

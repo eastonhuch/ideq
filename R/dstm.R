@@ -160,56 +160,80 @@ dstm <- function(Y, locs=NULL, obs_model = "EOF", proc_model = "RW",
   message("Process model")
   Sigma_G_inv <- matrix()
   if (IDE) {
-    # Error checking for m_kernel, C_kernel (the priors for the kernel parameters)
-    # As well as proposal_factor_m and proposal_factor_C which control
+    # Error checking for kernel prior
+    # As well as proposal_factor_mu and proposal_factor_Sigma which control
     # The variance of the proposed values
     locs_dim <- ncol(locs)
-    if ("m_kernel" %in% names(params)) {
-      m_kernel <- params[["m_kernel"]]
-      m_kernel <- as.vector(m_kernel)
-      if (!is.numeric(m_kernel) || length(m_kernel)!=locs_dim) {
-        stop("m_kernel must be numeric with length==ncol(locs)")
+    if ("mu_kernel_mean" %in% names(params)) {
+      mu_kernel_mean <- params[["mu_kernel_mean"]]
+      mu_kernel_mean <- as.vector(mu_kernel_mean)
+      if (!is.numeric(mu_kernel_mean) || length(mu_kernel_mean)!=locs_dim) {
+        stop("mu_kernel_mean must be numeric with length==ncol(locs)")
       }
     }
     else {
-      m_kernel <- rep(0, locs_dim)
-      message("m_kernel was not provided so I am using a vector of zeroes")
+      mu_kernel_mean <- rep(0, locs_dim)
+      message("mu_kernel_mean was not provided so I am using a vector of zeroes")
     }
     
-    if ("proposal_factor_m" %in% names(params)) {
-      proposal_factor_m <- params[["proposal_factor_m"]]
-      if (!is.numeric(proposal_factor_m) || proposal_factor_m <= 0) {
-        stop("proposal_factor_m must be numeric > 0")
-      }
-    }
-    else {
-      proposal_factor_m <- 1/5
-      message(paste("proposal_factor_m was not provided so I am using", 
-              proposal_factor_m))
-    }
-
-    if ("C_kernel" %in% names(params)) {
-      C_kernel <- params[["C_kernel"]]
-      if (!is.positive.definite(C_kernel) ||
+    if ("mu_kernel_var" %in% names(params)) {
+      mu_kernel_var <- params[["mu_kernel_var"]]
+      if (!is.positive.definite(mu_kernel_var) ||
           any(dim(Sigma) != locs_dim)) {
-        stop("C_kernel must be positive definite with dimensions == ncol(locs)")
+        stop("mu_kernel_var must be positive definite with dimensions == ncol(locs)")
       }
     }
     else {
-      C_kernel <- diag(1/9, locs_dim)
-      message("C_kernel was not provided so I am using I/9")
+      mu_kernel_var <- diag(1/9, locs_dim)
+      message("mu_kernel_var was not provided so I am using I/9")
     }
     
-    if ("proposal_factor_C" %in% names(params)) {
-      proposal_factor_C <- params[["proposal_factor_C"]]
-      if (!is.numeric(proposal_factor_C) || proposal_factor_C <= 0) {
-        stop("proposal_factor_C must be numeric > 0")
+    if ("proposal_factor_mu" %in% names(params)) {
+      proposal_factor_mu <- params[["proposal_factor_mu"]]
+      if (!is.numeric(proposal_factor_mu) || proposal_factor_mu <= 0) {
+        stop("proposal_factor_mu must be numeric > 0")
       }
     }
     else {
-      proposal_factor_C <- 1/5
-      message(paste("proposal_factor_C was not provided so I am using", 
-              proposal_factor_C))
+      proposal_factor_mu <- 1/9
+      message(paste("proposal_factor_mu was not provided so I am using", 
+              proposal_factor_mu))
+    }
+    
+    if ("Sigma_kernel_scale" %in% names(params)) {
+      Sigma_kernel_scale <- params[["Sigma_kernel_scale"]]
+      if (!is.positive.definite(Sigma_kernel_scale) ||
+          any(dim(Sigma) != locs_dim)) {
+        stop("Sigma_kernel_scale must be positive definite with dimensions == ncol(locs)")
+      }
+    }
+    else {
+      Sigma_kernel_scale <- diag(100, locs_dim)
+      message("Sigma_kernel_scale was not provided so I am using 20I")
+    }
+    
+    if ("Sigma_kernel_df" %in% names(params)) {
+      Sigma_kernel_df <- params[["Sigma_kernel_df"]]
+      if (!is.numeric(Sigma_kernel_df) || Sigma_kernel_df <= 0) {
+        stop("Sigma_kernel_df must be numeric > 0")
+      }
+    }
+    else {
+      Sigma_kernel_df <- 1000
+      message(paste("Sigma_kernel_df was not provided so I am using", 
+              Sigma_kernel_df))
+    }
+    
+    if ("proposal_factor_Sigma" %in% names(params)) {
+      proposal_factor_Sigma <- params[["proposal_factor_Sigma"]]
+      if (!is.numeric(proposal_factor_Sigma) || proposal_factor_Sigma <= 0) {
+        stop("proposal_factor_Sigma must be numeric > 0")
+      }
+    }
+    else {
+      proposal_factor_Sigma <- 1/10
+      message(paste("proposal_factor_Sigma was not provided so I am using", 
+              proposal_factor_Sigma))
     }
     
   }
@@ -301,9 +325,11 @@ dstm <- function(Y, locs=NULL, obs_model = "EOF", proc_model = "RW",
     scalar_params <- c(alpha_sigma2=alpha_sigma2, beta_sigma2=beta_sigma2,
                        sample_sigma2=as.numeric(sample_sigma2), sigma2=sigma2, J=J, L=L,
                        alpha_lambda=alpha_lambda, beta_lambda=beta_lambda,
-                       proposal_factor_m=proposal_factor_m,
-                       proposal_factor_C=proposal_factor_C)
-    results <- dstm_IDE(Y, locs, m_0, C_0, m_kernel, C_kernel,
+                       proposal_factor_mu=proposal_factor_mu,
+                       proposal_factor_Sigma=proposal_factor_Sigma,
+                       Sigma_kernel_df=Sigma_kernel_df)
+    results <- dstm_IDE(Y, locs, m_0, C_0, mu_kernel_mean,
+                        mu_kernel_var, Sigma_kernel_scale,
                         scalar_params, n_samples, verbose)
   }
   else if (proc_error == "discount") {

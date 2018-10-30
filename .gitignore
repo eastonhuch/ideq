@@ -2,5 +2,7 @@ ideq.Rproj
 .Rproj.user
 .Rhistory
 .RData
-src/*.o
-src/*.so
+src/Models.o
+src/Sample.o
+src/ideq.so
+.gitignore

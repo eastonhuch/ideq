@@ -2,6 +2,9 @@
 #include <RcppArmadillo.h>
 // [[Rcpp::depends(RcppArmadillo)]]
 
+#include <rgen.h>
+// [[Rcpp::depends(rgen)]]
+
 #include "Kalman.h"
 #include "Sample.h"
 #include "Distributions.h"
@@ -255,8 +258,9 @@ List dstm_IW(arma::mat Y, arma::mat F, arma::mat G_0, arma::mat Sigma_G_inv,
 //' @useDynLib ideq
 // [[Rcpp::export]]
 List dstm_IDE(arma::mat Y, arma::mat locs, arma::colvec m_0, arma::mat C_0,
-              arma::colvec m_kernel, arma::mat C_kernel,
-              NumericVector params, const int n_samples, const bool verbose) {
+              arma::colvec mu_kernel_mean, arma::mat mu_kernel_var,
+              arma::mat Sigma_kernel_scale, NumericVector params, 
+              const int n_samples, const bool verbose) {
   // Extract scalar parameters
   const double J  = params["J"];
   const double L  = params["L"];
@@ -266,8 +270,9 @@ List dstm_IDE(arma::mat Y, arma::mat locs, arma::colvec m_0, arma::mat C_0,
   const bool   sample_sigma2 = sigma2_i == NA;
   const double alpha_lambda  = params["alpha_lambda"];
   const double beta_lambda   = params["beta_lambda"];
-  const double proposal_factor_m = params["proposal_factor_m"];
-  const double proposal_factor_C = params["proposal_factor_C"];
+  const double proposal_factor_mu = params["proposal_factor_mu"];
+  const double proposal_factor_Sigma = params["proposal_factor_Sigma"];
+  const double Sigma_kernel_df = params["Sigma_kernel_df"];
   const int locs_dim = locs.n_cols;
   const int p = 2*J*J+1;
   const int T = Y.n_cols;
@@ -281,31 +286,32 @@ List dstm_IDE(arma::mat Y, arma::mat locs, arma::colvec m_0, arma::mat C_0,
   arma::cube R_inv(p, p, T+1), C(p, p, T+1), C_T(p, p, n_samples+1);
   m.col(0) = m_0;
   C.slice(0) = C_0;
+  
+  // Create objects for storing sampled mu_kernel and Sigma_kernel
+  arma::mat mu_kernel(locs_dim, n_samples+1);
+  arma::cube Sigma_kernel(locs_dim, locs_dim, n_samples+1);
+  mu_kernel.col(0) = mu_kernel_mean;
+  Sigma_kernel.slice(0) = Sigma_kernel_scale / (Sigma_kernel_df+locs_dim+1);
+  arma::colvec mu_kernel_proposal;
+  arma::mat Sigma_kernel_proposal, G_proposal;
+  arma::mat mu_kernel_proposal_var = sqrt(proposal_factor_mu) * mu_kernel_var;
+  double Sigma_kernel_proposal_df = locs_dim + Sigma_kernel_df/proposal_factor_Sigma;
+  const double Sigma_kernel_adjustment = Sigma_kernel_proposal_df - locs_dim - 1;
+  double mh_ratio;
 
   // Create observation matrix (F) and initial process matrix (G)
   arma::mat w_for_B = makeW(locs, J, L);
   arma::mat F = makeF(locs, w_for_B, J, L);
   const arma::mat FtFiFt = arma::solve(F.t() * F, F.t());
   arma::mat B(S, 2*J*J + 1);
-  makeB(B, m_kernel, C_kernel, locs, w_for_B, J, L);
+  makeB(B, mu_kernel_mean, Sigma_kernel.slice(0), locs, w_for_B, J, L);
   G.slice(0) = FtFiFt * B;
   
-  // Create objects for storing sampled mu_kernel and Sigma_kernel
-  arma::mat mu_kernel(locs_dim, n_samples+1);
-  arma::cube Sigma_kernel(locs_dim, locs_dim, n_samples+1);
-  mu_kernel.col(0) = m_kernel;
-  Sigma_kernel.slice(0) = C_kernel;
-  arma::colvec mu_kernel_proposal;
-  arma::mat Sigma_kernel_proposal, G_proposal;
-  arma::mat mu_kernel_proposal_var = proposal_factor_C * C_kernel;
-  double mh_ratio;
-
   // Create variance parameters
   arma::vec sigma2, lambda(n_samples+1);
   lambda.at(0) = rigamma(alpha_lambda, beta_lambda);
   if (sample_sigma2) {
     sigma2.set_size(n_samples+1);
-    //sigma2[0] = rigamma(alpha_sigma2, beta_sigma2);
     SampleSigma2(sigma2.at(0), alpha_sigma2, beta_sigma2, Y, F, theta.slice(0));
   }
 
@@ -337,41 +343,53 @@ List dstm_IDE(arma::mat Y, arma::mat locs, arma::colvec m_0, arma::mat C_0,
                  G.slice(i), C, theta.slice(i));
 
     // MH step for mu
-    // Sample proposal value
     mu_kernel_proposal = mvnorm(mu_kernel.col(i), mu_kernel_proposal_var);
     makeB(B, mu_kernel_proposal, Sigma_kernel.slice(i), locs, w_for_B, J, L);
     G_proposal = FtFiFt * B; 
-    mh_ratio = 0;
-    mh_ratio += ldmvnorm(mu_kernel_proposal, m_kernel, C_kernel);
-    mh_ratio -= ldmvnorm(mu_kernel.col(i), m_kernel, C_kernel);
+    mh_ratio  = ldmvnorm(mu_kernel_proposal, mu_kernel_mean, mu_kernel_var);
+    mh_ratio -= ldmvnorm(mu_kernel.col(i), mu_kernel_mean, mu_kernel_var);
     mh_ratio += kernelLikelihood(G_proposal, theta.slice(i), C);
     mh_ratio -= kernelLikelihood(G.slice(i), theta.slice(i), C);
     mh_ratio -= ldmvnorm(mu_kernel_proposal, mu_kernel.col(i), mu_kernel_proposal_var);
     mh_ratio += ldmvnorm(mu_kernel.col(i), mu_kernel_proposal, mu_kernel_proposal_var);
-    if ( std::log(R::runif(0, 1) ) < mh_ratio) {
+    if ( log(R::runif(0, 1)) < mh_ratio ) {
       mu_kernel.col(i+1) = mu_kernel_proposal;
       G.slice(i+1) = G_proposal;
     } else {
+      mu_kernel.col(i+1) = mu_kernel.col(i);
       G.slice(i+1) = G.slice(i);
     }
     
-    // Create new B and G matrix from value
-    // Likelihood looks something like this
-    // (theta_t - G * theta_{t-1})' (lambda * C)^{-1} (theta_t - G * theta_{t-1})
-    // Where C comes from the filtering recursions
-
     // MH step for Sigma
-    // Similar to portion for mu
-
-    // Make new process matrix
-    //arma::mat B = makeB(m_0, C_0, locs, w_for_B, J, L);
-    G.slice(i+1) = FtFiFt * B;
+    Sigma_kernel_proposal = rgen::riwishart(Sigma_kernel_proposal_df,
+                            Sigma_kernel.slice(i) * Sigma_kernel_proposal_df);
+    makeB(B, mu_kernel.col(i+1), Sigma_kernel_proposal, locs, w_for_B, J, L);
+    G_proposal = FtFiFt * B; 
+    mh_ratio  = ldiwishart(Sigma_kernel_proposal, Sigma_kernel_df, 
+                           Sigma_kernel_scale);
+    mh_ratio -= ldiwishart(Sigma_kernel.slice(i), Sigma_kernel_df,
+                           Sigma_kernel_scale);
+    Rcout << "mh_ratio is " << mh_ratio << std::endl;
+    mh_ratio += kernelLikelihood(G_proposal,   theta.slice(i), C);
+    mh_ratio -= kernelLikelihood(G.slice(i+1), theta.slice(i), C);
+    Rcout << "mh_ratio is " << mh_ratio << std::endl;
+    mh_ratio -= ldiwishart(Sigma_kernel_proposal, Sigma_kernel_proposal_df,
+                           Sigma_kernel.slice(i) * Sigma_kernel_proposal_df);
+    mh_ratio += ldiwishart(Sigma_kernel.slice(i), Sigma_kernel_proposal_df,
+                           Sigma_kernel_proposal * Sigma_kernel_proposal_df);
+    Rcout << "mh_ratio is " << mh_ratio << std::endl;
+    Rcout << Sigma_kernel_proposal << std::endl;
+    if ( log(R::runif(0, 1)) < mh_ratio ) {
+      Rcout << "Accepted!" << std::endl;
+      Sigma_kernel.slice(i+1) = Sigma_kernel_proposal;
+      G.slice(i+1) = G_proposal;
+    } else {
+      Rcout << "Rejected..." << std::endl;
+      Sigma_kernel.slice(i+1) = Sigma_kernel.slice(i);
+    }
   }
 
   List results;
-  results["m"] = m;
-  results["C"] = C;
-  results["a"] = a;
   results["theta"]  = theta;
   results["lambda"] = lambda;
   if (sample_sigma2) {
@@ -382,5 +400,7 @@ List dstm_IDE(arma::mat Y, arma::mat locs, arma::colvec m_0, arma::mat C_0,
   results["G"] = G;
   results["F"] = F;
   results["C_T"] = C_T;
+  results["mu_kernel"] = mu_kernel;
+  results["Sigma_kernel"] = Sigma_kernel;
   return results;
 }

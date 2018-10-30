@@ -47,7 +47,7 @@ dstm_IW <- function(Y, F, G_0, Sigma_G_inv, m_0, C_0, C_W, params, proc_model, n
 #' # Duhh...nothing yet
 #'ceCpp evalCpp
 #' @useDynLib ideq
-dstm_IDE <- function(Y, locs, m_0, C_0, m_kernel, C_kernel, params, n_samples, verbose) {
-    .Call('_ideq_dstm_IDE', PACKAGE = 'ideq', Y, locs, m_0, C_0, m_kernel, C_kernel, params, n_samples, verbose)
+dstm_IDE <- function(Y, locs, m_0, C_0, mu_kernel_mean, mu_kernel_var, Sigma_kernel_scale, params, n_samples, verbose) {
+    .Call('_ideq_dstm_IDE', PACKAGE = 'ideq', Y, locs, m_0, C_0, mu_kernel_mean, mu_kernel_var, Sigma_kernel_scale, params, n_samples, verbose)
 }
 
