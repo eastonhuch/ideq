@@ -291,7 +291,7 @@ List dstm_IDE(arma::mat Y, arma::mat locs, arma::colvec m_0, arma::mat C_0,
   arma::mat mu_kernel(locs_dim, n_samples+1);
   arma::cube Sigma_kernel(locs_dim, locs_dim, n_samples+1);
   mu_kernel.col(0) = mu_kernel_mean;
-  Sigma_kernel.slice(0) = Sigma_kernel_scale / (Sigma_kernel_df+locs_dim+1);
+  Sigma_kernel.slice(0) = Sigma_kernel_scale / (Sigma_kernel_df-locs_dim-1);
   arma::colvec mu_kernel_proposal;
   arma::mat Sigma_kernel_proposal, G_proposal;
   arma::mat mu_kernel_proposal_var = sqrt(proposal_factor_mu) * mu_kernel_var;
@@ -348,10 +348,10 @@ List dstm_IDE(arma::mat Y, arma::mat locs, arma::colvec m_0, arma::mat C_0,
     G_proposal = FtFiFt * B; 
     mh_ratio  = ldmvnorm(mu_kernel_proposal, mu_kernel_mean, mu_kernel_var);
     mh_ratio -= ldmvnorm(mu_kernel.col(i), mu_kernel_mean, mu_kernel_var);
-    mh_ratio += kernelLikelihood(G_proposal, theta.slice(i), C);
-    mh_ratio -= kernelLikelihood(G.slice(i), theta.slice(i), C);
-    mh_ratio -= ldmvnorm(mu_kernel_proposal, mu_kernel.col(i), mu_kernel_proposal_var);
-    mh_ratio += ldmvnorm(mu_kernel.col(i), mu_kernel_proposal, mu_kernel_proposal_var);
+    Rcout << "mh_ratio is " << mh_ratio << std::endl;
+    mh_ratio += kernelLikelihood(G_proposal, theta.slice(i), C, lambda.at(i+1));
+    mh_ratio -= kernelLikelihood(G.slice(i), theta.slice(i), C, lambda.at(i+1));
+    Rcout << "mh_ratio is " << mh_ratio << std::endl;
     if ( log(R::runif(0, 1)) < mh_ratio ) {
       mu_kernel.col(i+1) = mu_kernel_proposal;
       G.slice(i+1) = G_proposal;
@@ -361,8 +361,9 @@ List dstm_IDE(arma::mat Y, arma::mat locs, arma::colvec m_0, arma::mat C_0,
     }
     
     // MH step for Sigma
+    Sigma_kernel.slice(i+1) = Sigma_kernel.slice(i);
     Sigma_kernel_proposal = rgen::riwishart(Sigma_kernel_proposal_df,
-                            Sigma_kernel.slice(i) * Sigma_kernel_proposal_df);
+                            Sigma_kernel.slice(i) * Sigma_kernel_adjustment);
     makeB(B, mu_kernel.col(i+1), Sigma_kernel_proposal, locs, w_for_B, J, L);
     G_proposal = FtFiFt * B; 
     mh_ratio  = ldiwishart(Sigma_kernel_proposal, Sigma_kernel_df, 
@@ -370,15 +371,16 @@ List dstm_IDE(arma::mat Y, arma::mat locs, arma::colvec m_0, arma::mat C_0,
     mh_ratio -= ldiwishart(Sigma_kernel.slice(i), Sigma_kernel_df,
                            Sigma_kernel_scale);
     Rcout << "mh_ratio is " << mh_ratio << std::endl;
-    mh_ratio += kernelLikelihood(G_proposal,   theta.slice(i), C);
-    mh_ratio -= kernelLikelihood(G.slice(i+1), theta.slice(i), C);
+    mh_ratio += kernelLikelihood(G_proposal,   theta.slice(i), C, lambda.at(i+1));
+    mh_ratio -= kernelLikelihood(G.slice(i+1), theta.slice(i), C, lambda.at(i+1));
     Rcout << "mh_ratio is " << mh_ratio << std::endl;
     mh_ratio -= ldiwishart(Sigma_kernel_proposal, Sigma_kernel_proposal_df,
-                           Sigma_kernel.slice(i) * Sigma_kernel_proposal_df);
+                           Sigma_kernel.slice(i) * Sigma_kernel_adjustment);
     mh_ratio += ldiwishart(Sigma_kernel.slice(i), Sigma_kernel_proposal_df,
-                           Sigma_kernel_proposal * Sigma_kernel_proposal_df);
+                           Sigma_kernel_proposal * Sigma_kernel_adjustment);
     Rcout << "mh_ratio is " << mh_ratio << std::endl;
     Rcout << Sigma_kernel_proposal << std::endl;
+    
     if ( log(R::runif(0, 1)) < mh_ratio ) {
       Rcout << "Accepted!" << std::endl;
       Sigma_kernel.slice(i+1) = Sigma_kernel_proposal;

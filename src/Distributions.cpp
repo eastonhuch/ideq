@@ -44,7 +44,7 @@ double ldmvnorm(const arma::colvec x, const arma::colvec & mean,
 };
 
 double ldiwishart(const arma::mat x, const double df,
-               const arma::mat & scale) {
+                  const arma::mat & scale) {
   const int p = x.n_cols;
   double d = df/2 * log(arma::det(scale));
   d -= (df+p+1)/2 * log(arma::det(x));

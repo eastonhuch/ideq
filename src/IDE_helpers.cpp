@@ -32,7 +32,7 @@ arma::mat makeF(const arma::mat & locs, const arma::mat & w,
 // The function makeB returns the matrix B used as part of the process matrix
 // mu and Sigma are the parameters of the IDE kernel
 void makeB(arma::mat & B, const arma::colvec mu, const arma::mat Sigma, 
-                const arma::mat & locs, const arma::mat & w, const int J, const int L) {
+           const arma::mat & locs, const arma::mat & w, const int J, const int L) {
   arma::mat Jmat1 = (locs.col(0) + mu(0)) * w.col(0).t() +
                     (locs.col(1) + mu(1)) * w.col(1).t();
   arma::colvec Jvec = Sigma.at(0, 0) * arma::square(w.col(0)) +
@@ -47,8 +47,8 @@ void makeB(arma::mat & B, const arma::colvec mu, const arma::mat Sigma,
   return;
 };
 
-double kernelLikelihood(const arma::mat & G, const arma::mat theta, 
-                        const arma::cube & C) {
+double kernelLikelihood(const arma::mat & G, const arma::mat & theta, 
+                        const arma::cube & C, const double lambda) {
   const int T = theta.n_cols-1;
   const int p = theta.n_rows;
   arma::mat tmp = arma::zeros(1, 1);
@@ -56,7 +56,7 @@ double kernelLikelihood(const arma::mat & G, const arma::mat theta,
   
   for (int t=1; t<=T; ++t) {
     d = theta.col(t) - G * theta.col(t-1);
-    tmp += d.t() * arma::solve(C.slice(t), d);
+    tmp += d.t() * arma::solve(lambda * G * C.slice(t) * G.t(), d);
   }
   
   return -tmp(0)/2; 

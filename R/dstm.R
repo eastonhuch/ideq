@@ -195,7 +195,7 @@ dstm <- function(Y, locs=NULL, obs_model = "EOF", proc_model = "RW",
       }
     }
     else {
-      proposal_factor_mu <- 1/9
+      proposal_factor_mu <- 1
       message(paste("proposal_factor_mu was not provided so I am using", 
               proposal_factor_mu))
     }
@@ -208,8 +208,8 @@ dstm <- function(Y, locs=NULL, obs_model = "EOF", proc_model = "RW",
       }
     }
     else {
-      Sigma_kernel_scale <- diag(100, locs_dim)
-      message("Sigma_kernel_scale was not provided so I am using 20I")
+      Sigma_kernel_scale <- diag(1/10, locs_dim)
+      message("Sigma_kernel_scale was not provided so I am using 100I")
     }
     
     if ("Sigma_kernel_df" %in% names(params)) {
@@ -219,7 +219,7 @@ dstm <- function(Y, locs=NULL, obs_model = "EOF", proc_model = "RW",
       }
     }
     else {
-      Sigma_kernel_df <- 1000
+      Sigma_kernel_df <- 10
       message(paste("Sigma_kernel_df was not provided so I am using", 
               Sigma_kernel_df))
     }
@@ -231,7 +231,7 @@ dstm <- function(Y, locs=NULL, obs_model = "EOF", proc_model = "RW",
       }
     }
     else {
-      proposal_factor_Sigma <- 1/10
+      proposal_factor_Sigma <- 1
       message(paste("proposal_factor_Sigma was not provided so I am using", 
               proposal_factor_Sigma))
     }
