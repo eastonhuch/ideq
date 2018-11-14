@@ -47,6 +47,24 @@ void makeB(arma::mat & B, const arma::colvec mu, const arma::mat Sigma,
   return;
 };
 
+// The function makeB returns the matrix B used as part of the process matrix
+// mu and Sigma are the parameters of the IDE kernel
+void makeB_SV(arma::mat & B, const arma::mat mu, const arma::cube Sigma, 
+           const arma::mat & locs, const arma::mat & w, const int J, const int L) {
+  arma::mat Jmat1 = (locs.col(0) + mu.col(0)) * w.col(0).t() +
+    (locs.col(1) + mu.col(1)) * w.col(1).t();
+  arma::colvec Jvec = Sigma.tube(0, 0) % arma::square(w.col(0)) +
+    Sigma.tube(1, 1) % arma::square(w.col(1)) +
+    Sigma.tube(0, 1) % arma::prod(w, 1);
+  arma::mat Jmat2 = arma::kron( arma::ones(locs.n_rows, 1), Jvec.t() );
+  Jmat2 = arma::exp(-0.5 * Jmat2);
+  B.col(0) = Jmat2.col(0);
+  B.cols(1, J*J) = Jmat2 % arma::cos(Jmat1);
+  B.cols(J*J + 1, 2*J*J) = Jmat2 % arma::sin(Jmat1);
+  B /= std::sqrt(L);
+  return;
+};
+
 double kernelLikelihood(const arma::mat & G, const arma::mat & theta, 
                         const arma::cube & C, const double lambda) {
   const int T = theta.n_cols-1;
