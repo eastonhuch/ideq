@@ -11,10 +11,9 @@
 #' @examples
 #' # Duhh...nothing yet
 dstm_eof <- function(Y, proc_model = "RW",
-                     proc_error = "discount", p = 10L,
+                     proc_error = "IW", p = 10L,
                      n_samples = 1L, sample_sigma2 = TRUE,
                      verbose = FALSE, params = NULL) {
-  results <- "No output...whoops"
 
   # Observation Model; creates F, m_0, C_0
   e <- eigen(cov(t(Y)))
@@ -229,7 +228,7 @@ dstm_eof <- function(Y, proc_model = "RW",
   }
 
   # Process output
-  class(results) <- c("dstm", "list")
+  class(results) <- c("dstm_eof", "dstm", "list")
   attr(results,  "obs_model") <- obs_model
   attr(results, "proc_model") <- proc_model
   attr(results, "proc_error") <- proc_error
@@ -434,7 +433,8 @@ dstm_ide <- function(Y, locs=NULL, proc_error = "discount", p = 10L,
   }
   
   # Process Error; creates alpha_lambda, beta_lambda, etc.
-  alpha_lambda <- beta_lambda <- NA
+  alpha_lambda <- beta_lambda  <- df_W <- NA
+  C_W <- matrix(NA)
   if (proc_error == "discount") {
     if ("alpha_lambda" %in% names(params)) {
       alpha_lambda <- params[["alpha_lambda"]]
@@ -451,24 +451,47 @@ dstm_ide <- function(Y, locs=NULL, proc_error = "discount", p = 10L,
       beta_lambda <- 3
       message(paste("beta_lambda was not provided so I am using", beta_lambda))
     }
-  } else if (proc_error == "IW") {
-    stop("Sorry, not supported yet")
-    # FIXME: Add code to to specify process error in IDE model
-  } else {
+  } 
+  else if (proc_error == "IW") {
+    # C_W
+    if ("C_W" %in% names(params)) {
+      C_W <- params[["C_W"]]
+      if (!is.positive.definite(C_W)) {
+        stop("C_W must be a square positive definite matrix")
+      }
+    }
+    else {
+      message("C_W was not provided so I am using an identity matrix")
+      C_W <- diag(p)
+    }
+
+    if ("df_W" %in% names(params)) {
+      df_W <- as.integer(params[["df_W"]])
+      if (!is.numeric(params[["df_W"]] || params[["df_W"]] < p)) {
+        stop("df_W must be numeric >= p")
+      }
+    }
+    else {
+      message("df_W was not provided so I am using p")
+      df_W <- p
+    } 
+  }
+  else {
     stop("proc_error not recognized; must be `discount` or `IW`")
   }
+  
   scalar_params <- c(alpha_sigma2=alpha_sigma2, beta_sigma2=beta_sigma2,
                      sample_sigma2=as.numeric(sample_sigma2), sigma2=sigma2, J=J, L=L,
-                     alpha_lambda=alpha_lambda, beta_lambda=beta_lambda,
+                     alpha_lambda=alpha_lambda, beta_lambda=beta_lambda, df_W=df_W,
                      proposal_factor_mu=proposal_factor_mu,
                      proposal_factor_Sigma=proposal_factor_Sigma,
                      Sigma_kernel_df=Sigma_kernel_df)
   results <- ide_sc(Y, locs, m_0, C_0, mu_kernel_mean,
-                    mu_kernel_var, Sigma_kernel_scale,
+                    mu_kernel_var, Sigma_kernel_scale, C_W,
                     scalar_params, n_samples, verbose)
   
   # Process output
-  class(results) <- c("dstm", "list")
+  class(results) <- c("dstm_ide" , "dstm", "list")
   attr(results, "proc_error") <- proc_error
   attr(results, "sample_sigma2") <- sample_sigma2
 

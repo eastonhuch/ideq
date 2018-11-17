@@ -10,18 +10,18 @@ List eof_discount(arma::mat Y, arma::mat F, arma::mat G_0, arma::mat Sigma_G_inv
                    const bool verbose);
 
 List eof_iw(arma::mat Y, arma::mat F, arma::mat G_0, arma::mat Sigma_G_inv,
-             arma::colvec m_0, arma::mat C_0, arma::mat C_W,
-             NumericVector params, CharacterVector proc_model,
-             const int n_samples, const bool verbose);
+            arma::colvec m_0, arma::mat C_0, arma::mat C_W,
+            NumericVector params, CharacterVector proc_model,
+            const int n_samples, const bool verbose);
 
 List ide_sc(arma::mat Y, arma::mat locs, arma::colvec m_0, arma::mat C_0,
             arma::colvec mu_kernel_mean, arma::mat mu_kernel_var,
-            arma::mat Sigma_kernel_scale, NumericVector params, 
+            arma::mat Sigma_kernel_scale, arma::mat C_W, NumericVector params, 
             const int n_samples, const bool verbose);
 
 List ide_sv(arma::mat Y, arma::mat locs, arma::colvec m_0, arma::mat C_0,
             arma::colvec mu_kernel_mean, arma::mat mu_kernel_var,
-            arma::mat Sigma_kernel_scale, NumericVector params, 
+            arma::mat Sigma_kernel_scale, arma::mat C_W, NumericVector params, 
             const int n_samples, const bool verbose);
 
 #endif

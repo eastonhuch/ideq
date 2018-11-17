@@ -258,9 +258,9 @@ List eof_iw(arma::mat Y, arma::mat F, arma::mat G_0, arma::mat Sigma_G_inv,
 //' @useDynLib ideq
 // [[Rcpp::export]]
 List ide_sc(arma::mat Y, arma::mat locs, arma::colvec m_0, arma::mat C_0,
-           arma::colvec mu_kernel_mean, arma::mat mu_kernel_var,
-           arma::mat Sigma_kernel_scale, NumericVector params, 
-           const int n_samples, const bool verbose) {
+            arma::colvec mu_kernel_mean, arma::mat mu_kernel_var,
+            arma::mat Sigma_kernel_scale, arma::mat C_W, NumericVector params, 
+            const int n_samples, const bool verbose) {
   // Extract scalar parameters
   const double J  = params["J"];
   const double L  = params["L"];
@@ -270,6 +270,8 @@ List ide_sc(arma::mat Y, arma::mat locs, arma::colvec m_0, arma::mat C_0,
   const bool   sample_sigma2 = sigma2_i == NA;
   const double alpha_lambda  = params["alpha_lambda"];
   const double beta_lambda   = params["beta_lambda"];
+  const double df_W = params["df_W"];
+  const bool discount = C_W.at(0, 0) == NA;
   const double proposal_factor_mu = params["proposal_factor_mu"];
   const double proposal_factor_Sigma = params["proposal_factor_Sigma"];
   const double Sigma_kernel_df = params["Sigma_kernel_df"];
@@ -307,14 +309,24 @@ List ide_sc(arma::mat Y, arma::mat locs, arma::colvec m_0, arma::mat C_0,
   makeB(B, mu_kernel_mean, Sigma_kernel.slice(0), locs, w_for_B, J, L);
   G.slice(0) = FtFiFt * B;
   
-  // Create variance parameters
-  arma::vec sigma2, lambda(n_samples+1);
-  lambda.at(0) = rigamma(alpha_lambda, beta_lambda);
+  // Observation error
+  arma::vec sigma2;
   if (sample_sigma2) {
     sigma2.set_size(n_samples+1);
     SampleSigma2(sigma2.at(0), alpha_sigma2, beta_sigma2, Y, F, theta.slice(0));
   }
 
+  // Process error
+  arma::vec lambda;
+  arma::cube W;
+  if (discount) {
+    lambda.set_size(n_samples+1);
+    lambda.at(0) = rigamma(alpha_lambda, beta_lambda);
+  } else {
+    W.set_size(p, p, n_samples+1);
+    W.slice(0) = df_W * C_W;
+  }
+  
   // Begin MCMC
   for (int i=0; i<n_samples; ++i) {
     checkUserInterrupt();
@@ -409,7 +421,7 @@ List ide_sc(arma::mat Y, arma::mat locs, arma::colvec m_0, arma::mat C_0,
 // [[Rcpp::export]]
 List ide_sv(arma::mat Y, arma::mat locs, arma::colvec m_0, arma::mat C_0,
             arma::colvec mu_kernel_mean, arma::mat mu_kernel_var,
-            arma::mat Sigma_kernel_scale, NumericVector params, 
+            arma::mat Sigma_kernel_scale, arma::mat C_W, NumericVector params, 
             const int n_samples, const bool verbose) {
   Rcout << "I don't know what to do yet" << std::endl;
   return 42;
