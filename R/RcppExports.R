@@ -25,8 +25,8 @@ mvnorm <- function(mean, Sigma) {
 #' # Duhh...nothing yet
 #' @importFrom Rcpp sourceCpp evalCpp
 #' @useDynLib ideq
-dstm_discount <- function(Y, F, G_0, Sigma_G_inv, m_0, C_0, params, proc_model, n_samples, verbose) {
-    .Call('_ideq_dstm_discount', PACKAGE = 'ideq', Y, F, G_0, Sigma_G_inv, m_0, C_0, params, proc_model, n_samples, verbose)
+eof_discount <- function(Y, F, G_0, Sigma_G_inv, m_0, C_0, params, proc_model, n_samples, verbose) {
+    .Call('_ideq_eof_discount', PACKAGE = 'ideq', Y, F, G_0, Sigma_G_inv, m_0, C_0, params, proc_model, n_samples, verbose)
 }
 
 #' Fits a DSTM using a wishart prior for W
@@ -36,8 +36,8 @@ dstm_discount <- function(Y, F, G_0, Sigma_G_inv, m_0, C_0, params, proc_model, 
 #' # Duhh...nothing yet
 #' @importFrom Rcpp sourceCpp evalCpp
 #' @useDynLib ideq
-dstm_IW <- function(Y, F, G_0, Sigma_G_inv, m_0, C_0, C_W, params, proc_model, n_samples, verbose) {
-    .Call('_ideq_dstm_IW', PACKAGE = 'ideq', Y, F, G_0, Sigma_G_inv, m_0, C_0, C_W, params, proc_model, n_samples, verbose)
+eof_iw <- function(Y, F, G_0, Sigma_G_inv, m_0, C_0, C_W, params, proc_model, n_samples, verbose) {
+    .Call('_ideq_eof_iw', PACKAGE = 'ideq', Y, F, G_0, Sigma_G_inv, m_0, C_0, C_W, params, proc_model, n_samples, verbose)
 }
 
 #' Fits a integrodifference equation model (IDE)
@@ -47,7 +47,18 @@ dstm_IW <- function(Y, F, G_0, Sigma_G_inv, m_0, C_0, C_W, params, proc_model, n
 #' # Duhh...nothing yet
 #'ceCpp evalCpp
 #' @useDynLib ideq
-dstm_IDE <- function(Y, locs, m_0, C_0, mu_kernel_mean, mu_kernel_var, Sigma_kernel_scale, params, n_samples, verbose) {
-    .Call('_ideq_dstm_IDE', PACKAGE = 'ideq', Y, locs, m_0, C_0, mu_kernel_mean, mu_kernel_var, Sigma_kernel_scale, params, n_samples, verbose)
+ide_sc <- function(Y, locs, m_0, C_0, mu_kernel_mean, mu_kernel_var, Sigma_kernel_scale, params, n_samples, verbose) {
+    .Call('_ideq_ide_sc', PACKAGE = 'ideq', Y, locs, m_0, C_0, mu_kernel_mean, mu_kernel_var, Sigma_kernel_scale, params, n_samples, verbose)
+}
+
+#' Fits a integrodifference equation model (IDE)
+#'
+#' @export
+#' @examples @importFrom Rcpp sour
+#' # Duhh...nothing yet
+#'ceCpp evalCpp
+#' @useDynLib ideq
+ide_sv <- function(Y, locs, m_0, C_0, mu_kernel_mean, mu_kernel_var, Sigma_kernel_scale, params, n_samples, verbose) {
+    .Call('_ideq_ide_sv', PACKAGE = 'ideq', Y, locs, m_0, C_0, mu_kernel_mean, mu_kernel_var, Sigma_kernel_scale, params, n_samples, verbose)
 }
 

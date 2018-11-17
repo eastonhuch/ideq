@@ -1,4 +1,4 @@
-#' Fits a dynamic spatio-temporal model (DSTM)
+#' Fits a dynamic spatio-temporal model with EOFs
 #'
 #' @param Y S by T matrix containing response variable at S spatial locations and T time points
 #' @param model character string; options include `discount`, `sample_G`, `AR`, and `IDE`
@@ -328,9 +328,9 @@ dstm <- function(Y, locs=NULL, obs_model = "EOF", proc_model = "RW",
                        proposal_factor_mu=proposal_factor_mu,
                        proposal_factor_Sigma=proposal_factor_Sigma,
                        Sigma_kernel_df=Sigma_kernel_df)
-    results <- dstm_IDE(Y, locs, m_0, C_0, mu_kernel_mean,
-                        mu_kernel_var, Sigma_kernel_scale,
-                        scalar_params, n_samples, verbose)
+    results <- ide_sc(Y, locs, m_0, C_0, mu_kernel_mean,
+                      mu_kernel_var, Sigma_kernel_scale,
+                      scalar_params, n_samples, verbose)
   }
   else if (proc_error == "discount") {
 
@@ -364,7 +364,7 @@ dstm <- function(Y, locs=NULL, obs_model = "EOF", proc_model = "RW",
                        sigma2=sigma2, sample_sigma2=as.numeric(sample_sigma2))
 
     # Run the model
-    results <- dstm_discount(Y, F_, G_0, Sigma_G_inv, m_0, C_0,
+    results <- eof_discount(Y, F_, G_0, Sigma_G_inv, m_0, C_0,
                   scalar_params, proc_model, n_samples, verbose)
     results[["lambda"]] <- as.numeric(results[["lambda"]])
     if ("sigma2" %in% names(results)) {
@@ -397,7 +397,7 @@ dstm <- function(Y, locs=NULL, obs_model = "EOF", proc_model = "RW",
 
     scalar_params <- c(df_W=df_W, alpha_sigma2=alpha_sigma2, beta_sigma2=beta_sigma2,
                        sigma2=sigma2, sample_sigma2=as.numeric(sample_sigma2))
-    results <- dstm_IW(Y, F_, G_0, Sigma_G_inv, m_0, C_0, C_W,
+    results <- eof_iw(Y, F_, G_0, Sigma_G_inv, m_0, C_0, C_W,
                        scalar_params, proc_model, n_samples, verbose)
     if ("sigma2" %in% names(results)) {
       results[["sigma2"]] <- as.numeric(results[["sigma2"]])

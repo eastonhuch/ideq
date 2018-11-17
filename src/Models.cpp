@@ -26,9 +26,9 @@ using namespace Rcpp;
 //' @importFrom Rcpp sourceCpp evalCpp
 //' @useDynLib ideq
 // [[Rcpp::export]]
-List dstm_discount(arma::mat Y, arma::mat F, arma::mat G_0, arma::mat Sigma_G_inv,
-                   arma::colvec m_0, arma::mat C_0, NumericVector params,
-                   CharacterVector proc_model, const int n_samples, const bool verbose) {
+List eof_discount(arma::mat Y, arma::mat F, arma::mat G_0, arma::mat Sigma_G_inv,
+                  arma::colvec m_0, arma::mat C_0, NumericVector params,
+                  CharacterVector proc_model, const int n_samples, const bool verbose) {
   // Extract scalar parameters
   bool AR = proc_model(0) == "AR";
   bool FULL = proc_model(0) == "Full";
@@ -146,10 +146,10 @@ List dstm_discount(arma::mat Y, arma::mat F, arma::mat G_0, arma::mat Sigma_G_in
 //' @importFrom Rcpp sourceCpp evalCpp
 //' @useDynLib ideq
 // [[Rcpp::export]]
-List dstm_IW(arma::mat Y, arma::mat F, arma::mat G_0, arma::mat Sigma_G_inv,
-             arma::colvec m_0, arma::mat C_0, arma::mat C_W,
-             NumericVector params, CharacterVector proc_model,
-             const int n_samples, const bool verbose) {
+List eof_iw(arma::mat Y, arma::mat F, arma::mat G_0, arma::mat Sigma_G_inv,
+            arma::colvec m_0, arma::mat C_0, arma::mat C_W,
+            NumericVector params, CharacterVector proc_model,
+            const int n_samples, const bool verbose) {
   // Extract scalar parameters
   bool AR = proc_model(0) == "AR";
   bool FULL = proc_model(0) == "Full";
@@ -257,10 +257,10 @@ List dstm_IW(arma::mat Y, arma::mat F, arma::mat G_0, arma::mat Sigma_G_inv,
 //'ceCpp evalCpp
 //' @useDynLib ideq
 // [[Rcpp::export]]
-List dstm_IDE(arma::mat Y, arma::mat locs, arma::colvec m_0, arma::mat C_0,
-              arma::colvec mu_kernel_mean, arma::mat mu_kernel_var,
-              arma::mat Sigma_kernel_scale, NumericVector params, 
-              const int n_samples, const bool verbose) {
+List ide_sc(arma::mat Y, arma::mat locs, arma::colvec m_0, arma::mat C_0,
+           arma::colvec mu_kernel_mean, arma::mat mu_kernel_var,
+           arma::mat Sigma_kernel_scale, NumericVector params, 
+           const int n_samples, const bool verbose) {
   // Extract scalar parameters
   const double J  = params["J"];
   const double L  = params["L"];
@@ -397,4 +397,20 @@ List dstm_IDE(arma::mat Y, arma::mat locs, arma::colvec m_0, arma::mat C_0,
   results["mu_kernel"] = mu_kernel;
   results["Sigma_kernel"] = Sigma_kernel;
   return results;
+}
+
+//' Fits a integrodifference equation model (IDE)
+//'
+//' @export
+//' @examples @importFrom Rcpp sour
+//' # Duhh...nothing yet
+//'ceCpp evalCpp
+//' @useDynLib ideq
+// [[Rcpp::export]]
+List ide_sv(arma::mat Y, arma::mat locs, arma::colvec m_0, arma::mat C_0,
+            arma::colvec mu_kernel_mean, arma::mat mu_kernel_var,
+            arma::mat Sigma_kernel_scale, NumericVector params, 
+            const int n_samples, const bool verbose) {
+  Rcout << "I don't know what to do yet" << std::endl;
+  return 42;
 }
