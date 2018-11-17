@@ -210,7 +210,7 @@ List eof_iw(arma::mat Y, arma::mat F, arma::mat G_0, arma::mat Sigma_G_inv,
       Rcout << "Filtering sample number " << i+1 << std::endl;
     }
     if (sample_sigma2) sigma2_i = sigma2.at(i);
-    Kalman(m, C, a, R_inv, Y, F, G.slice(G_idx), W.slice(i), sigma2_i);
+    Kalman(m, C, a, R_inv, Y, F, G.slice(G_idx), sigma2_i, W.slice(i));
 
     if (verbose) {
       Rcout << "Drawing sample number " << i+1 << std::endl;
@@ -336,7 +336,12 @@ List ide_sc(arma::mat Y, arma::mat locs, arma::colvec m_0, arma::mat C_0,
       Rcout << "Filtering sample number " << i+1 << std::endl;
     }
     if (sample_sigma2) sigma2_i = sigma2.at(i);
-    KalmanDiscount(m, C, a, R_inv, Y, F, G.slice(i), sigma2_i, lambda.at(i));
+    
+    if (discount) {
+      KalmanDiscount(m, C, a, R_inv, Y, F, G.slice(i), sigma2_i, lambda.at(i));
+    } else {
+      Kalman(m, C, a, R_inv, Y, F, G.slice(i), sigma2_i, W.slice(i));
+    }
 
 
     if (verbose) {
