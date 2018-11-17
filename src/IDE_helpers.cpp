@@ -75,7 +75,7 @@ void makeB_SV(arma::mat & B, const arma::mat mu, const arma::cube Sigma,
   return;
 };
 
-double kernelLikelihood(const arma::mat & G, const arma::mat & theta, 
+double kernelLikelihoodDiscount(const arma::mat & G, const arma::mat & theta, 
                         const arma::cube & C, const double lambda) {
   const int T = theta.n_cols-1;
   const int p = theta.n_rows;
@@ -85,6 +85,21 @@ double kernelLikelihood(const arma::mat & G, const arma::mat & theta,
   for (int t=1; t<=T; ++t) {
     d = theta.col(t) - G * theta.col(t-1);
     tmp += d.t() * arma::solve(lambda * G * C.slice(t) * G.t(), d);
+  }
+  
+  return -tmp(0)/2; 
+};
+
+double kernelLikelihood(const arma::mat & G, const arma::mat & theta,
+                        const arma::mat W) {
+  const int T = theta.n_cols-1;
+  const int p = theta.n_rows;
+  arma::mat tmp = arma::zeros(1, 1);
+  arma::colvec d;
+  
+  for (int t=1; t<=T; ++t) {
+    d = theta.col(t) - G * theta.col(t-1);
+    tmp += d.t() * arma::solve(W, d);
   }
   
   return -tmp(0)/2; 

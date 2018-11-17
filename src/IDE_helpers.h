@@ -15,7 +15,10 @@ void makeB(arma::mat & B, const arma::colvec mu, const arma::mat Sigma,
 void makeB_SV(arma::mat & B, const arma::mat mu, const arma::cube Sigma, 
               const arma::mat & locs, const arma::mat & w, const int J, const int L);
 
-double kernelLikelihood(const arma::mat & G, const arma::mat & theta, 
+double kernelLikelihoodDiscount(const arma::mat & G, const arma::mat & theta, 
                         const arma::cube & C, const double lambda);
+
+double kernelLikelihood(const arma::mat & G, const arma::mat & theta, 
+                        const arma::mat W);
 
 #endif

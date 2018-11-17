@@ -89,7 +89,7 @@ dstm_eof <- function(Y, proc_model = "RW",
   }
   else if (proc_model == "AR") {
     if ("mu_G" %in% names(params)) {
-      if (is.diagonal.matrix(params$mu_G) &&
+      if (matrixcalc::is.diagonal.matrix(params$mu_G) &&
           all(dim(params$mu_G) != c(p, p))) {
         G_0 <- params[["mu_G"]]
       }
@@ -104,8 +104,8 @@ dstm_eof <- function(Y, proc_model = "RW",
     }
 
     if ("Sigma_G_inv" %in% names(params)) {
-      if (is.positive.definite(params$Sigma_G_inv) &&
-          is.symmetric.matrix(params$Sigma_G_inv)) {
+      if (matrixcalc::is.positive.definite(params$Sigma_G_inv) &&
+          matrixcalc::is.symmetric.matrix(params$Sigma_G_inv)) {
         Sigma_G_inv <- params[["Sigma_G_inv"]]
       } else {
         stop("Sigma_G_inv must be symmetric positive definite matrix")
@@ -131,8 +131,8 @@ dstm_eof <- function(Y, proc_model = "RW",
     }
 
     if ("Sigma_G_inv" %in% names(params)) {
-      if (is.positive.definite(params$Sigma_G_inv) &&
-          is.symmetric.matrix(params$Sigma_G_inv) &&
+      if (matrixcalc::is.positive.definite(params$Sigma_G_inv) &&
+          matrixcalc::is.symmetric.matrix(params$Sigma_G_inv) &&
           nrow(params$Sigma_G_inv) == p^2) {
         Sigma_G_inv <- params$Sigma_G_inv
       }
@@ -195,7 +195,7 @@ dstm_eof <- function(Y, proc_model = "RW",
     # C_W
     if ("C_W" %in% names(params)) {
       C_W <- params[["C_W"]]
-      if (!is.positive.definite(C_W)) {
+      if (!matrixcalc::is.positive.definite(C_W)) {
         stop("C_W must be a square positive definite matrix")
       }
     }
@@ -229,7 +229,6 @@ dstm_eof <- function(Y, proc_model = "RW",
 
   # Process output
   class(results) <- c("dstm_eof", "dstm", "list")
-  attr(results,  "obs_model") <- obs_model
   attr(results, "proc_model") <- proc_model
   attr(results, "proc_error") <- proc_error
   attr(results, "sample_sigma2") <- sample_sigma2
@@ -249,7 +248,7 @@ dstm_eof <- function(Y, proc_model = "RW",
 #' @export
 #' @examples
 #' # Duhh...nothing yet
-dstm_ide <- function(Y, locs=NULL, proc_error = "discount", p = 10L,
+dstm_ide <- function(Y, locs=NULL, proc_error = "discount", J=4L,
                      n_samples = 1L, sample_sigma2 = TRUE,
                      verbose = FALSE, params = NULL) {
   results <- "No output...whoops"
@@ -259,16 +258,9 @@ dstm_ide <- function(Y, locs=NULL, proc_error = "discount", p = 10L,
     stop("locs must be specified for obs_model == IDE")
   }
 
-  if ("J" %in% names(params)) {
-    J <- params[["J"]]
-    J <- as.integer(J)
-    if (! (is.numeric(J) || J>0) ) {
-      stop("J must an integer > 0")
-    }
-  }
-  else {
-    J <- 5
-    message(paste("J was not provided, so I am using "), J)
+  J <- as.integer(J)
+  if (!(is.numeric(J)) || J<1 ) {
+    stop("J must an integer > 0")
   }
 
   if ("L" %in% names(params)) {
@@ -374,8 +366,8 @@ dstm_ide <- function(Y, locs=NULL, proc_error = "discount", p = 10L,
   
   if ("mu_kernel_var" %in% names(params)) {
     mu_kernel_var <- params[["mu_kernel_var"]]
-    if (!is.positive.definite(mu_kernel_var) ||
-        any(dim(Sigma) != locs_dim)) {
+    if (!matrixcalc::is.positive.definite(mu_kernel_var) ||
+        any(dim(mu_kernel_var) != locs_dim)) {
       stop("mu_kernel_var must be positive definite with dimensions == ncol(locs)")
     }
   }
@@ -398,7 +390,7 @@ dstm_ide <- function(Y, locs=NULL, proc_error = "discount", p = 10L,
   
   if ("Sigma_kernel_scale" %in% names(params)) {
     Sigma_kernel_scale <- params[["Sigma_kernel_scale"]]
-    if (!is.positive.definite(Sigma_kernel_scale) ||
+    if (!matrixcalc::is.positive.definite(Sigma_kernel_scale) ||
         any(dim(Sigma) != locs_dim)) {
       stop("Sigma_kernel_scale must be positive definite with dimensions == ncol(locs)")
     }
@@ -456,7 +448,7 @@ dstm_ide <- function(Y, locs=NULL, proc_error = "discount", p = 10L,
     # C_W
     if ("C_W" %in% names(params)) {
       C_W <- params[["C_W"]]
-      if (!is.positive.definite(C_W)) {
+      if (!matrixcalc::is.positive.definite(C_W)) {
         stop("C_W must be a square positive definite matrix")
       }
     }
@@ -486,6 +478,7 @@ dstm_ide <- function(Y, locs=NULL, proc_error = "discount", p = 10L,
                      proposal_factor_mu=proposal_factor_mu,
                      proposal_factor_Sigma=proposal_factor_Sigma,
                      Sigma_kernel_df=Sigma_kernel_df)
+  
   results <- ide_sc(Y, locs, m_0, C_0, mu_kernel_mean,
                     mu_kernel_var, Sigma_kernel_scale, C_W,
                     scalar_params, n_samples, verbose)
