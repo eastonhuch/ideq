@@ -181,10 +181,14 @@ List ide_sc(arma::mat Y, arma::mat locs, arma::colvec m_0, arma::mat C_0,
   // Extract scalar parameters
   const double J  = params["J"];
   const double L  = params["L"];
+  const int p = 2*J*J+1;
+  const int T = Y.n_cols;
+  const int S = Y.n_rows;
+  const int locs_dim = locs.n_cols;
   const double alpha_sigma2  = params["alpha_sigma2"];
   const double beta_sigma2   = params["beta_sigma2"];
   double       sigma2_i      = params["sigma2"];
-  const bool   sample_sigma2 = sigma2_i == NA;
+  const bool   sample_sigma2 = sigma2_i < 0;
   const double alpha_lambda  = params["alpha_lambda"];
   const double beta_lambda   = params["beta_lambda"];
   const double df_W = params["df_W"];
@@ -192,10 +196,6 @@ List ide_sc(arma::mat Y, arma::mat locs, arma::colvec m_0, arma::mat C_0,
   const double proposal_factor_mu = params["proposal_factor_mu"];
   const double proposal_factor_Sigma = params["proposal_factor_Sigma"];
   const double Sigma_kernel_df = params["Sigma_kernel_df"];
-  const int locs_dim = locs.n_cols;
-  const int p = 2*J*J+1;
-  const int T = Y.n_cols;
-  const int S = Y.n_rows;
 
   // Create matrices and cubes for FFBS
   Y.insert_cols(0, 1); // make Y true-indexed; i.e. index 1 is t_1

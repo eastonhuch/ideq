@@ -308,7 +308,7 @@ dstm_ide <- function(Y, locs=NULL, proc_error = "discount", J=4L,
   
   # Observation Error; creates alpha_sigma2, beta_sigma2, sigma2
   # NOTE: We could also draw this from a Wishart distribution...nah
-  alpha_sigma2 <- beta_sigma2 <- sigma2 <- NA
+  alpha_sigma2 <- beta_sigma2 <- sigma2 <- -1
   if (sample_sigma2) {
     if ("alpha_sigma2" %in% names(params)) {
       alpha_sigma2 <- params[["alpha_sigma2"]]
@@ -420,7 +420,7 @@ dstm_ide <- function(Y, locs=NULL, proc_error = "discount", J=4L,
   }
   
   # Process Error; creates alpha_lambda, beta_lambda, etc.
-  alpha_lambda <- beta_lambda  <- df_W <- NA
+  alpha_lambda <- beta_lambda <- df_W <- NA
   C_W <- matrix(NA)
   if (proc_error == "discount") {
     if ("alpha_lambda" %in% names(params)) {
@@ -468,8 +468,8 @@ dstm_ide <- function(Y, locs=NULL, proc_error = "discount", J=4L,
   }
   
   scalar_params <- c(alpha_sigma2=alpha_sigma2, beta_sigma2=beta_sigma2,
-                     sample_sigma2=as.numeric(sample_sigma2), sigma2=sigma2, J=J, L=L,
-                     alpha_lambda=alpha_lambda, beta_lambda=beta_lambda, df_W=df_W,
+                     sigma2=sigma2, J=J, L=L, df_W=df_W,
+                     alpha_lambda=alpha_lambda, beta_lambda=beta_lambda, 
                      proposal_factor_mu=proposal_factor_mu,
                      proposal_factor_Sigma=proposal_factor_Sigma,
                      Sigma_kernel_df=Sigma_kernel_df)
