@@ -2,8 +2,7 @@
 
 export(dstm_eof)
 export(dstm_ide)
-export(eof_discount)
-export(eof_iw)
+export(eof)
 export(ide_sc)
 export(ide_sv)
 export(mvnorm)

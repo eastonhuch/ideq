@@ -12,6 +12,7 @@
 
 using namespace Rcpp;
 
+/*
 //' Fits a dynamic spatio-temporal model (DSTM) with a discount factor
 //'
 //' @param Y S by T matrix containing response variable at S spatial locations and T time points
@@ -27,8 +28,9 @@ using namespace Rcpp;
 //' @useDynLib ideq
 // [[Rcpp::export]]
 List eof_discount(arma::mat Y, arma::mat F, arma::mat G_0, arma::mat Sigma_G_inv,
-                  arma::colvec m_0, arma::mat C_0, NumericVector params,
-                  CharacterVector proc_model, const int n_samples, const bool verbose) {
+                  arma::colvec m_0, arma::mat C_0, arma::mat C_W,
+                  NumericVector params, CharacterVector proc_model,
+                  const int n_samples, const bool verbose) {
   // Extract scalar parameters
   bool AR = proc_model(0) == "AR";
   bool FULL = proc_model(0) == "Full";
@@ -137,6 +139,7 @@ List eof_discount(arma::mat Y, arma::mat F, arma::mat G_0, arma::mat Sigma_G_inv
   results["C_T"] = C_T;
   return results;
 }
+ */
 
 //' Fits a DSTM using a wishart prior for W
 //'
@@ -146,10 +149,10 @@ List eof_discount(arma::mat Y, arma::mat F, arma::mat G_0, arma::mat Sigma_G_inv
 //' @importFrom Rcpp sourceCpp evalCpp
 //' @useDynLib ideq
 // [[Rcpp::export]]
-List eof_iw(arma::mat Y, arma::mat F, arma::mat G_0, arma::mat Sigma_G_inv,
-            arma::colvec m_0, arma::mat C_0, arma::mat C_W,
-            NumericVector params, CharacterVector proc_model,
-            const int n_samples, const bool verbose) {
+List eof(arma::mat Y, arma::mat F, arma::mat G_0, arma::mat Sigma_G_inv,
+         arma::colvec m_0, arma::mat C_0, arma::mat C_W,
+         NumericVector params, CharacterVector proc_model,
+         const int n_samples, const bool verbose) {
   // Extract scalar parameters
   bool AR = proc_model(0) == "AR";
   bool FULL = proc_model(0) == "Full";
@@ -159,17 +162,19 @@ List eof_iw(arma::mat Y, arma::mat F, arma::mat G_0, arma::mat Sigma_G_inv,
   const double alpha_sigma2 = params["alpha_sigma2"];
   const double beta_sigma2  = params["beta_sigma2"];
   const bool sample_sigma2  = params["sample_sigma2"] > 0;
+  const double alpha_lambda  = params["alpha_lambda"];
+  const double beta_lambda   = params["beta_lambda"];
+  const double df_W = params["df_W"];
+  const bool discount = C_W.at(0, 0) == NA;
 
   // Create matrices and cubes for FFBS
   Y.insert_cols(0, 1); // make Y true-indexed; i.e. index 1 is t_1
   arma::cube theta(p, T+1, n_samples), G;
   theta.slice(0).zeros();
   arma::mat a(p, T+1), m(p, T+1), tmp;
-  arma::cube R_inv(p, p, T+1), C(p, p, T+1), W(p, p, n_samples+1);
+  arma::cube R_inv(p, p, T+1), C(p, p, T+1), C_T;
   m.col(0) = m_0;
   C.slice(0) = C_0;
-  const double df_W = params["df_W"];
-  W.slice(0) = df_W * C_W;
 
   if (AR) {
     G.set_size(p, p, n_samples+1);
@@ -189,7 +194,7 @@ List eof_iw(arma::mat Y, arma::mat F, arma::mat G_0, arma::mat Sigma_G_inv,
     G.slice(0) = G_0;
   }
 
-  // Create variance parameters
+  // Observation error
   arma::vec sigma2;
   double sigma2_i;
   if (sample_sigma2) {
@@ -199,7 +204,20 @@ List eof_iw(arma::mat Y, arma::mat F, arma::mat G_0, arma::mat Sigma_G_inv,
   else {
     sigma2_i = params["sigma2"];
   }
-
+  
+  // Process error
+  arma::vec lambda;
+  arma::cube W;
+  if (discount) {
+    lambda.set_size(n_samples+1);
+    lambda.at(0) = rigamma(alpha_lambda, beta_lambda);
+    C_T.set_size(p, p, n_samples+1);
+  } 
+  else {
+    W.set_size(p, p, n_samples+1);
+    W.slice(0) = df_W * C_W;
+  }
+  
   // Begin MCMC
   int G_idx = 0; // This value is incremented each iteration for AR and Full models
   for (int i = 0; i < n_samples; ++i) {
@@ -210,7 +228,13 @@ List eof_iw(arma::mat Y, arma::mat F, arma::mat G_0, arma::mat Sigma_G_inv,
       Rcout << "Filtering sample number " << i+1 << std::endl;
     }
     if (sample_sigma2) sigma2_i = sigma2.at(i);
-    Kalman(m, C, a, R_inv, Y, F, G.slice(G_idx), sigma2_i, W.slice(i));
+    
+    if (discount) {
+      KalmanDiscount(m, C, a, R_inv, Y, F, G.slice(G_idx), sigma2_i, lambda.at(i));
+      C_T.slice(i+1) = C.slice(T); // Save for predictions
+    } else {
+      Kalman(m, C, a, R_inv, Y, F, G.slice(G_idx), sigma2_i, W.slice(i));
+    }
 
     if (verbose) {
       Rcout << "Drawing sample number " << i+1 << std::endl;
@@ -223,19 +247,34 @@ List eof_iw(arma::mat Y, arma::mat F, arma::mat G_0, arma::mat Sigma_G_inv,
     }
 
     // W
-    SampleW(W.slice(i+1), theta.slice(i), G.slice(G_idx), C_W, df_W);
+    if (discount) {
+      SampleLambda(lambda.at(i+1), alpha_lambda, beta_lambda,
+                   G.slice(G_idx), C, theta.slice(i));
+    } else {
+      SampleW(W.slice(i+1), theta.slice(i), G.slice(G_idx), C_W, df_W);
+    }
 
     // G
     if (AR) {
-      SampleAR(G.slice(G_idx+1), W.slices(i+1, i+1), theta.slice(i), Sigma_G_inv, G_0);
-      ++G_idx;
+      if (discount) {
+        SampleAR(G.slice(G_idx+1), R_inv, theta.slice(i),
+                 Sigma_G_inv, G_0, true, lambda.at(i+1));
+      } else {
+        SampleAR(G.slice(G_idx+1), W.slices(i+1, i+1), theta.slice(i), Sigma_G_inv, G_0);
+      }
     } else if (FULL) {
-      SampleG(G.slice(G_idx+1), W.slices(i+1, i+1), theta.slice(i), Sigma_G_inv, G_0);
-      ++G_idx;
+      if (discount) {
+        SampleG(G.slice(G_idx+1), R_inv, theta.slice(i),
+                Sigma_G_inv, G_0, true, lambda.at(i+1));
+      } else {
+        SampleG(G.slice(G_idx+1), W.slices(i+1, i+1), theta.slice(i), Sigma_G_inv, G_0);
+      }
     }
-
+    ++G_idx;
   }
+  
   List results;
+  results["F"] = F;
   results["theta"]  = theta;
   if (sample_sigma2) {    results["sigma2"] = sigma2;
   } else {
@@ -244,8 +283,12 @@ List eof_iw(arma::mat Y, arma::mat F, arma::mat G_0, arma::mat Sigma_G_inv,
   if (AR || FULL) {
     results["G"] = G;
   }
-  results["F"] = F;
-  results["W"] = W;
+  if (discount) {
+    results["lambda"] = lambda;
+  } else {
+    results["W"] = W;
+  }
+  
   return results;
 }
 
@@ -322,7 +365,8 @@ List ide_sc(arma::mat Y, arma::mat locs, arma::colvec m_0, arma::mat C_0,
   if (discount) {
     lambda.set_size(n_samples+1);
     lambda.at(0) = rigamma(alpha_lambda, beta_lambda);
-  } else {
+  } 
+  else {
     W.set_size(p, p, n_samples+1);
     W.slice(0) = df_W * C_W;
   }

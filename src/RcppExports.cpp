@@ -18,29 +18,9 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
-// eof_discount
-List eof_discount(arma::mat Y, arma::mat F, arma::mat G_0, arma::mat Sigma_G_inv, arma::colvec m_0, arma::mat C_0, NumericVector params, CharacterVector proc_model, const int n_samples, const bool verbose);
-RcppExport SEXP _ideq_eof_discount(SEXP YSEXP, SEXP FSEXP, SEXP G_0SEXP, SEXP Sigma_G_invSEXP, SEXP m_0SEXP, SEXP C_0SEXP, SEXP paramsSEXP, SEXP proc_modelSEXP, SEXP n_samplesSEXP, SEXP verboseSEXP) {
-BEGIN_RCPP
-    Rcpp::RObject rcpp_result_gen;
-    Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< arma::mat >::type Y(YSEXP);
-    Rcpp::traits::input_parameter< arma::mat >::type F(FSEXP);
-    Rcpp::traits::input_parameter< arma::mat >::type G_0(G_0SEXP);
-    Rcpp::traits::input_parameter< arma::mat >::type Sigma_G_inv(Sigma_G_invSEXP);
-    Rcpp::traits::input_parameter< arma::colvec >::type m_0(m_0SEXP);
-    Rcpp::traits::input_parameter< arma::mat >::type C_0(C_0SEXP);
-    Rcpp::traits::input_parameter< NumericVector >::type params(paramsSEXP);
-    Rcpp::traits::input_parameter< CharacterVector >::type proc_model(proc_modelSEXP);
-    Rcpp::traits::input_parameter< const int >::type n_samples(n_samplesSEXP);
-    Rcpp::traits::input_parameter< const bool >::type verbose(verboseSEXP);
-    rcpp_result_gen = Rcpp::wrap(eof_discount(Y, F, G_0, Sigma_G_inv, m_0, C_0, params, proc_model, n_samples, verbose));
-    return rcpp_result_gen;
-END_RCPP
-}
-// eof_iw
-List eof_iw(arma::mat Y, arma::mat F, arma::mat G_0, arma::mat Sigma_G_inv, arma::colvec m_0, arma::mat C_0, arma::mat C_W, NumericVector params, CharacterVector proc_model, const int n_samples, const bool verbose);
-RcppExport SEXP _ideq_eof_iw(SEXP YSEXP, SEXP FSEXP, SEXP G_0SEXP, SEXP Sigma_G_invSEXP, SEXP m_0SEXP, SEXP C_0SEXP, SEXP C_WSEXP, SEXP paramsSEXP, SEXP proc_modelSEXP, SEXP n_samplesSEXP, SEXP verboseSEXP) {
+// eof
+List eof(arma::mat Y, arma::mat F, arma::mat G_0, arma::mat Sigma_G_inv, arma::colvec m_0, arma::mat C_0, arma::mat C_W, NumericVector params, CharacterVector proc_model, const int n_samples, const bool verbose);
+RcppExport SEXP _ideq_eof(SEXP YSEXP, SEXP FSEXP, SEXP G_0SEXP, SEXP Sigma_G_invSEXP, SEXP m_0SEXP, SEXP C_0SEXP, SEXP C_WSEXP, SEXP paramsSEXP, SEXP proc_modelSEXP, SEXP n_samplesSEXP, SEXP verboseSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -55,7 +35,7 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< CharacterVector >::type proc_model(proc_modelSEXP);
     Rcpp::traits::input_parameter< const int >::type n_samples(n_samplesSEXP);
     Rcpp::traits::input_parameter< const bool >::type verbose(verboseSEXP);
-    rcpp_result_gen = Rcpp::wrap(eof_iw(Y, F, G_0, Sigma_G_inv, m_0, C_0, C_W, params, proc_model, n_samples, verbose));
+    rcpp_result_gen = Rcpp::wrap(eof(Y, F, G_0, Sigma_G_inv, m_0, C_0, C_W, params, proc_model, n_samples, verbose));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -104,8 +84,7 @@ END_RCPP
 
 static const R_CallMethodDef CallEntries[] = {
     {"_ideq_mvnorm", (DL_FUNC) &_ideq_mvnorm, 2},
-    {"_ideq_eof_discount", (DL_FUNC) &_ideq_eof_discount, 10},
-    {"_ideq_eof_iw", (DL_FUNC) &_ideq_eof_iw, 11},
+    {"_ideq_eof", (DL_FUNC) &_ideq_eof, 11},
     {"_ideq_ide_sc", (DL_FUNC) &_ideq_ide_sc, 11},
     {"_ideq_ide_sv", (DL_FUNC) &_ideq_ide_sv, 11},
     {NULL, NULL, 0}

@@ -4,14 +4,12 @@
 \alias{dstm_ide}
 \title{Fits an integrodifference equation model (IDE)}
 \usage{
-dstm_ide(Y, locs = NULL, proc_error = "discount", p = 10L,
+dstm_ide(Y, locs = NULL, proc_error = "discount", J = 4L,
   n_samples = 1L, sample_sigma2 = TRUE, verbose = FALSE,
   params = NULL)
 }
 \arguments{
 \item{Y}{S by T matrix containing response variable at S spatial locations and T time points}
-
-\item{p}{integer; dimension of G in the state equation \eqn{\theta_{t+1} = G \theta_{t}}}
 
 \item{n_samples}{integer; number of posterior samples to take}
 
@@ -20,6 +18,8 @@ dstm_ide(Y, locs = NULL, proc_error = "discount", p = 10L,
 \item{verbose}{boolean; controls verbosity}
 
 \item{model}{character string; options include `discount`, `sample_G`, `AR`, and `IDE`}
+
+\item{p}{integer; dimension of G in the state equation \eqn{\theta_{t+1} = G \theta_{t}}}
 }
 \description{
 Fits an integrodifference equation model (IDE)

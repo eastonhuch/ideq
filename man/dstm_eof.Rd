@@ -4,7 +4,7 @@
 \alias{dstm_eof}
 \title{Fits a dynamic spatio-temporal model with EOFs}
 \usage{
-dstm_eof(Y, proc_model = "RW", proc_error = "discount", p = 10L,
+dstm_eof(Y, proc_model = "RW", proc_error = "IW", p = 10L,
   n_samples = 1L, sample_sigma2 = TRUE, verbose = FALSE,
   params = NULL)
 }

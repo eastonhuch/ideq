@@ -5,7 +5,7 @@
 \title{Fits a integrodifference equation model (IDE)}
 \usage{
 ide_sc(Y, locs, m_0, C_0, mu_kernel_mean, mu_kernel_var,
-  Sigma_kernel_scale, params, n_samples, verbose)
+  Sigma_kernel_scale, C_W, params, n_samples, verbose)
 }
 \description{
 Fits a integrodifference equation model (IDE)

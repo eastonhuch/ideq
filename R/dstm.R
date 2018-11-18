@@ -151,11 +151,10 @@ dstm_eof <- function(Y, proc_model = "RW",
   }
 
   # Process Error; creates all necessary params (e.g., alpha_lambda)
-  message("Process error")
+  alpha_lambda <- beta_lambda <- df_W <- NA
+  C_W <- matrix(NA)
   if (proc_error == "discount") {
-
     # Set prior for lambda
-    alpha_lambda <- beta_lambda <- NULL
     if ("alpha_lambda" %in% names(params)) {
       alpha_lambda <- params[["alpha_lambda"]]
       if (!is.numeric(alpha_lambda) || alpha_lambda <= 0) {
@@ -176,19 +175,6 @@ dstm_eof <- function(Y, proc_model = "RW",
     else {
       beta_lambda <- 4
       message(paste("beta_lambda was not provided so I am using", beta_lambda))
-    }
-
-    # Group scalar params into vector
-    scalar_params <- c(alpha_lambda=alpha_lambda, beta_lambda=beta_lambda,
-                       alpha_sigma2=alpha_sigma2, beta_sigma2=beta_sigma2,
-                       sigma2=sigma2, sample_sigma2=as.numeric(sample_sigma2))
-
-    # Run the model
-    results <- eof_discount(Y, F_, G_0, Sigma_G_inv, m_0, C_0,
-                  scalar_params, proc_model, n_samples, verbose)
-    results[["lambda"]] <- as.numeric(results[["lambda"]])
-    if ("sigma2" %in% names(results)) {
-      results[["sigma2"]] <- as.numeric(results[["sigma2"]])
     }
   }
   else if (proc_error == "IW") {
@@ -214,17 +200,26 @@ dstm_eof <- function(Y, proc_model = "RW",
       message("df_W was not provided so I am using p")
       df_W <- p
     }
-
-    scalar_params <- c(df_W=df_W, alpha_sigma2=alpha_sigma2, beta_sigma2=beta_sigma2,
-                       sigma2=sigma2, sample_sigma2=as.numeric(sample_sigma2))
-    results <- eof_iw(Y, F_, G_0, Sigma_G_inv, m_0, C_0, C_W,
-                       scalar_params, proc_model, n_samples, verbose)
-    if ("sigma2" %in% names(results)) {
-      results[["sigma2"]] <- as.numeric(results[["sigma2"]])
-    }
   }
   else {
     stop("I don't know that type of process error")
+  }
+  
+  # Group scalar params into vector
+  scalar_params <- c(alpha_lambda=alpha_lambda, beta_lambda=beta_lambda, df_W=df_W,
+                     alpha_sigma2=alpha_sigma2, beta_sigma2=beta_sigma2,
+                     sigma2=sigma2, sample_sigma2=as.numeric(sample_sigma2))
+
+  # Fit the model
+  results <- eof(Y, F_, G_0, Sigma_G_inv, m_0, C_0, C_W,
+                 scalar_params, proc_model, n_samples, verbose)
+  
+  # Process results
+  if ("lambda" %in% names(results)) {
+    results[["lambda"]] <- as.numeric(results[["lambda"]])
+  }
+  if ("sigma2" %in% names(results)) {
+    results[["sigma2"]] <- as.numeric(results[["sigma2"]])
   }
 
   # Process output

@@ -12,23 +12,6 @@ mvnorm <- function(mean, Sigma) {
     .Call('_ideq_mvnorm', PACKAGE = 'ideq', mean, Sigma)
 }
 
-#' Fits a dynamic spatio-temporal model (DSTM) with a discount factor
-#'
-#' @param Y S by T matrix containing response variable at S spatial locations and T time points
-#' @param n_samples integer; number of posterior samples to take
-#' @param p integer; dimension of G in the state equation \eqn{\theta_{t+1} = G \theta_{t}}
-#' @param verbose boolean; controls verbosity
-#' @param sample_sigma2 whether boolean; to sample \eqn{\sigma^2}
-#'
-#' @export
-#' @examples
-#' # Duhh...nothing yet
-#' @importFrom Rcpp sourceCpp evalCpp
-#' @useDynLib ideq
-eof_discount <- function(Y, F, G_0, Sigma_G_inv, m_0, C_0, params, proc_model, n_samples, verbose) {
-    .Call('_ideq_eof_discount', PACKAGE = 'ideq', Y, F, G_0, Sigma_G_inv, m_0, C_0, params, proc_model, n_samples, verbose)
-}
-
 #' Fits a DSTM using a wishart prior for W
 #'
 #' @export
@@ -36,8 +19,8 @@ eof_discount <- function(Y, F, G_0, Sigma_G_inv, m_0, C_0, params, proc_model, n
 #' # Duhh...nothing yet
 #' @importFrom Rcpp sourceCpp evalCpp
 #' @useDynLib ideq
-eof_iw <- function(Y, F, G_0, Sigma_G_inv, m_0, C_0, C_W, params, proc_model, n_samples, verbose) {
-    .Call('_ideq_eof_iw', PACKAGE = 'ideq', Y, F, G_0, Sigma_G_inv, m_0, C_0, C_W, params, proc_model, n_samples, verbose)
+eof <- function(Y, F, G_0, Sigma_G_inv, m_0, C_0, C_W, params, proc_model, n_samples, verbose) {
+    .Call('_ideq_eof', PACKAGE = 'ideq', Y, F, G_0, Sigma_G_inv, m_0, C_0, C_W, params, proc_model, n_samples, verbose)
 }
 
 #' Fits a integrodifference equation model (IDE)
