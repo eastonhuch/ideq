@@ -23,7 +23,7 @@ eof <- function(Y, F, G_0, Sigma_G_inv, m_0, C_0, C_W, params, proc_model, n_sam
     .Call('_ideq_eof', PACKAGE = 'ideq', Y, F, G_0, Sigma_G_inv, m_0, C_0, C_W, params, proc_model, n_samples, verbose)
 }
 
-#' Fits a integrodifference equation model (IDE)
+#' Fits an integrodifference equation model (IDE)
 #'
 #' @export
 #' @examples @importFrom Rcpp sour

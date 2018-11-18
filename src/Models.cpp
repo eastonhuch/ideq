@@ -12,135 +12,6 @@
 
 using namespace Rcpp;
 
-/*
-//' Fits a dynamic spatio-temporal model (DSTM) with a discount factor
-//'
-//' @param Y S by T matrix containing response variable at S spatial locations and T time points
-//' @param n_samples integer; number of posterior samples to take
-//' @param p integer; dimension of G in the state equation \eqn{\theta_{t+1} = G \theta_{t}}
-//' @param verbose boolean; controls verbosity
-//' @param sample_sigma2 whether boolean; to sample \eqn{\sigma^2}
-//'
-//' @export
-//' @examples
-//' # Duhh...nothing yet
-//' @importFrom Rcpp sourceCpp evalCpp
-//' @useDynLib ideq
-// [[Rcpp::export]]
-List eof_discount(arma::mat Y, arma::mat F, arma::mat G_0, arma::mat Sigma_G_inv,
-                  arma::colvec m_0, arma::mat C_0, arma::mat C_W,
-                  NumericVector params, CharacterVector proc_model,
-                  const int n_samples, const bool verbose) {
-  // Extract scalar parameters
-  bool AR = proc_model(0) == "AR";
-  bool FULL = proc_model(0) == "Full";
-  const int p = G_0.n_rows;
-  const int T = Y.n_cols;
-  const int S = Y.n_rows;
-  const double alpha_sigma2 = params["alpha_sigma2"];
-  const double beta_sigma2  = params["beta_sigma2"];
-  const bool sample_sigma2  = params["sample_sigma2"] > 0;
-  double alpha_lambda = params["alpha_lambda"];
-  double beta_lambda  = params["beta_lambda"];
-
-  // Create matrices and cubes for FFBS
-  Y.insert_cols(0, 1); // make Y true-indexed; i.e. index 1 is t_1
-  arma::cube theta(p, T+1, n_samples), G;
-  theta.slice(0).zeros();
-  arma::mat a(p, T+1), m(p, T+1), tmp;
-  arma::cube R_inv(p, p, T+1), C(p, p, T+1), C_T(p, p, n_samples+1);
-  m.col(0) = m_0;
-  C.slice(0) = C_0;
-
-  if (AR) {
-    G.set_size(p, p, n_samples+1);
-    G.zeros();
-    tmp = G_0.diag();
-    G_0.set_size(p, 1);
-    G_0 = tmp;
-    G.slice(0).diag() = mvnorm(G_0, arma::inv_sympd(Sigma_G_inv));
-  } else if (FULL) {
-    G.set_size(p, p, n_samples+1);
-    G_0.reshape(p*p, 1);
-    tmp = mvnorm(G_0, arma::inv_sympd(Sigma_G_inv));
-    tmp.reshape(p, p);
-    G.slice(0) = tmp;
-  } else {
-    G.set_size(p, p, 1);
-    G.slice(0) = G_0;
-  }
-
-  // Create variance parameters
-  arma::vec sigma2;
-  double sigma2_i;
-  if (sample_sigma2) {
-    sigma2.set_size(n_samples+1);
-    SampleSigma2(sigma2.at(0), alpha_sigma2, beta_sigma2, Y, F, theta.slice(0));
-  }
-  else {
-    sigma2_i = params["sigma2"];
-  }
-
-  // Create parameters for sampling lambda
-  arma::vec lambda(n_samples+1);
-  lambda.at(0) = rigamma(alpha_lambda, beta_lambda);
-
-  // Begin MCMC
-  int G_idx = 0; // This value is incremented each iteration for AR and Full models
-  for (int i=0; i<n_samples; ++i) {
-    checkUserInterrupt();
-
-    // FFBS
-    if (verbose) {
-      Rcout << "Filtering sample number " << i+1 << std::endl;
-    }
-    if (sample_sigma2) sigma2_i = sigma2.at(i);
-    KalmanDiscount(m, C, a, R_inv, Y, F, G.slice(G_idx), sigma2_i, lambda.at(i));
-    C_T.slice(i+1) = C.slice(T); // Save for predictions
-
-    if (verbose) {
-      Rcout << "Drawing sample number " << i+1 << std::endl;
-    }
-    BackwardSample(theta.slice(i), m, a, C, G.slice(G_idx), R_inv);
-
-    // Sigma2
-    if (sample_sigma2) {
-      SampleSigma2(sigma2.at(i+1), alpha_sigma2, beta_sigma2, Y, F, theta.slice(i));
-    }
-
-    // Lambda (W)
-    SampleLambda(lambda.at(i+1), alpha_lambda, beta_lambda,
-                 G.slice(G_idx), C, theta.slice(i));
-
-    // G
-    if (AR) {
-      SampleAR(G.slice(G_idx+1), R_inv, theta.slice(i),
-               Sigma_G_inv, G_0, true, lambda.at(i+1));
-      ++G_idx;
-    } else if (FULL) {
-      SampleG(G.slice(G_idx+1), R_inv, theta.slice(i),
-              Sigma_G_inv, G_0, true, lambda.at(i+1));
-      ++G_idx;
-    }
-  }
-
-  List results;
-  results["theta"]  = theta;
-  results["lambda"] = lambda;
-  if (sample_sigma2) {
-    results["sigma2"] = sigma2;
-  } else {
-    results["sigma2"] = sigma2_i;
-  }
-  if (AR || FULL) {
-    results["G"] = G;
-  }
-  results["F"] = F;
-  results["C_T"] = C_T;
-  return results;
-}
- */
-
 //' Fits a DSTM using a wishart prior for W
 //'
 //' @export
@@ -153,6 +24,7 @@ List eof(arma::mat Y, arma::mat F, arma::mat G_0, arma::mat Sigma_G_inv,
          arma::colvec m_0, arma::mat C_0, arma::mat C_W,
          NumericVector params, CharacterVector proc_model,
          const int n_samples, const bool verbose) {
+  
   // Extract scalar parameters
   bool AR = proc_model(0) == "AR";
   bool FULL = proc_model(0) == "Full";
@@ -161,9 +33,10 @@ List eof(arma::mat Y, arma::mat F, arma::mat G_0, arma::mat Sigma_G_inv,
   const int S = Y.n_rows;
   const double alpha_sigma2 = params["alpha_sigma2"];
   const double beta_sigma2  = params["beta_sigma2"];
-  const bool sample_sigma2  = params["sample_sigma2"] > 0;
-  const double alpha_lambda  = params["alpha_lambda"];
-  const double beta_lambda   = params["beta_lambda"];
+  double sigma2_i = params["sigma2"];
+  const bool sample_sigma2  = sigma2_i < 0;
+  const double alpha_lambda = params["alpha_lambda"];
+  const double beta_lambda  = params["beta_lambda"];
   const double df_W = params["df_W"];
   const bool discount = C_W.at(0, 0) == NA;
 
@@ -172,10 +45,11 @@ List eof(arma::mat Y, arma::mat F, arma::mat G_0, arma::mat Sigma_G_inv,
   arma::cube theta(p, T+1, n_samples), G;
   theta.slice(0).zeros();
   arma::mat a(p, T+1), m(p, T+1), tmp;
-  arma::cube R_inv(p, p, T+1), C(p, p, T+1), C_T;
+  arma::cube R_inv(p, p, T+1), C(p, p, T+1), C_T; // C_T for discount models only
   m.col(0) = m_0;
   C.slice(0) = C_0;
 
+  // Process model
   if (AR) {
     G.set_size(p, p, n_samples+1);
     G.zeros();
@@ -196,7 +70,6 @@ List eof(arma::mat Y, arma::mat F, arma::mat G_0, arma::mat Sigma_G_inv,
 
   // Observation error
   arma::vec sigma2;
-  double sigma2_i;
   if (sample_sigma2) {
     sigma2.set_size(n_samples+1);
     SampleSigma2(sigma2.at(0), alpha_sigma2, beta_sigma2, Y, F, theta.slice(0));
@@ -218,17 +91,18 @@ List eof(arma::mat Y, arma::mat F, arma::mat G_0, arma::mat Sigma_G_inv,
     W.slice(0) = df_W * C_W;
   }
   
-  // Begin MCMC
+  // Sampling loop
   int G_idx = 0; // This value is incremented each iteration for AR and Full models
   for (int i = 0; i < n_samples; ++i) {
     checkUserInterrupt();
 
+    // Set sigma2_i for FFBS
+   if (sample_sigma2) sigma2_i = sigma2.at(i);
+    
     // FFBS
     if (verbose) {
       Rcout << "Filtering sample number " << i+1 << std::endl;
     }
-    if (sample_sigma2) sigma2_i = sigma2.at(i);
-    
     if (discount) {
       KalmanDiscount(m, C, a, R_inv, Y, F, G.slice(G_idx), sigma2_i, lambda.at(i));
       C_T.slice(i+1) = C.slice(T); // Save for predictions
@@ -241,12 +115,12 @@ List eof(arma::mat Y, arma::mat F, arma::mat G_0, arma::mat Sigma_G_inv,
     }
     BackwardSample(theta.slice(i), m, a, C, G.slice(G_idx), R_inv);
 
-    // Sigma2
+    // Sample Sigma2
     if (sample_sigma2) {
       SampleSigma2(sigma2.at(i+1), alpha_sigma2, beta_sigma2, Y, F, theta.slice(i));
     }
 
-    // W
+    // Sample W
     if (discount) {
       SampleLambda(lambda.at(i+1), alpha_lambda, beta_lambda,
                    G.slice(G_idx), C, theta.slice(i));
@@ -254,7 +128,7 @@ List eof(arma::mat Y, arma::mat F, arma::mat G_0, arma::mat Sigma_G_inv,
       SampleW(W.slice(i+1), theta.slice(i), G.slice(G_idx), C_W, df_W);
     }
 
-    // G
+    // Sample G
     if (AR) {
       if (discount) {
         SampleAR(G.slice(G_idx+1), R_inv, theta.slice(i),
@@ -292,7 +166,7 @@ List eof(arma::mat Y, arma::mat F, arma::mat G_0, arma::mat Sigma_G_inv,
   return results;
 }
 
-//' Fits a integrodifference equation model (IDE)
+//' Fits an integrodifference equation model (IDE)
 //'
 //' @export
 //' @examples @importFrom Rcpp sour

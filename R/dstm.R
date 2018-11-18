@@ -45,7 +45,7 @@ dstm_eof <- function(Y, proc_model = "RW",
 
   # Observation Error; creates alpha_sigma2, beta_sigma2, sigma2
   # NOTE: We could also draw this from a Wishart distribution...nah
-  alpha_sigma2 <- beta_sigma2 <- sigma2 <- NA
+  alpha_sigma2 <- beta_sigma2 <- sigma2 <- -1
   if (sample_sigma2) {
     if ("alpha_sigma2" %in% names(params)) {
       alpha_sigma2 <- params[["alpha_sigma2"]]
@@ -206,9 +206,9 @@ dstm_eof <- function(Y, proc_model = "RW",
   }
   
   # Group scalar params into vector
-  scalar_params <- c(alpha_lambda=alpha_lambda, beta_lambda=beta_lambda, df_W=df_W,
+  scalar_params <- c(alpha_lambda=alpha_lambda, beta_lambda=beta_lambda,
                      alpha_sigma2=alpha_sigma2, beta_sigma2=beta_sigma2,
-                     sigma2=sigma2, sample_sigma2=as.numeric(sample_sigma2))
+                     sigma2=sigma2, df_W=df_W)
 
   # Fit the model
   results <- eof(Y, F_, G_0, Sigma_G_inv, m_0, C_0, C_W,
