@@ -3,7 +3,7 @@
 #' @param Y S by T matrix containing response variable at S spatial locations and T time points
 #' @param model character string; options include `discount`, `sample_G`, `AR`, and `IDE`
 #' @param n_samples integer; number of posterior samples to take
-#' @param p integer; dimension of G in the state equation \eqn{\theta_{t+1} = G \theta_{t}}
+#' @param P integer; dimension of G in the state equation \eqn{\theta_{t+1} = G \theta_{t}}
 #' @param verbose boolean; controls verbosity
 #' @param sample_sigma2 whether boolean; to sample \eqn{\sigma^2}
 #'
@@ -11,36 +11,36 @@
 #' @examples
 #' # Duhh...nothing yet
 dstm_eof <- function(Y, proc_model = "RW",
-                     proc_error = "IW", p = 10L,
+                     proc_error = "IW", P = 10L,
                      n_samples = 1L, sample_sigma2 = TRUE,
                      verbose = FALSE, params = NULL) {
 
   # Observation Model; creates F, m_0, C_0
   e <- eigen(cov(t(Y)))
-  F_ <-e$vectors[, 1:p]
+  F_ <-e$vectors[, 1:P]
   
   # Set m_0
   m_0 <- NULL
   if ("m_0" %in% names(params)) {
-    if(length(params[["m_0"]]) != p) stop("m_0 must have length p")
+    if(length(params[["m_0"]]) != P) stop("m_0 must have length P")
     m_0 <- params[["m_0"]]
   }
   else {
     message("No prior was provided for m_0 so I am using a vector of zeros")
-    m_0 <- rep(0, p)
+    m_0 <- rep(0, P)
   }
 
   # Set C_0
   C_0 <- matrix()
   if ("C_0" %in% names(params)) {
-    if (!is.matrix(params[["C_0"]]) || any(dim(params[["C_0"]]) != c(p, p))){
-      stop("C_0 must be a p by p matrix")
+    if (!is.matrix(params[["C_0"]]) || any(dim(params[["C_0"]]) != c(P, P))){
+      stop("C_0 must be a P by P matrix")
     }
     C_0 <- params[["C_0"]]
   }
   else {
     message("No prior was provided for C_0 so I am using 1e-6I")
-    C_0 <- diag(1e-3, p)
+    C_0 <- diag(1e-3, P)
   }
 
   # Observation Error; creates alpha_sigma2, beta_sigma2, sigma2
@@ -85,22 +85,22 @@ dstm_eof <- function(Y, proc_model = "RW",
   # Process Model; creates G_0 (mu_G) and Sigma_G_inv
   Sigma_G_inv <- matrix()
   if (proc_model == "RW") {
-    G_0 <- diag(p)
+    G_0 <- diag(P)
   }
   else if (proc_model == "AR") {
     if ("mu_G" %in% names(params)) {
       if (matrixcalc::is.diagonal.matrix(params$mu_G) &&
-          all(dim(params$mu_G) != c(p, p))) {
+          all(dim(params$mu_G) != c(P, P))) {
         G_0 <- params[["mu_G"]]
       }
       else {
-        stop("mu_G must be a diagonal p by p matrix")
+        stop("mu_G must be a diagonal P by P matrix")
       }
 
     }
     else {
       message("mu_G was not provided, so I am using 10I")
-      G_0 <- 1e1 * diag(p)
+      G_0 <- 1e1 * diag(P)
     }
 
     if ("Sigma_G_inv" %in% names(params)) {
@@ -112,37 +112,37 @@ dstm_eof <- function(Y, proc_model = "RW",
       }
     } else {
       message("Sigma_G_inv was not provided, so I am using 1e3I")
-      Sigma_G_inv <- diag(p)
+      Sigma_G_inv <- diag(P)
     }
 
   }
   else if (proc_model == "Full") {
     if ("mu_G" %in% names(params)) {
-      if (is.matrix(params$mu_G) && all(dim(params$mu_G) != c(p, p))) {
+      if (is.matrix(params$mu_G) && all(dim(params$mu_G) != c(P, P))) {
         G_0 <- params$mu_G
       }
       else {
-        stop("mu_G must be a p by p matrix")
+        stop("mu_G must be a P by P matrix")
       }
     }
     else {
       message("mu_G was not provided, so I am using an identity matrix")
-      G_0 <- diag(p)
+      G_0 <- diag(P)
     }
 
     if ("Sigma_G_inv" %in% names(params)) {
       if (matrixcalc::is.positive.definite(params$Sigma_G_inv) &&
           matrixcalc::is.symmetric.matrix(params$Sigma_G_inv) &&
-          nrow(params$Sigma_G_inv) == p^2) {
+          nrow(params$Sigma_G_inv) == P^2) {
         Sigma_G_inv <- params$Sigma_G_inv
       }
       else {
-        stop("Sigma_G_inv must be a p^2 by p^2 symmetric positive definite matrix")
+        stop("Sigma_G_inv must be a P^2 by P^2 symmetric positive definite matrix")
       }
     }
     else {
       message("Sigma_G_inv was not provided, so I am using 1e5I")
-      Sigma_G_inv <- 1e5*diag(p^2)
+      Sigma_G_inv <- 1e5*diag(P^2)
     }
 
   }
@@ -187,18 +187,18 @@ dstm_eof <- function(Y, proc_model = "RW",
     }
     else {
       message("C_W was not provided so I am using an identity matrix")
-      C_W <- diag(p)
+      C_W <- diag(P)
     }
 
     if ("df_W" %in% names(params)) {
       df_W <- as.integer(params[["df_W"]])
-      if (!is.numeric(params[["df_W"]] || params[["df_W"]] < p)) {
-        stop("df_W must be numeric >= p")
+      if (!is.numeric(params[["df_W"]] || params[["df_W"]] < P)) {
+        stop("df_W must be numeric >= P")
       }
     }
     else {
-      message("df_W was not provided so I am using p")
-      df_W <- p
+      message("df_W was not provided so I am using P")
+      df_W <- P
     }
   }
   else {
@@ -492,9 +492,9 @@ dstm_ide <- function(Y, locs=NULL, kernel_locs=NULL, proc_error = "discount", J=
                      proposal_factor_Sigma=proposal_factor_Sigma,
                      Sigma_kernel_df=Sigma_kernel_df)
   
-  results <- ide_sc(Y, locs, m_0, C_0, mu_kernel_mean,
-                    mu_kernel_var, Sigma_kernel_scale, C_W,
-                    scalar_params, n_samples, verbose)
+  results <- ide(Y, locs, m_0, C_0, mu_kernel_mean,
+                 mu_kernel_var, Sigma_kernel_scale, C_W,
+                 scalar_params, n_samples, verbose)
   
   # Process output
   class(results) <- c("dstm_ide" , "dstm", "list")

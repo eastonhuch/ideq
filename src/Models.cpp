@@ -28,7 +28,7 @@ List eof(arma::mat Y, arma::mat F, arma::mat G_0, arma::mat Sigma_G_inv,
   // Extract scalar parameters
   bool AR = proc_model(0) == "AR";
   bool FULL = proc_model(0) == "Full";
-  const int p = G_0.n_rows;
+  const int P = G_0.n_rows;
   const int T = Y.n_cols;
   const int S = Y.n_rows;
   const double alpha_sigma2 = params["alpha_sigma2"];
@@ -42,29 +42,29 @@ List eof(arma::mat Y, arma::mat F, arma::mat G_0, arma::mat Sigma_G_inv,
 
   // Create matrices and cubes for FFBS
   Y.insert_cols(0, 1); // make Y true-indexed; i.e. index 1 is t_1
-  arma::cube theta(p, T+1, n_samples), G;
+  arma::cube theta(P, T+1, n_samples), G;
   theta.slice(0).zeros();
-  arma::mat a(p, T+1), m(p, T+1), tmp;
-  arma::cube R_inv(p, p, T+1), C(p, p, T+1), C_T; // C_T for discount models only
+  arma::mat a(P, T+1), m(P, T+1), tmp;
+  arma::cube R_inv(P, P, T+1), C(P, P, T+1), C_T; // C_T for discount models only
   m.col(0) = m_0;
   C.slice(0) = C_0;
 
   // Process model
   if (AR) {
-    G.set_size(p, p, n_samples+1);
+    G.set_size(P, P, n_samples+1);
     G.zeros();
     tmp = G_0.diag();
-    G_0.set_size(p, 1);
+    G_0.set_size(P, 1);
     G_0 = tmp;
     G.slice(0).diag() = mvnorm(G_0, arma::inv_sympd(Sigma_G_inv));
   } else if (FULL) {
-    G.set_size(p, p, n_samples+1);
-    G_0.reshape(p*p, 1);
+    G.set_size(P, P, n_samples+1);
+    G_0.reshape(P*P, 1);
     tmp = mvnorm(G_0, arma::inv_sympd(Sigma_G_inv));
-    tmp.reshape(p, p);
+    tmp.reshape(P, P);
     G.slice(0) = tmp;
   } else {
-    G.set_size(p, p, 1);
+    G.set_size(P, P, 1);
     G.slice(0) = G_0;
   }
 
@@ -84,10 +84,10 @@ List eof(arma::mat Y, arma::mat F, arma::mat G_0, arma::mat Sigma_G_inv,
   if (discount) {
     lambda.set_size(n_samples+1);
     lambda.at(0) = rigamma(alpha_lambda, beta_lambda);
-    C_T.set_size(p, p, n_samples+1);
+    C_T.set_size(P, P, n_samples+1);
   } 
   else {
-    W.set_size(p, p, n_samples+1);
+    W.set_size(P, P, n_samples+1);
     W.slice(0) = df_W * C_W;
   }
   
@@ -174,14 +174,14 @@ List eof(arma::mat Y, arma::mat F, arma::mat G_0, arma::mat Sigma_G_inv,
 //'ceCpp evalCpp
 //' @useDynLib ideq
 // [[Rcpp::export]]
-List ide_sc(arma::mat Y, arma::mat locs, arma::colvec m_0, arma::mat C_0,
-            arma::colvec mu_kernel_mean, arma::mat mu_kernel_var,
-            arma::mat Sigma_kernel_scale, arma::mat C_W, NumericVector params, 
-            const int n_samples, const bool verbose) {
+List ide(arma::mat Y, arma::mat locs, arma::colvec m_0, arma::mat C_0,
+         arma::colvec mu_kernel_mean, arma::mat mu_kernel_var,
+         arma::mat Sigma_kernel_scale, arma::mat C_W, NumericVector params, 
+         const int n_samples, const bool verbose) {
   // Extract scalar parameters
   const double J  = params["J"];
   const double L  = params["L"];
-  const int p = 2*J*J+1;
+  const int P = 2*J*J+1;
   const int T = Y.n_cols;
   const int S = Y.n_rows;
   const int locs_dim = locs.n_cols;
@@ -199,10 +199,10 @@ List ide_sc(arma::mat Y, arma::mat locs, arma::colvec m_0, arma::mat C_0,
 
   // Create matrices and cubes for FFBS
   Y.insert_cols(0, 1); // make Y true-indexed; i.e. index 1 is t_1
-  arma::cube theta(p, T+1, n_samples), G(p, p, n_samples+1);
+  arma::cube theta(P, T+1, n_samples), G(P, P, n_samples+1);
   theta.slice(0).zeros();
-  arma::mat a(p, T+1), m(p, T+1);
-  arma::cube R_inv(p, p, T+1), C(p, p, T+1), C_T(p, p, n_samples+1);
+  arma::mat a(P, T+1), m(P, T+1);
+  arma::cube R_inv(P, P, T+1), C(P, P, T+1), C_T(P, P, n_samples+1);
   m.col(0) = m_0;
   C.slice(0) = C_0;
   
@@ -241,7 +241,7 @@ List ide_sc(arma::mat Y, arma::mat locs, arma::colvec m_0, arma::mat C_0,
     lambda.at(0) = rigamma(alpha_lambda, beta_lambda);
   } 
   else {
-    W.set_size(p, p, n_samples+1);
+    W.set_size(P, P, n_samples+1);
     W.slice(0) = df_W * C_W;
   }
   

@@ -3,7 +3,7 @@
 export(dstm_eof)
 export(dstm_ide)
 export(eof)
-export(ide_sc)
+export(ide)
 export(mvnorm)
 importFrom(Rcpp,evalCpp)
 importFrom(Rcpp,sourceCpp)

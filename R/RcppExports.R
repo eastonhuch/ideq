@@ -30,7 +30,7 @@ eof <- function(Y, F, G_0, Sigma_G_inv, m_0, C_0, C_W, params, proc_model, n_sam
 #' # Duhh...nothing yet
 #'ceCpp evalCpp
 #' @useDynLib ideq
-ide_sc <- function(Y, locs, m_0, C_0, mu_kernel_mean, mu_kernel_var, Sigma_kernel_scale, C_W, params, n_samples, verbose) {
-    .Call('_ideq_ide_sc', PACKAGE = 'ideq', Y, locs, m_0, C_0, mu_kernel_mean, mu_kernel_var, Sigma_kernel_scale, C_W, params, n_samples, verbose)
+ide <- function(Y, locs, m_0, C_0, mu_kernel_mean, mu_kernel_var, Sigma_kernel_scale, C_W, params, n_samples, verbose) {
+    .Call('_ideq_ide', PACKAGE = 'ideq', Y, locs, m_0, C_0, mu_kernel_mean, mu_kernel_var, Sigma_kernel_scale, C_W, params, n_samples, verbose)
 }
 
