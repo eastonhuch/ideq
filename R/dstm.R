@@ -285,15 +285,7 @@ dstm_ide <- function(Y, locs=NULL, kernel_locs=NULL, proc_error = "discount", J=
     L <- 10
     message(paste("L was not provided so I am using L="), L,
             " and centering and scaling locs")
-    center_col <- function(x, L) {
-      x_range <- diff(range(x))
-      x <- L/x_range * x
-      x <- x + (L/2 - max(x))
-      x
-    }
-    for ( i in seq(ncol(locs)) ) {
-      locs[, i] <- center_col(locs[, i], L)
-    }
+    locs <- center_all(locs, L)
   }
 
   # Observation Model: creates m_0, C_0
@@ -362,9 +354,33 @@ dstm_ide <- function(Y, locs=NULL, kernel_locs=NULL, proc_error = "discount", J=
   }
 
   # Process Model; creates kernel parameters
-  # FIXME: Add ability to use different locs and spatially varying params
+  # FIXME: Add ability to use different locs
   
   # Error checking for kernel_locs
+  SV <- FALSE
+  K  <- array(0, dim=c(1, 1, 1))
+  if (is.numeric(kernel_locs)) {
+    SV <- TRUE
+    # We need to make K matrix
+    if (length(kernel_locs) > 1) {
+      kernel_locs <- center_all(kernel_locs)
+    }
+    else {
+      kernel_locs <- gen_grid(as.integer(kernel_locs), L)
+    }
+    
+    # Maps 
+    K <- pdist::pdist(kernel_locs, locs)
+    K <- as.matrix(K)
+    K <- apply(K, 2, function(x) x / sum(x))
+    K <- array(t(K), dim=c(dim(K), 1))
+  }
+  else if (is.null(kernel_locs)) {
+    SV <- FALSE
+  } 
+  else {
+    stop("kernel_locs must be numeric or NULL")
+  }
   
   locs_dim <- ncol(locs)
   if ("mu_kernel_mean" %in% names(params)) {
@@ -492,10 +508,10 @@ dstm_ide <- function(Y, locs=NULL, kernel_locs=NULL, proc_error = "discount", J=
                      alpha_lambda=alpha_lambda, beta_lambda=beta_lambda, 
                      proposal_factor_mu=proposal_factor_mu,
                      proposal_factor_Sigma=proposal_factor_Sigma,
-                     Sigma_kernel_df=Sigma_kernel_df)
+                     Sigma_kernel_df=Sigma_kernel_df, SV=SV)
   
   results <- ide(Y, locs, m_0, C_0, mu_kernel_mean,
-                 mu_kernel_var, Sigma_kernel_scale, C_W,
+                 mu_kernel_var, K, Sigma_kernel_scale, C_W,
                  scalar_params, n_samples, verbose)
   
   # Process output

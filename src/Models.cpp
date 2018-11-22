@@ -175,7 +175,7 @@ List eof(arma::mat Y, arma::mat F, arma::mat G_0, arma::mat Sigma_G_inv,
 //' @useDynLib ideq
 // [[Rcpp::export]]
 List ide(arma::mat Y, arma::mat locs, arma::colvec m_0, arma::mat C_0,
-         arma::colvec mu_kernel_mean, arma::mat mu_kernel_var,
+         arma::colvec mu_kernel_mean, arma::mat mu_kernel_var, arma::cube K,
          arma::mat Sigma_kernel_scale, arma::mat C_W, NumericVector params, 
          const int n_samples, const bool verbose) {
   // Extract scalar parameters
@@ -196,6 +196,7 @@ List ide(arma::mat Y, arma::mat locs, arma::colvec m_0, arma::mat C_0,
   const double proposal_factor_mu = params["proposal_factor_mu"];
   const double proposal_factor_Sigma = params["proposal_factor_Sigma"];
   const double Sigma_kernel_df = params["Sigma_kernel_df"];
+  const bool SV = params["SV"] > 0;
 
   // Create matrices and cubes for FFBS
   Y.insert_cols(0, 1); // make Y true-indexed; i.e. index 1 is t_1
@@ -281,8 +282,14 @@ List ide(arma::mat Y, arma::mat locs, arma::colvec m_0, arma::mat C_0,
     }
 
     // MH step for mu
-    mu_kernel_proposal = mvnorm(mu_kernel.col(i), mu_kernel_proposal_var);
-    makeB(B, mu_kernel_proposal, Sigma_kernel.slice(i), locs, w_for_B, J, L);
+    if (SV) {
+      Rcout << "not implemented" << std::endl;  
+    }
+    else {
+      mu_kernel_proposal = mvnorm(mu_kernel.col(i), mu_kernel_proposal_var);
+      makeB(B, mu_kernel_proposal, Sigma_kernel.slice(i), locs, w_for_B, J, L);
+    }
+    
     G_proposal = FtFiFt * B; 
     mh_ratio  = ldmvnorm(mu_kernel_proposal, mu_kernel_mean, mu_kernel_var);
     mh_ratio -= ldmvnorm(mu_kernel.col(i), mu_kernel_mean, mu_kernel_var);
