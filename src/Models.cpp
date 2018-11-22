@@ -295,7 +295,7 @@ List ide_sc(arma::mat Y, arma::mat locs, arma::colvec m_0, arma::mat C_0,
       mh_ratio -= kernelLikelihood(G.slice(i), theta.slice(i), W.slice(i+1));
     }
     
-    if ( log(R::runif(0, 1)) < mh_ratio ) {
+    if ( log((float) R::runif(0, 1)) < mh_ratio ) {
       mu_kernel.col(i+1) = mu_kernel_proposal;
       G.slice(i+1) = G_proposal;
     } else {
@@ -327,7 +327,7 @@ List ide_sc(arma::mat Y, arma::mat locs, arma::colvec m_0, arma::mat C_0,
     mh_ratio += ldiwishart(Sigma_kernel.slice(i), Sigma_kernel_proposal_df,
                            Sigma_kernel_proposal * Sigma_kernel_adjustment);
     
-    if ( log(R::runif(0, 1)) < mh_ratio ) {
+    if ( log((float) R::runif(0, 1)) < mh_ratio ) {
       Sigma_kernel.slice(i+1) = Sigma_kernel_proposal;
       G.slice(i+1) = G_proposal;}
     else {
@@ -355,20 +355,4 @@ List ide_sc(arma::mat Y, arma::mat locs, arma::colvec m_0, arma::mat C_0,
     results["sigma2"] = sigma2_i;
   }
   return results;
-}
-
-//' Fits a integrodifference equation model (IDE)
-//'
-//' @export
-//' @examples @importFrom Rcpp sour
-//' # Duhh...nothing yet
-//'ceCpp evalCpp
-//' @useDynLib ideq
-// [[Rcpp::export]]
-List ide_sv(arma::mat Y, arma::mat locs, arma::colvec m_0, arma::mat C_0,
-            arma::colvec mu_kernel_mean, arma::mat mu_kernel_var,
-            arma::mat Sigma_kernel_scale, arma::mat C_W, NumericVector params, 
-            const int n_samples, const bool verbose) {
-  Rcout << "I don't know what to do yet" << std::endl;
-  return 42;
 }

@@ -34,14 +34,3 @@ ide_sc <- function(Y, locs, m_0, C_0, mu_kernel_mean, mu_kernel_var, Sigma_kerne
     .Call('_ideq_ide_sc', PACKAGE = 'ideq', Y, locs, m_0, C_0, mu_kernel_mean, mu_kernel_var, Sigma_kernel_scale, C_W, params, n_samples, verbose)
 }
 
-#' Fits a integrodifference equation model (IDE)
-#'
-#' @export
-#' @examples @importFrom Rcpp sour
-#' # Duhh...nothing yet
-#'ceCpp evalCpp
-#' @useDynLib ideq
-ide_sv <- function(Y, locs, m_0, C_0, mu_kernel_mean, mu_kernel_var, Sigma_kernel_scale, C_W, params, n_samples, verbose) {
-    .Call('_ideq_ide_sv', PACKAGE = 'ideq', Y, locs, m_0, C_0, mu_kernel_mean, mu_kernel_var, Sigma_kernel_scale, C_W, params, n_samples, verbose)
-}
-

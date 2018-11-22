@@ -60,27 +60,8 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
-// ide_sv
-List ide_sv(arma::mat Y, arma::mat locs, arma::colvec m_0, arma::mat C_0, arma::colvec mu_kernel_mean, arma::mat mu_kernel_var, arma::mat Sigma_kernel_scale, arma::mat C_W, NumericVector params, const int n_samples, const bool verbose);
-RcppExport SEXP _ideq_ide_sv(SEXP YSEXP, SEXP locsSEXP, SEXP m_0SEXP, SEXP C_0SEXP, SEXP mu_kernel_meanSEXP, SEXP mu_kernel_varSEXP, SEXP Sigma_kernel_scaleSEXP, SEXP C_WSEXP, SEXP paramsSEXP, SEXP n_samplesSEXP, SEXP verboseSEXP) {
-BEGIN_RCPP
-    Rcpp::RObject rcpp_result_gen;
-    Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< arma::mat >::type Y(YSEXP);
-    Rcpp::traits::input_parameter< arma::mat >::type locs(locsSEXP);
-    Rcpp::traits::input_parameter< arma::colvec >::type m_0(m_0SEXP);
-    Rcpp::traits::input_parameter< arma::mat >::type C_0(C_0SEXP);
-    Rcpp::traits::input_parameter< arma::colvec >::type mu_kernel_mean(mu_kernel_meanSEXP);
-    Rcpp::traits::input_parameter< arma::mat >::type mu_kernel_var(mu_kernel_varSEXP);
-    Rcpp::traits::input_parameter< arma::mat >::type Sigma_kernel_scale(Sigma_kernel_scaleSEXP);
-    Rcpp::traits::input_parameter< arma::mat >::type C_W(C_WSEXP);
-    Rcpp::traits::input_parameter< NumericVector >::type params(paramsSEXP);
-    Rcpp::traits::input_parameter< const int >::type n_samples(n_samplesSEXP);
-    Rcpp::traits::input_parameter< const bool >::type verbose(verboseSEXP);
-    rcpp_result_gen = Rcpp::wrap(ide_sv(Y, locs, m_0, C_0, mu_kernel_mean, mu_kernel_var, Sigma_kernel_scale, C_W, params, n_samples, verbose));
-    return rcpp_result_gen;
-END_RCPP
-}
+
+RcppExport SEXP _ideq_ide_sv(SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP);
 
 static const R_CallMethodDef CallEntries[] = {
     {"_ideq_mvnorm", (DL_FUNC) &_ideq_mvnorm, 2},
