@@ -298,28 +298,28 @@ dstm_ide <- function(Y, locs=NULL, kernel_locs=NULL, proc_error = "discount", J=
 
   # Observation Model: creates m_0, C_0
   # Set m_0
-  p <- 2*J^2 + 1
+  P <- 2*J^2 + 1
   m_0 <- NULL
   if ("m_0" %in% names(params)) {
-    if(length(params[["m_0"]]) != p) stop("m_0 must have length p")
+    if(length(params[["m_0"]]) != P) stop("m_0 must have length P")
     m_0 <- params[["m_0"]]
   }
   else {
     message("No prior was provided for m_0 so I am using a vector of zeros")
-    m_0 <- rep(0, p)
+    m_0 <- rep(0, P)
   }
 
   # Set C_0
   C_0 <- matrix()
   if ("C_0" %in% names(params)) {
-    if (!is.matrix(params[["C_0"]]) || any(dim(params[["C_0"]]) != c(p, p))){
-      stop("C_0 must be a p by p matrix")
+    if (!is.matrix(params[["C_0"]]) || any(dim(params[["C_0"]]) != c(P, P))){
+      stop("C_0 must be a P by P matrix")
     }
     C_0 <- params[["C_0"]]
   }
   else {
     message("No prior was provided for C_0 so I am using I/9")
-    C_0 <- diag(1/9, p)
+    C_0 <- diag(1/9, P)
   }
   
   # Observation Error; creates alpha_sigma2, beta_sigma2, sigma2
@@ -363,6 +363,8 @@ dstm_ide <- function(Y, locs=NULL, kernel_locs=NULL, proc_error = "discount", J=
 
   # Process Model; creates kernel parameters
   # FIXME: Add ability to use different locs and spatially varying params
+  
+  # Error checking for kernel_locs
   
   locs_dim <- ncol(locs)
   if ("mu_kernel_mean" %in% names(params)) {
@@ -467,18 +469,18 @@ dstm_ide <- function(Y, locs=NULL, kernel_locs=NULL, proc_error = "discount", J=
     }
     else {
       message("C_W was not provided so I am using an identity matrix")
-      C_W <- diag(p)
+      C_W <- diag(P)
     }
 
     if ("df_W" %in% names(params)) {
       df_W <- as.integer(params[["df_W"]])
-      if (!is.numeric(params[["df_W"]] || params[["df_W"]] < p)) {
-        stop("df_W must be numeric >= p")
+      if (!is.numeric(params[["df_W"]] || params[["df_W"]] < P)) {
+        stop("df_W must be numeric >= P")
       }
     }
     else {
-      message("df_W was not provided so I am using p")
-      df_W <- p
+      message("df_W was not provided so I am using P")
+      df_W <- P
     } 
   }
   else {
