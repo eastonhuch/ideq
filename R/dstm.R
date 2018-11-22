@@ -232,18 +232,35 @@ dstm_eof <- function(Y, proc_model = "RW",
 }
 
 #' Fits an integrodifference equation model (IDE)
+#' @description Detailed description
 #'
-#' @param Y S by T matrix containing response variable at S spatial locations and T time points
-#' @param model character string; options include `discount`, `sample_G`, `AR`, and `IDE`
-#' @param n_samples integer; number of posterior samples to take
-#' @param p integer; dimension of G in the state equation \eqn{\theta_{t+1} = G \theta_{t}}
-#' @param verbose boolean; controls verbosity
-#' @param sample_sigma2 whether boolean; to sample \eqn{\sigma^2}
+#' @param Y matrix.
+#'          S by T matrix containing response variable at S spatial locations and T time points
+#' @param locs matrix or array.
+#'             Spatial locations of observed data. If the locations are the same at each time
+#'             point, then `locs` is an S by 2 matrix. 
+#'             If the locations change at different time points,
+#'             then `locs` is an array with dimension (S, 2, T)
+#' @param kernel_locs integer or matrix.
+#'                    if integer, then kernel parameters are calculated on a 2-D grid
+#'                    with dimension (`kernel_locs`, `kernel_locs`)
+#' @param proc_error "discount" or "IW".
+#'                   If "discount", then the process error is estimated using a discount factor.
+#'                   If "IW", then the process error is estimated as a realization from
+#'                   an inverse-Wishart distribution
+#' @param J integer. Extent of Fourier approximation.
+#'          The size of the state space is 2 * J^2 + 1
+#' @param n_samples integer; number of posterior samples to draw
+#' @param sample_sigma2 boolean; whether to sample \eqn{\sigma^2}
+#' @param verbose boolean; verbose = TRUE prints sampling progress
+#' @param params list; Used to specify hyperparameters
+#' 
+#' @details How to specify hyperparameters such as priors
 #'
 #' @export
 #' @examples
 #' # Duhh...nothing yet
-dstm_ide <- function(Y, locs=NULL, proc_error = "discount", J=4L,
+dstm_ide <- function(Y, locs=NULL, kernel_locs=NULL, proc_error = "discount", J=4L,
                      n_samples = 1L, sample_sigma2 = TRUE,
                      verbose = FALSE, params = NULL) {
   results <- "No output...whoops"
@@ -307,7 +324,7 @@ dstm_ide <- function(Y, locs=NULL, proc_error = "discount", J=4L,
   }
   
   # Observation Error; creates alpha_sigma2, beta_sigma2, sigma2
-  # NOTE: We could also draw this from a Wishart distribution...nah
+  # NOTE: We could also draw this from a Wishart distribution
   alpha_sigma2 <- beta_sigma2 <- sigma2 <- -1
   if (sample_sigma2) {
     if ("alpha_sigma2" %in% names(params)) {
@@ -346,6 +363,12 @@ dstm_ide <- function(Y, locs=NULL, proc_error = "discount", J=4L,
   }
 
   # Process Model; creates kernel parameters
+  if (length(dim(locs)) > 2) {
+    
+  } else {
+    
+  }
+  
   locs_dim <- ncol(locs)
   if ("mu_kernel_mean" %in% names(params)) {
     mu_kernel_mean <- params[["mu_kernel_mean"]]

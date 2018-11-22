@@ -2,13 +2,13 @@
 % Please edit documentation in R/RcppExports.R
 \name{ide_sc}
 \alias{ide_sc}
-\title{Fits a integrodifference equation model (IDE)}
+\title{Fits an integrodifference equation model (IDE)}
 \usage{
 ide_sc(Y, locs, m_0, C_0, mu_kernel_mean, mu_kernel_var,
   Sigma_kernel_scale, C_W, params, n_samples, verbose)
 }
 \description{
-Fits a integrodifference equation model (IDE)
+Fits an integrodifference equation model (IDE)
 }
 \examples{
 @importFrom Rcpp sour

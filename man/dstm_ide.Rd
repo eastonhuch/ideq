@@ -4,25 +4,45 @@
 \alias{dstm_ide}
 \title{Fits an integrodifference equation model (IDE)}
 \usage{
-dstm_ide(Y, locs = NULL, proc_error = "discount", J = 4L,
-  n_samples = 1L, sample_sigma2 = TRUE, verbose = FALSE,
+dstm_ide(Y, locs = NULL, kernel_locs = NULL, proc_error = "discount",
+  J = 4L, n_samples = 1L, sample_sigma2 = TRUE, verbose = FALSE,
   params = NULL)
 }
 \arguments{
-\item{Y}{S by T matrix containing response variable at S spatial locations and T time points}
+\item{Y}{matrix.
+S by T matrix containing response variable at S spatial locations and T time points}
 
-\item{n_samples}{integer; number of posterior samples to take}
+\item{locs}{matrix or array.
+Spatial locations of observed data. If the locations are the same at each time
+point, then `locs` is an S by 2 matrix. 
+If the locations change at different time points,
+then `locs` is an array with dimension (S, 2, T)}
 
-\item{sample_sigma2}{whether boolean; to sample \eqn{\sigma^2}}
+\item{kernel_locs}{integer or matrix.
+if integer, then kernel parameters are calculated on a 2-D grid
+with dimension (`kernel_locs`, `kernel_locs`)}
 
-\item{verbose}{boolean; controls verbosity}
+\item{proc_error}{"discount" or "IW".
+If "discount", then the process error is estimated using a discount factor.
+If "IW", then the process error is estimated as a realization from
+an inverse-Wishart distribution}
 
-\item{model}{character string; options include `discount`, `sample_G`, `AR`, and `IDE`}
+\item{J}{integer. Extent of Fourier approximation.
+The size of the state space is 2 * J^2 + 1}
 
-\item{p}{integer; dimension of G in the state equation \eqn{\theta_{t+1} = G \theta_{t}}}
+\item{n_samples}{integer; number of posterior samples to draw}
+
+\item{sample_sigma2}{boolean; whether to sample \eqn{\sigma^2}}
+
+\item{verbose}{boolean; verbose = TRUE prints sampling progress}
+
+\item{params}{list; Used to specify hyperparameters}
 }
 \description{
-Fits an integrodifference equation model (IDE)
+Detailed description
+}
+\details{
+How to specify hyperparameters such as priors
 }
 \examples{
 # Duhh...nothing yet
