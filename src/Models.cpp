@@ -219,7 +219,7 @@ List ide_sc(arma::mat Y, arma::mat locs, arma::colvec m_0, arma::mat C_0,
   double mh_ratio;
 
   // Create observation matrix (F) and initial process matrix (G)
-  arma::mat w_for_B = makeW(locs, J, L);
+  arma::mat w_for_B = makeW(J, L);
   arma::mat F = makeF(locs, w_for_B, J, L);
   const arma::mat FtFiFt = arma::solve(F.t() * F, F.t());
   arma::mat B(S, 2*J*J + 1);

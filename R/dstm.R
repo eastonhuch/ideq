@@ -263,7 +263,6 @@ dstm_eof <- function(Y, proc_model = "RW",
 dstm_ide <- function(Y, locs=NULL, kernel_locs=NULL, proc_error = "discount", J=4L,
                      n_samples = 1L, sample_sigma2 = TRUE,
                      verbose = FALSE, params = NULL) {
-  results <- "No output...whoops"
 
   # Error checking for J, L, locs
   if (is.null(locs)) {
@@ -363,11 +362,7 @@ dstm_ide <- function(Y, locs=NULL, kernel_locs=NULL, proc_error = "discount", J=
   }
 
   # Process Model; creates kernel parameters
-  if (length(dim(locs)) > 2) {
-    
-  } else {
-    
-  }
+  # FIXME: Add ability to use different locs and spatially varying params
   
   locs_dim <- ncol(locs)
   if ("mu_kernel_mean" %in% names(params)) {

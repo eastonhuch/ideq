@@ -5,7 +5,7 @@
 
 using namespace Rcpp;
 
-arma::mat makeW(const arma::mat & locs, const int J, const int L) {
+arma::mat makeW(const int J, const int L) {
   arma::colvec freqs = 2*PI/L * arma::regspace(1, J);
   arma::mat w(J*J, 2);
   w.col(0) = arma::repmat(freqs, J, 1);
