@@ -208,10 +208,18 @@ List ide(arma::mat Y, arma::mat locs, arma::colvec m_0, arma::mat C_0,
   C.slice(0) = C_0;
   
   // Create objects for storing sampled mu_kernel and Sigma_kernel
-  arma::mat mu_kernel(locs_dim, n_samples+1);
-  arma::cube Sigma_kernel(locs_dim, locs_dim, n_samples+1);
-  mu_kernel.col(0) = mu_kernel_mean;
-  Sigma_kernel.slice(0) = Sigma_kernel_scale / (Sigma_kernel_df-locs_dim-1);
+  arma::mat mu_kernel;
+  arma::cube Sigma_kernel;
+  if (SV) {
+    Rcout << "Not implemented" << std::endl;
+  }
+  else {
+    mu_kernel.set_size(locs_dim, n_samples+1);
+    Sigma_kernel.set_size(locs_dim, locs_dim, n_samples+1);
+    mu_kernel.col(0) = mu_kernel_mean;
+    Sigma_kernel.slice(0) = Sigma_kernel_scale / (Sigma_kernel_df-locs_dim-1);
+  }
+  
   arma::colvec mu_kernel_proposal;
   arma::mat Sigma_kernel_proposal, G_proposal;
   arma::mat mu_kernel_proposal_var = sqrt(proposal_factor_mu) * mu_kernel_var;
