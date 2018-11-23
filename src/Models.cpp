@@ -39,7 +39,7 @@ List eof(arma::mat Y, arma::mat F, arma::mat G_0, arma::mat Sigma_G_inv,
   const double beta_lambda  = params["beta_lambda"];
   const double df_W = params["df_W"];
   const bool discount = C_W.at(0, 0) == NA;
-
+  
   // Create matrices and cubes for FFBS
   Y.insert_cols(0, 1); // make Y true-indexed; i.e. index 1 is t_1
   arma::cube theta(P, T+1, n_samples), G;
@@ -48,7 +48,7 @@ List eof(arma::mat Y, arma::mat F, arma::mat G_0, arma::mat Sigma_G_inv,
   arma::cube R_inv(P, P, T+1), C(P, P, T+1), C_T; // C_T for discount models only
   m.col(0) = m_0;
   C.slice(0) = C_0;
-
+  
   // Process model
   if (AR) {
     G.set_size(P, P, n_samples+1);
@@ -67,7 +67,7 @@ List eof(arma::mat Y, arma::mat F, arma::mat G_0, arma::mat Sigma_G_inv,
     G.set_size(P, P, 1);
     G.slice(0) = G_0;
   }
-
+  
   // Observation error
   arma::vec sigma2;
   if (sample_sigma2) {
@@ -95,9 +95,9 @@ List eof(arma::mat Y, arma::mat F, arma::mat G_0, arma::mat Sigma_G_inv,
   int G_idx = 0; // This value is incremented each iteration for AR and Full models
   for (int i = 0; i < n_samples; ++i) {
     checkUserInterrupt();
-
+    
     // Set sigma2_i for FFBS
-   if (sample_sigma2) sigma2_i = sigma2.at(i);
+    if (sample_sigma2) sigma2_i = sigma2.at(i);
     
     // FFBS
     if (verbose) {
@@ -109,17 +109,17 @@ List eof(arma::mat Y, arma::mat F, arma::mat G_0, arma::mat Sigma_G_inv,
     } else {
       Kalman(m, C, a, R_inv, Y, F, G.slice(G_idx), sigma2_i, W.slice(i));
     }
-
+    
     if (verbose) {
       Rcout << "Drawing sample number " << i+1 << std::endl;
     }
     BackwardSample(theta.slice(i), m, a, C, G.slice(G_idx), R_inv);
-
+    
     // Sample Sigma2
     if (sample_sigma2) {
       SampleSigma2(sigma2.at(i+1), alpha_sigma2, beta_sigma2, Y, F, theta.slice(i));
     }
-
+    
     // Sample W
     if (discount) {
       SampleLambda(lambda.at(i+1), alpha_lambda, beta_lambda,
@@ -127,7 +127,7 @@ List eof(arma::mat Y, arma::mat F, arma::mat G_0, arma::mat Sigma_G_inv,
     } else {
       SampleW(W.slice(i+1), theta.slice(i), G.slice(G_idx), C_W, df_W);
     }
-
+    
     // Sample G
     if (AR) {
       if (discount) {
@@ -185,6 +185,7 @@ List ide(arma::mat Y, arma::mat locs, arma::colvec m_0, arma::mat C_0,
   const int T = Y.n_cols;
   const int S = Y.n_rows;
   const int locs_dim = locs.n_cols;
+  const int n_kernel_points = K.n_cols;
   const double alpha_sigma2  = params["alpha_sigma2"];
   const double beta_sigma2   = params["beta_sigma2"];
   double       sigma2_i      = params["sigma2"];
@@ -197,7 +198,7 @@ List ide(arma::mat Y, arma::mat locs, arma::colvec m_0, arma::mat C_0,
   const double proposal_factor_Sigma = params["proposal_factor_Sigma"];
   const double Sigma_kernel_df = params["Sigma_kernel_df"];
   const bool SV = params["SV"] > 0;
-
+  
   // Create matrices and cubes for FFBS
   Y.insert_cols(0, 1); // make Y true-indexed; i.e. index 1 is t_1
   arma::cube theta(P, T+1, n_samples), G(P, P, n_samples+1);
@@ -208,32 +209,36 @@ List ide(arma::mat Y, arma::mat locs, arma::colvec m_0, arma::mat C_0,
   C.slice(0) = C_0;
   
   // Create objects for storing sampled mu_kernel and Sigma_kernel
-  arma::mat mu_kernel;
-  arma::cube Sigma_kernel;
+  arma::cube mu_kernel;
+  arma::field<arma::cube> Sigma_kernel(n_samples+1);
   if (SV) {
+    mu_kernel.set_size(locs_dim, n_kernel_points, n_samples+1);
     Rcout << "Not implemented" << std::endl;
   }
   else {
-    mu_kernel.set_size(locs_dim, n_samples+1);
-    Sigma_kernel.set_size(locs_dim, locs_dim, n_samples+1);
-    mu_kernel.col(0) = mu_kernel_mean;
-    Sigma_kernel.slice(0) = Sigma_kernel_scale / (Sigma_kernel_df-locs_dim-1);
+    mu_kernel.set_size(locs_dim, 1, n_samples+1);
+    mu_kernel.slice(0) = mu_kernel_mean;
+    for (int i=0; i<=n_samples; ++i) {
+      Sigma_kernel.at(i).set_size(locs_dim, locs_dim, 1);
+    }
+    Sigma_kernel.at(0).slice(0) = Sigma_kernel_scale / (Sigma_kernel_df-locs_dim-1);
   }
   
   arma::colvec mu_kernel_proposal;
   arma::mat Sigma_kernel_proposal, G_proposal;
-  arma::mat mu_kernel_proposal_var = sqrt(proposal_factor_mu) * mu_kernel_var;
+  arma::mat mu_kernel_proposal_var = std::sqrt(proposal_factor_mu) * mu_kernel_var;
   double Sigma_kernel_proposal_df = locs_dim + Sigma_kernel_df/proposal_factor_Sigma;
   const double Sigma_kernel_adjustment = Sigma_kernel_proposal_df - locs_dim - 1;
   double mh_ratio;
-
+  
   // Create observation matrix (F) and initial process matrix (G)
   arma::mat w_for_B = makeW(J, L);
   arma::mat F = makeF(locs, w_for_B, J, L);
   const arma::mat FtFiFt = arma::solve(F.t() * F, F.t());
   arma::mat B(S, 2*J*J + 1);
-  makeB(B, mu_kernel_mean, Sigma_kernel.slice(0), locs, w_for_B, J, L);
+  makeB(B, mu_kernel_mean, Sigma_kernel.at(0).slice(0), locs, w_for_B, J, L);
   G.slice(0) = FtFiFt * B;
+  
   
   // Observation error
   arma::vec sigma2;
@@ -241,7 +246,7 @@ List ide(arma::mat Y, arma::mat locs, arma::colvec m_0, arma::mat C_0,
     sigma2.set_size(n_samples+1);
     SampleSigma2(sigma2.at(0), alpha_sigma2, beta_sigma2, Y, F, theta.slice(0));
   }
-
+  
   // Process error
   arma::vec lambda;
   arma::cube W;
@@ -257,7 +262,7 @@ List ide(arma::mat Y, arma::mat locs, arma::colvec m_0, arma::mat C_0,
   // Begin MCMC
   for (int i=0; i<n_samples; ++i) {
     checkUserInterrupt();
-
+    
     // FFBS
     if (verbose) {
       Rcout << "Filtering sample number " << i+1 << std::endl;
@@ -275,7 +280,7 @@ List ide(arma::mat Y, arma::mat locs, arma::colvec m_0, arma::mat C_0,
     }
     BackwardSample(theta.slice(i), m, a, C, G.slice(i), R_inv);
     C_T.slice(i+1) = C.slice(T); // Save for predictions
-
+    
     // Sigma2
     if (sample_sigma2) {
       SampleSigma2(sigma2.at(i+1), alpha_sigma2, beta_sigma2, Y, F, theta.slice(i));
@@ -284,23 +289,23 @@ List ide(arma::mat Y, arma::mat locs, arma::colvec m_0, arma::mat C_0,
     // Process error
     if (discount) {
       SampleLambda(lambda.at(i+1), alpha_lambda, beta_lambda,
-                 G.slice(i), C, theta.slice(i));}
+                   G.slice(i), C, theta.slice(i));}
     else {
       SampleW(W.slice(i+1), theta.slice(i), G.slice(i), C_W, df_W);
     }
-
+    
     // MH step for mu
     if (SV) {
       Rcout << "not implemented" << std::endl;  
     }
     else {
-      mu_kernel_proposal = mvnorm(mu_kernel.col(i), mu_kernel_proposal_var);
-      makeB(B, mu_kernel_proposal, Sigma_kernel.slice(i), locs, w_for_B, J, L);
+      mu_kernel_proposal = mvnorm(mu_kernel.slice(i), mu_kernel_proposal_var);
+      makeB(B, mu_kernel_proposal, Sigma_kernel.at(i).slice(0), locs, w_for_B, J, L);
     }
     
     G_proposal = FtFiFt * B; 
-    mh_ratio  = ldmvnorm(mu_kernel_proposal, mu_kernel_mean, mu_kernel_var);
-    mh_ratio -= ldmvnorm(mu_kernel.col(i), mu_kernel_mean, mu_kernel_var);
+    mh_ratio  = ldmvnorm(mu_kernel_proposal, mu_kernel.slice(0), mu_kernel_var);
+    mh_ratio -= ldmvnorm(mu_kernel.slice(i), mu_kernel.slice(0), mu_kernel_var);
     
     if (discount) {
       mh_ratio += kernelLikelihoodDiscount(G_proposal, theta.slice(i), C, lambda.at(i+1));
@@ -311,22 +316,22 @@ List ide(arma::mat Y, arma::mat locs, arma::colvec m_0, arma::mat C_0,
     }
     
     if ( log((float) R::runif(0, 1)) < mh_ratio ) {
-      mu_kernel.col(i+1) = mu_kernel_proposal;
+      mu_kernel.slice(i+1) = mu_kernel_proposal;
       G.slice(i+1) = G_proposal;
     } else {
-      mu_kernel.col(i+1) = mu_kernel.col(i);
+      mu_kernel.slice(i+1) = mu_kernel.slice(i);
       G.slice(i+1) = G.slice(i);
     }
     
     // MH step for Sigma
-    Sigma_kernel.slice(i+1) = Sigma_kernel.slice(i);
+    Sigma_kernel.at(i+1).slice(0) = Sigma_kernel.at(i).slice(0);
     Sigma_kernel_proposal = rgen::riwishart(Sigma_kernel_proposal_df,
-                            Sigma_kernel.slice(i) * Sigma_kernel_adjustment);
-    makeB(B, mu_kernel.col(i+1), Sigma_kernel_proposal, locs, w_for_B, J, L);
+                                            Sigma_kernel.at(i).slice(0) * Sigma_kernel_adjustment);
+    makeB(B, mu_kernel.slice(i+1), Sigma_kernel_proposal, locs, w_for_B, J, L);
     G_proposal = FtFiFt * B; 
     mh_ratio  = ldiwishart(Sigma_kernel_proposal, Sigma_kernel_df, 
                            Sigma_kernel_scale);
-    mh_ratio -= ldiwishart(Sigma_kernel.slice(i), Sigma_kernel_df,
+    mh_ratio -= ldiwishart(Sigma_kernel.at(i).slice(0), Sigma_kernel_df,
                            Sigma_kernel_scale);
     
     if (discount) {
@@ -338,18 +343,18 @@ List ide(arma::mat Y, arma::mat locs, arma::colvec m_0, arma::mat C_0,
     }
     
     mh_ratio -= ldiwishart(Sigma_kernel_proposal, Sigma_kernel_proposal_df,
-                           Sigma_kernel.slice(i) * Sigma_kernel_adjustment);
-    mh_ratio += ldiwishart(Sigma_kernel.slice(i), Sigma_kernel_proposal_df,
+                           Sigma_kernel.at(i).slice(0) * Sigma_kernel_adjustment);
+    mh_ratio += ldiwishart(Sigma_kernel.at(i).slice(0), Sigma_kernel_proposal_df,
                            Sigma_kernel_proposal * Sigma_kernel_adjustment);
     
     if ( log((float) R::runif(0, 1)) < mh_ratio ) {
-      Sigma_kernel.slice(i+1) = Sigma_kernel_proposal;
+      Sigma_kernel.at(i+1).slice(0) = Sigma_kernel_proposal;
       G.slice(i+1) = G_proposal;}
     else {
-      Sigma_kernel.slice(i+1) = Sigma_kernel.slice(i);
+      Sigma_kernel.at(i+1).slice(0) = Sigma_kernel.at(i).slice(0);
     }
   }
-
+  
   List results;
   results["theta"]  = theta;
   results["G"] = G;
