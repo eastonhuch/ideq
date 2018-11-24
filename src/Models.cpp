@@ -176,7 +176,7 @@ List eof(arma::mat Y, arma::mat F, arma::mat G_0, arma::mat Sigma_G_inv,
 // [[Rcpp::export]]
 List ide(arma::mat Y, arma::mat locs, arma::colvec m_0, arma::mat C_0,
          arma::colvec mu_kernel_mean, arma::mat mu_kernel_var, arma::cube K,
-         arma::mat Sigma_kernel_scale, arma::mat C_W, NumericVector params, 
+         arma::cube Sigma_kernel_scale, arma::mat C_W, NumericVector params, 
          const int n_samples, const bool verbose) {
   // Extract scalar parameters
   const double J  = params["J"];
@@ -203,34 +203,43 @@ List ide(arma::mat Y, arma::mat locs, arma::colvec m_0, arma::mat C_0,
   Y.insert_cols(0, 1); // make Y true-indexed; i.e. index 1 is t_1
   arma::cube theta(P, T+1, n_samples), G(P, P, n_samples+1);
   theta.slice(0).zeros();
-  arma::mat a(P, T+1), m(P, T+1);
+  arma::mat a(P, T+1), m(P, T+1), tmp;
   arma::cube R_inv(P, P, T+1), C(P, P, T+1), C_T(P, P, n_samples+1);
   m.col(0) = m_0;
   C.slice(0) = C_0;
   
   // Create objects for storing sampled mu_kernel and Sigma_kernel
-  arma::cube mu_kernel;
+  arma::cube mu_kernel, Sigma_kernel_proposal;
   arma::field<arma::cube> Sigma_kernel(n_samples+1);
   
+  Rcout << "chk 1 " << std::endl;
   if (SV) {
     mu_kernel.set_size(locs_dim, n_kernel_points, n_samples+1);
-    Rcout << "Not implemented" << std::endl;
+    mu_kernel.slice(0) = arma::reshape(mu_kernel_mean, locs_dim, n_kernel_points);
+    Sigma_kernel_proposal.set_size(locs_dim, locs_dim, n_kernel_points);
+    for (int i=0; i<=n_samples; ++i) {
+      Sigma_kernel.at(i).set_size(locs_dim, locs_dim, n_kernel_points);
+    }
   }
   else {
     mu_kernel.set_size(locs_dim, 1, n_samples+1);
     mu_kernel.slice(0) = mu_kernel_mean;
+    Sigma_kernel_proposal.set_size(locs_dim, locs_dim, 1);
     for (int i=0; i<=n_samples; ++i) {
       Sigma_kernel.at(i).set_size(locs_dim, locs_dim, 1);
     }
-    Sigma_kernel.at(0).slice(0) = Sigma_kernel_scale / (Sigma_kernel_df-locs_dim-1);
   }
+  Sigma_kernel.at(0) = Sigma_kernel_scale / (Sigma_kernel_df-locs_dim-1);
+  
+  Rcout << "chk 2 " << std::endl;
   
   arma::colvec mu_kernel_proposal;
-  arma::mat Sigma_kernel_proposal, G_proposal;
+  arma::mat G_proposal;
   arma::mat mu_kernel_proposal_var = std::sqrt(proposal_factor_mu) * mu_kernel_var;
   double Sigma_kernel_proposal_df = locs_dim + Sigma_kernel_df/proposal_factor_Sigma;
   const double Sigma_kernel_adjustment = Sigma_kernel_proposal_df - locs_dim - 1;
   double mh_ratio;
+  Rcout << "chk 3 " << std::endl;
   
   // Create observation matrix (F) and initial process matrix (G)
   arma::mat w_for_B = makeW(J, L);
@@ -240,6 +249,7 @@ List ide(arma::mat Y, arma::mat locs, arma::colvec m_0, arma::mat C_0,
   makeB(B, mu_kernel_mean, Sigma_kernel.at(0).slice(0), locs, w_for_B, J, L);
   G.slice(0) = FtFiFt * B;
   
+  Rcout << "chk 4 " << std::endl;
   
   // Observation error
   arma::vec sigma2;
@@ -295,6 +305,7 @@ List ide(arma::mat Y, arma::mat locs, arma::colvec m_0, arma::mat C_0,
       SampleW(W.slice(i+1), theta.slice(i), G.slice(i), C_W, df_W);
     }
     
+    Rcout << "chk 5" << std::endl;
     // MH step for mu
     if (SV) {
       Rcout << "not implemented" << std::endl;  
@@ -303,10 +314,12 @@ List ide(arma::mat Y, arma::mat locs, arma::colvec m_0, arma::mat C_0,
       mu_kernel_proposal = mvnorm(mu_kernel.slice(i), mu_kernel_proposal_var);
       makeB(B, mu_kernel_proposal, Sigma_kernel.at(i).slice(0), locs, w_for_B, J, L);
     }
+    Rcout << "chk 6" << std::endl;
     
     G_proposal = FtFiFt * B; 
     mh_ratio  = ldmvnorm(mu_kernel_proposal, mu_kernel.slice(0), mu_kernel_var);
     mh_ratio -= ldmvnorm(mu_kernel.slice(i), mu_kernel.slice(0), mu_kernel_var);
+    Rcout << "chk 7" << std::endl;
     
     if (discount) {
       mh_ratio += kernelLikelihoodDiscount(G_proposal, theta.slice(i), C, lambda.at(i+1));
@@ -315,6 +328,7 @@ List ide(arma::mat Y, arma::mat locs, arma::colvec m_0, arma::mat C_0,
       mh_ratio += kernelLikelihood(G_proposal, theta.slice(i), W.slice(i+1));
       mh_ratio -= kernelLikelihood(G.slice(i), theta.slice(i), W.slice(i+1));
     }
+    Rcout << "chk 8" << std::endl;
     
     if ( log((float) R::runif(0, 1)) < mh_ratio ) {
       mu_kernel.slice(i+1) = mu_kernel_proposal;
@@ -323,17 +337,24 @@ List ide(arma::mat Y, arma::mat locs, arma::colvec m_0, arma::mat C_0,
       mu_kernel.slice(i+1) = mu_kernel.slice(i);
       G.slice(i+1) = G.slice(i);
     }
+    Rcout << "chk 9" << std::endl;
     
     // MH step for Sigma
     Sigma_kernel.at(i+1).slice(0) = Sigma_kernel.at(i).slice(0);
-    Sigma_kernel_proposal = rgen::riwishart(Sigma_kernel_proposal_df,
-                                            Sigma_kernel.at(i).slice(0) * Sigma_kernel_adjustment);
-    makeB(B, mu_kernel.slice(i+1), Sigma_kernel_proposal, locs, w_for_B, J, L);
+    for (int k=0; k<n_kernel_points; ++k) {
+      Sigma_kernel_proposal.slice(k) = rgen::riwishart(Sigma_kernel_proposal_df,
+                                                       Sigma_kernel.at(i).slice(k) * Sigma_kernel_adjustment);
+    }
+    Rcout << "chk 9.1" << std::endl;
+    makeB(B, mu_kernel.slice(i+1), Sigma_kernel_proposal.slice(0), locs, w_for_B, J, L);
+    Rcout << "chk 9.2" << std::endl;
     G_proposal = FtFiFt * B; 
-    mh_ratio  = ldiwishart(Sigma_kernel_proposal, Sigma_kernel_df, 
-                           Sigma_kernel_scale);
+    Rcout << "chk 9.3" << std::endl;
+    mh_ratio  = ldiwishart(Sigma_kernel_proposal.slice(0), Sigma_kernel_df, 
+                           Sigma_kernel_scale.slice(0));
     mh_ratio -= ldiwishart(Sigma_kernel.at(i).slice(0), Sigma_kernel_df,
-                           Sigma_kernel_scale);
+                           Sigma_kernel_scale.slice(0));
+    Rcout << "chk 10" << std::endl;
     
     if (discount) {
       mh_ratio += kernelLikelihoodDiscount(G_proposal, theta.slice(i), C, lambda.at(i+1));
@@ -342,14 +363,16 @@ List ide(arma::mat Y, arma::mat locs, arma::colvec m_0, arma::mat C_0,
       mh_ratio += kernelLikelihood(G_proposal, theta.slice(i), W.slice(i+1));
       mh_ratio -= kernelLikelihood(G.slice(i), theta.slice(i), W.slice(i+1));
     }
+    Rcout << "chk 11" << std::endl;
     
-    mh_ratio -= ldiwishart(Sigma_kernel_proposal, Sigma_kernel_proposal_df,
+    mh_ratio -= ldiwishart(Sigma_kernel_proposal.slice(0), Sigma_kernel_proposal_df,
                            Sigma_kernel.at(i).slice(0) * Sigma_kernel_adjustment);
     mh_ratio += ldiwishart(Sigma_kernel.at(i).slice(0), Sigma_kernel_proposal_df,
-                           Sigma_kernel_proposal * Sigma_kernel_adjustment);
+                           Sigma_kernel_proposal.slice(0) * Sigma_kernel_adjustment);
+    Rcout << "chk 12" << std::endl;
     
     if ( log((float) R::runif(0, 1)) < mh_ratio ) {
-      Sigma_kernel.at(i+1).slice(0) = Sigma_kernel_proposal;
+      Sigma_kernel.at(i+1).slice(0) = Sigma_kernel_proposal.slice(0);
       G.slice(i+1) = G_proposal;}
     else {
       Sigma_kernel.at(i+1).slice(0) = Sigma_kernel.at(i).slice(0);

@@ -343,6 +343,7 @@ dstm_ide <- function(Y, locs=NULL, kernel_locs=NULL, proc_error = "discount", J=
   # Process Model; creates kernel parameters
   # FIXME: Add ability to use different locs
   
+  num_kernel_locs <- 1
   locs_dim <- ncol(locs)
   if ("mu_kernel_mean" %in% names(params)) {
     mu_kernel_mean <- params[["mu_kernel_mean"]]
@@ -428,8 +429,6 @@ dstm_ide <- function(Y, locs=NULL, kernel_locs=NULL, proc_error = "discount", J=
     mu_kernel_mean <- rep(1, num_kernel_locs) %x% mu_kernel_mean
     R <- exp(-as.matrix(dist(kernel_locs))) # Correlation matrix
     mu_kernel_var <- R %x% mu_kernel_var
-    Sigma_kernel_df <- num_kernel_locs * Sigma_kernel_df
-    Sigma_kernel_scale <- R %x% (Sigma_kernel_scale / num_kernel_locs)
     
     # Create K matrix
     K <- pdist::pdist(kernel_locs, locs)
@@ -442,6 +441,10 @@ dstm_ide <- function(Y, locs=NULL, kernel_locs=NULL, proc_error = "discount", J=
   } else {
     stop("kernel_locs must be numeric or NULL")
   }
+  
+  if (is.null(num_kernel_locs)) num_kernel_locs <- 1
+  Sigma_kernel_scale <- array(1, dim=c(1, 1, num_kernel_locs)) %x%
+                        Sigma_kernel_scale
   
   # Process Error; creates alpha_lambda, beta_lambda, etc.
   alpha_lambda <- beta_lambda <- df_W <- NA
@@ -499,7 +502,6 @@ dstm_ide <- function(Y, locs=NULL, kernel_locs=NULL, proc_error = "discount", J=
   results <- ide(Y, locs, m_0, C_0, mu_kernel_mean,
                  mu_kernel_var, K, Sigma_kernel_scale, C_W,
                  scalar_params, n_samples, verbose)
-  
   
   # Process output
   class(results) <- c("dstm_ide" , "dstm", "list")
