@@ -211,6 +211,7 @@ List ide(arma::mat Y, arma::mat locs, arma::colvec m_0, arma::mat C_0,
   // Create objects for storing sampled mu_kernel and Sigma_kernel
   arma::cube mu_kernel;
   arma::field<arma::cube> Sigma_kernel(n_samples+1);
+  
   if (SV) {
     mu_kernel.set_size(locs_dim, n_kernel_points, n_samples+1);
     Rcout << "Not implemented" << std::endl;

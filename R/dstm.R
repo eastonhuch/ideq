@@ -24,8 +24,7 @@ dstm_eof <- function(Y, proc_model = "RW",
   if ("m_0" %in% names(params)) {
     if(length(params[["m_0"]]) != P) stop("m_0 must have length P")
     m_0 <- params[["m_0"]]
-  }
-  else {
+  } else {
     message("No prior was provided for m_0 so I am using a vector of zeros")
     m_0 <- rep(0, P)
   }
@@ -49,34 +48,32 @@ dstm_eof <- function(Y, proc_model = "RW",
   if (sample_sigma2) {
     if ("alpha_sigma2" %in% names(params)) {
       alpha_sigma2 <- params[["alpha_sigma2"]]
-    }
-    else {
+    } else {
       v <- mean(apply(Y, 1, var))
       alpha_sigma2 <- 2 + v / 4
       message(paste("alpha_sigma2 was not provided so I am using", alpha_sigma2))
     }
+    
     if ("beta_sigma2" %in% names(params)) {
       beta_sigma2 <- params[["beta_sigma2"]]
-    }
-    else {
+    } else {
       if (!exists("v")) v <- mean(apply(Y, 1, var))
       beta_sigma2 <- (alpha_sigma2 - 1) * v
       message(paste("beta_sigma2 was not provided so I am using", beta_sigma2))
     }
+    
     if (alpha_sigma2 <= 0) {
       stop("alpha_sigma2 is not positive; specify manually in params")
     }
     else if (beta_sigma2 <= 0) {
       stop("beta_sigma2 is not positive; specify manually in params")
     }
-  }
-  else if ("sigma2" %in% names(params)) {
+  } else if ("sigma2" %in% names(params)) {
     sigma2 <- params[["sigma2"]]
     if (!is.numeric(sigma2) || sigma2 <= 0) {
       stop("inavlid value for sigma2; must be numeric greater than zero")
     }
-  }
-  else {
+  } else {
     v <- mean(apply(Y, 1, var))
     sigma2 <- v
     message(paste("sigma2 was not provided so I am using", sigma2))
@@ -86,8 +83,7 @@ dstm_eof <- function(Y, proc_model = "RW",
   Sigma_G_inv <- matrix()
   if (proc_model == "RW") {
     G_0 <- diag(P)
-  }
-  else if (proc_model == "AR") {
+  } else if (proc_model == "AR") {
     if ("mu_G" %in% names(params)) {
       if (matrixcalc::is.diagonal.matrix(params$mu_G) &&
           all(dim(params$mu_G) != c(P, P))) {
@@ -115,8 +111,7 @@ dstm_eof <- function(Y, proc_model = "RW",
       Sigma_G_inv <- diag(P)
     }
 
-  }
-  else if (proc_model == "Full") {
+  } else if (proc_model == "Full") {
     if ("mu_G" %in% names(params)) {
       if (is.matrix(params$mu_G) && all(dim(params$mu_G) != c(P, P))) {
         G_0 <- params$mu_G
@@ -145,8 +140,7 @@ dstm_eof <- function(Y, proc_model = "RW",
       Sigma_G_inv <- 1e5*diag(P^2)
     }
 
-  }
-  else {
+  } else {
     stop("proc_model not supported")
   }
 
@@ -176,8 +170,7 @@ dstm_eof <- function(Y, proc_model = "RW",
       beta_lambda <- 4
       message(paste("beta_lambda was not provided so I am using", beta_lambda))
     }
-  }
-  else if (proc_error == "IW") {
+  } else if (proc_error == "IW") {
     # C_W
     if ("C_W" %in% names(params)) {
       C_W <- params[["C_W"]]
@@ -200,8 +193,7 @@ dstm_eof <- function(Y, proc_model = "RW",
       message("df_W was not provided so I am using P")
       df_W <- P
     }
-  }
-  else {
+  } else {
     stop("I don't know that type of process error")
   }
   
@@ -280,9 +272,8 @@ dstm_ide <- function(Y, locs=NULL, kernel_locs=NULL, proc_error = "discount", J=
     if (! (is.numeric(L) || L>0) ) {
       stop("L must be numeric > 0")
     }
-  }
-  else {
-    L <- 10
+  } else {
+    L <- 2
     message(paste("L was not provided so I am using L="), L,
             " and centering and scaling locs")
     locs <- center_all(locs, L)
@@ -295,8 +286,7 @@ dstm_ide <- function(Y, locs=NULL, kernel_locs=NULL, proc_error = "discount", J=
   if ("m_0" %in% names(params)) {
     if(length(params[["m_0"]]) != P) stop("m_0 must have length P")
     m_0 <- params[["m_0"]]
-  }
-  else {
+  } else {
     message("No prior was provided for m_0 so I am using a vector of zeros")
     m_0 <- rep(0, P)
   }
@@ -308,8 +298,7 @@ dstm_ide <- function(Y, locs=NULL, kernel_locs=NULL, proc_error = "discount", J=
       stop("C_0 must be a P by P matrix")
     }
     C_0 <- params[["C_0"]]
-  }
-  else {
+  } else {
     message("No prior was provided for C_0 so I am using I/9")
     C_0 <- diag(1/9, P)
   }
@@ -340,14 +329,12 @@ dstm_ide <- function(Y, locs=NULL, kernel_locs=NULL, proc_error = "discount", J=
     else if (beta_sigma2 <= 0) {
       stop("beta_sigma2 is not positive; specify manually in params")
     }
-  }
-  else if ("sigma2" %in% names(params)) {
+  } else if ("sigma2" %in% names(params)) {
     sigma2 <- params[["sigma2"]]
     if (!is.numeric(sigma2) || sigma2 <= 0) {
       stop("inavlid value for sigma2; must be numeric greater than zero")
     }
-  }
-  else {
+  } else {
     v <- mean(apply(Y, 1, var))
     sigma2 <- v
     message(paste("sigma2 was not provided so I am using", sigma2))
@@ -356,32 +343,6 @@ dstm_ide <- function(Y, locs=NULL, kernel_locs=NULL, proc_error = "discount", J=
   # Process Model; creates kernel parameters
   # FIXME: Add ability to use different locs
   
-  # Error checking for kernel_locs
-  SV <- FALSE
-  K  <- array(0, dim=c(1, 1, 1))
-  if (is.numeric(kernel_locs)) {
-    SV <- TRUE
-    # We need to make K matrix
-    if (length(kernel_locs) > 1) {
-      kernel_locs <- center_all(kernel_locs)
-    }
-    else {
-      kernel_locs <- gen_grid(as.integer(kernel_locs), L)
-    }
-    
-    # Maps 
-    K <- pdist::pdist(kernel_locs, locs)
-    K <- as.matrix(K)
-    K <- apply(K, 2, function(x) x / sum(x))
-    K <- array(t(K), dim=c(dim(K), 1))
-  }
-  else if (is.null(kernel_locs)) {
-    SV <- FALSE
-  } 
-  else {
-    stop("kernel_locs must be numeric or NULL")
-  }
-  
   locs_dim <- ncol(locs)
   if ("mu_kernel_mean" %in% names(params)) {
     mu_kernel_mean <- params[["mu_kernel_mean"]]
@@ -389,8 +350,7 @@ dstm_ide <- function(Y, locs=NULL, kernel_locs=NULL, proc_error = "discount", J=
     if (!is.numeric(mu_kernel_mean) || length(mu_kernel_mean)!=locs_dim) {
       stop("mu_kernel_mean must be numeric with length==ncol(locs)")
     }
-  }
-  else {
+  } else {
     mu_kernel_mean <- rep(0, locs_dim)
     message("mu_kernel_mean was not provided so I am using a vector of zeroes")
   }
@@ -401,8 +361,7 @@ dstm_ide <- function(Y, locs=NULL, kernel_locs=NULL, proc_error = "discount", J=
         any(dim(mu_kernel_var) != locs_dim)) {
       stop("mu_kernel_var must be positive definite with dimensions == ncol(locs)")
     }
-  }
-  else {
+  } else {
     mu_kernel_var <- diag(1/9, locs_dim)
     message("mu_kernel_var was not provided so I am using I/9")
   }
@@ -412,11 +371,21 @@ dstm_ide <- function(Y, locs=NULL, kernel_locs=NULL, proc_error = "discount", J=
     if (!is.numeric(proposal_factor_mu) || proposal_factor_mu <= 0) {
       stop("proposal_factor_mu must be numeric > 0")
     }
-  }
-  else {
+  } else {
     proposal_factor_mu <- 1
     message(paste("proposal_factor_mu was not provided so I am using", 
             proposal_factor_mu))
+  }
+  
+  if ("Sigma_kernel_df" %in% names(params)) {
+    Sigma_kernel_df <- params[["Sigma_kernel_df"]]
+    if (!is.numeric(Sigma_kernel_df) || Sigma_kernel_df <= 0) {
+      stop("Sigma_kernel_df must be numeric > 0")
+    }
+  } else {
+    Sigma_kernel_df <- 10
+    message(paste("Sigma_kernel_df was not provided so I am using", 
+            Sigma_kernel_df))
   }
   
   if ("Sigma_kernel_scale" %in% names(params)) {
@@ -425,22 +394,9 @@ dstm_ide <- function(Y, locs=NULL, kernel_locs=NULL, proc_error = "discount", J=
         any(dim(Sigma) != locs_dim)) {
       stop("Sigma_kernel_scale must be positive definite with dimensions == ncol(locs)")
     }
-  }
-  else {
-    Sigma_kernel_scale <- diag(1/10, locs_dim)
-    message("Sigma_kernel_scale was not provided so I am using 100I")
-  }
-  
-  if ("Sigma_kernel_df" %in% names(params)) {
-    Sigma_kernel_df <- params[["Sigma_kernel_df"]]
-    if (!is.numeric(Sigma_kernel_df) || Sigma_kernel_df <= 0) {
-      stop("Sigma_kernel_df must be numeric > 0")
-    }
-  }
-  else {
-    Sigma_kernel_df <- 10
-    message(paste("Sigma_kernel_df was not provided so I am using", 
-            Sigma_kernel_df))
+  } else {
+    Sigma_kernel_scale <- diag(1/Sigma_kernel_df, locs_dim)
+    message("Sigma_kernel_scale was not provided so I am using I/Sigma_kernel_df")
   }
   
   if ("proposal_factor_Sigma" %in% names(params)) {
@@ -448,11 +404,43 @@ dstm_ide <- function(Y, locs=NULL, kernel_locs=NULL, proc_error = "discount", J=
     if (!is.numeric(proposal_factor_Sigma) || proposal_factor_Sigma <= 0) {
       stop("proposal_factor_Sigma must be numeric > 0")
     }
-  }
-  else {
+  } else {
     proposal_factor_Sigma <- 1
     message(paste("proposal_factor_Sigma was not provided so I am using", 
             proposal_factor_Sigma))
+  }
+  
+  # Error checking for kernel_locs
+  # Also, adjustment to above quantities if using spatially varying kernel params
+  SV <- FALSE
+  K  <- array(0, dim=c(1, 1, 1))
+  if (is.numeric(kernel_locs)) {
+    SV <- TRUE
+    # prepare kernel_locs
+    if (length(kernel_locs) > 1) {
+      kernel_locs <- center_all(kernel_locs, L)
+    } else {
+      kernel_locs <- gen_grid(as.integer(kernel_locs), L)
+    }
+    
+    # Modify kernel parameters
+    num_kernel_locs <- nrow(kernel_locs)
+    mu_kernel_mean <- rep(1, num_kernel_locs) %x% mu_kernel_mean
+    R <- exp(-as.matrix(dist(kernel_locs))) # Correlation matrix
+    mu_kernel_var <- R %x% mu_kernel_var
+    Sigma_kernel_df <- num_kernel_locs * Sigma_kernel_df
+    Sigma_kernel_scale <- R %x% (Sigma_kernel_scale / num_kernel_locs)
+    
+    # Create K matrix
+    K <- pdist::pdist(kernel_locs, locs)
+    K <- as.matrix(K)
+    K <- apply(K, 2, function(x) x / sum(x))
+    K <- array(t(K), dim=c(dim(K), 1))
+    
+  } else if (is.null(kernel_locs)) {
+    SV <- FALSE
+  } else {
+    stop("kernel_locs must be numeric or NULL")
   }
   
   # Process Error; creates alpha_lambda, beta_lambda, etc.
@@ -474,8 +462,7 @@ dstm_ide <- function(Y, locs=NULL, kernel_locs=NULL, proc_error = "discount", J=
       beta_lambda <- 3
       message(paste("beta_lambda was not provided so I am using", beta_lambda))
     }
-  } 
-  else if (proc_error == "IW") {
+  } else if (proc_error == "IW") {
     # C_W
     if ("C_W" %in% names(params)) {
       C_W <- params[["C_W"]]
@@ -498,8 +485,7 @@ dstm_ide <- function(Y, locs=NULL, kernel_locs=NULL, proc_error = "discount", J=
       message("df_W was not provided so I am using P")
       df_W <- P
     } 
-  }
-  else {
+  } else {
     stop("proc_error not recognized; must be `discount` or `IW`")
   }
   
@@ -513,6 +499,7 @@ dstm_ide <- function(Y, locs=NULL, kernel_locs=NULL, proc_error = "discount", J=
   results <- ide(Y, locs, m_0, C_0, mu_kernel_mean,
                  mu_kernel_var, K, Sigma_kernel_scale, C_W,
                  scalar_params, n_samples, verbose)
+  
   
   # Process output
   class(results) <- c("dstm_ide" , "dstm", "list")
