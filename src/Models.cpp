@@ -212,7 +212,7 @@ List ide(arma::mat Y, arma::mat locs, arma::colvec m_0, arma::mat C_0,
   arma::cube mu_kernel, Sigma_kernel_proposal;
   arma::field<arma::cube> Sigma_kernel(n_samples+1);
   
-  Rcout << "chk 1 " << std::endl;
+  //Rcout << "chk 1 " << std::endl;
   if (SV) {
     mu_kernel.set_size(locs_dim, n_kernel_points, n_samples+1);
     mu_kernel.slice(0) = arma::reshape(mu_kernel_mean, locs_dim, n_kernel_points);
@@ -231,7 +231,7 @@ List ide(arma::mat Y, arma::mat locs, arma::colvec m_0, arma::mat C_0,
   }
   Sigma_kernel.at(0) = Sigma_kernel_scale / (Sigma_kernel_df-locs_dim-1);
   
-  Rcout << "chk 2 " << std::endl;
+  //Rcout << "chk 2 " << std::endl;
   
   arma::colvec mu_kernel_proposal;
   arma::mat G_proposal;
@@ -239,17 +239,17 @@ List ide(arma::mat Y, arma::mat locs, arma::colvec m_0, arma::mat C_0,
   double Sigma_kernel_proposal_df = locs_dim + Sigma_kernel_df/proposal_factor_Sigma;
   const double Sigma_kernel_adjustment = Sigma_kernel_proposal_df - locs_dim - 1;
   double mh_ratio;
-  Rcout << "chk 3 " << std::endl;
+  //Rcout << "chk 3 " << std::endl;
   
   // Create observation matrix (F) and initial process matrix (G)
   arma::mat w_for_B = makeW(J, L);
   arma::mat F = makeF(locs, w_for_B, J, L);
   const arma::mat FtFiFt = arma::solve(F.t() * F, F.t());
   arma::mat B(S, 2*J*J + 1);
-  makeB(B, mu_kernel_mean, Sigma_kernel.at(0).slice(0), locs, w_for_B, J, L);
+  makeB(B, mu_kernel.slice(0), Sigma_kernel.at(0), locs, w_for_B, J, L);
   G.slice(0) = FtFiFt * B;
   
-  Rcout << "chk 4 " << std::endl;
+  //Rcout << "chk 4 " << std::endl;
   
   // Observation error
   arma::vec sigma2;
@@ -312,7 +312,7 @@ List ide(arma::mat Y, arma::mat locs, arma::colvec m_0, arma::mat C_0,
     }
     else {
       mu_kernel_proposal = mvnorm(mu_kernel.slice(i), mu_kernel_proposal_var);
-      makeB(B, mu_kernel_proposal, Sigma_kernel.at(i).slice(0), locs, w_for_B, J, L);
+      makeB(B, mu_kernel_proposal, Sigma_kernel.at(i), locs, w_for_B, J, L);
     }
     Rcout << "chk 6" << std::endl;
     
@@ -346,7 +346,7 @@ List ide(arma::mat Y, arma::mat locs, arma::colvec m_0, arma::mat C_0,
                                                        Sigma_kernel.at(i).slice(k) * Sigma_kernel_adjustment);
     }
     Rcout << "chk 9.1" << std::endl;
-    makeB(B, mu_kernel.slice(i+1), Sigma_kernel_proposal.slice(0), locs, w_for_B, J, L);
+    makeB(B, mu_kernel.slice(i+1), Sigma_kernel_proposal, locs, w_for_B, J, L);
     Rcout << "chk 9.2" << std::endl;
     G_proposal = FtFiFt * B; 
     Rcout << "chk 9.3" << std::endl;

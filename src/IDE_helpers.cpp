@@ -31,37 +31,31 @@ arma::mat makeF(const arma::mat & locs, const arma::mat & w,
 
 // The function makeB returns the matrix B used as part of the process matrix
 // mu and Sigma are the parameters of the IDE kernel
-void makeB(arma::mat & B, const arma::colvec mu, const arma::mat Sigma, 
+void makeB(arma::mat & B, const arma::mat & mu, const arma::cube & Sigma, 
            const arma::mat & locs, const arma::mat & w, const int J, const int L) {
-  arma::mat Jmat1 = (locs.col(0) + mu(0)) * w.col(0).t() +
-                    (locs.col(1) + mu(1)) * w.col(1).t();
-  arma::colvec Jvec = Sigma.at(0, 0) * arma::square(w.col(0)) +
-                      Sigma.at(1, 1) * arma::square(w.col(1)) +
-                      Sigma.at(0, 1) * arma::prod(w, 1);
-  arma::mat Jmat2 = arma::kron( arma::ones(locs.n_rows, 1), Jvec.t() );
-  Jmat2 = arma::exp(-0.5 * Jmat2);
-  B.col(0) = Jmat2.col(0);
-  B.cols(1, J*J) = Jmat2 % arma::cos(Jmat1);
-  B.cols(J*J + 1, 2*J*J) = Jmat2 % arma::sin(Jmat1);
-  B /= std::sqrt(L);
-  return;
-};
-
-// The function makeB returns the matrix B used as part of the process matrix
-// mu and Sigma are the parameters of the IDE kernel
-void makeB_SV(arma::mat & B, const arma::mat mu, const arma::cube Sigma, 
-           const arma::mat & locs, const arma::mat & w, const int J, const int L) {
-  // Jmat1
-  arma::mat Jmat1 = (locs.col(0) + mu.col(0)) * w.col(0).t() +
-    (locs.col(1) + mu.col(1)) * w.col(1).t();
   
-  // Jvec
-  arma::colvec tmp = Sigma.tube(0, 0);
-  arma::colvec Jvec = tmp % arma::square(w.col(0));
-  tmp = Sigma.tube(1, 1);
-  Jvec += tmp % arma::square(w.col(1));
-  tmp = Sigma.tube(0, 1);
-  Jvec += tmp % arma::prod(w, 1);
+  const bool SV = mu.n_cols > 1;
+  
+  // Jmat1 and Jvec
+  arma::mat Jmat1;
+  arma::colvec Jvec;
+  
+  if (SV) {
+    Jmat1 = (locs.col(0) + mu.row(0)) * w.col(0).t() +
+                      (locs.col(1) + mu.row(1)) * w.col(1).t();
+    arma::colvec tmp = Sigma.tube(0, 0);
+    Jvec = tmp % arma::square(w.col(0));
+    tmp = Sigma.tube(1, 1);
+    Jvec += tmp % arma::square(w.col(1));
+    tmp = Sigma.tube(0, 1);
+    Jvec += tmp % arma::prod(w, 1);
+  } else {
+    Jmat1 = (locs.col(0) + mu(0)) * w.col(0).t() +
+                      (locs.col(1) + mu(1)) * w.col(1).t();
+    Jvec = Sigma.at(0, 0, 0) * arma::square(w.col(0)) +
+           Sigma.at(1, 1, 0) * arma::square(w.col(1)) +
+           Sigma.at(0, 1, 0) * arma::prod(w, 1);
+  }
   
   // Jmat 2
   arma::mat Jmat2 = arma::kron( arma::ones(locs.n_rows, 1), Jvec.t() );
