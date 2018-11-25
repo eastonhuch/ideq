@@ -211,6 +211,7 @@ List ide(arma::mat Y, arma::mat locs, arma::colvec m_0, arma::mat C_0,
   // Create objects for storing sampled mu_kernel and Sigma_kernel
   arma::cube mu_kernel, Sigma_kernel_proposal;
   arma::field<arma::cube> Sigma_kernel(n_samples+1);
+  float u;
   
   //Rcout << "chk 1 " << std::endl;
   if (SV) {
@@ -305,21 +306,16 @@ List ide(arma::mat Y, arma::mat locs, arma::colvec m_0, arma::mat C_0,
       SampleW(W.slice(i+1), theta.slice(i), G.slice(i), C_W, df_W);
     }
     
-    Rcout << "chk 5" << std::endl;
+    //Rcout << "chk 5" << std::endl;
     // MH step for mu
-    if (SV) {
-      Rcout << "not implemented" << std::endl;  
-    }
-    else {
-      mu_kernel_proposal = mvnorm(mu_kernel.slice(i), mu_kernel_proposal_var);
-      makeB(B, mu_kernel_proposal, Sigma_kernel.at(i), locs, w_for_B, J, L);
-    }
-    Rcout << "chk 6" << std::endl;
+    mu_kernel_proposal = mvnorm(mu_kernel.slice(i), mu_kernel_proposal_var);
+    makeB(B, mu_kernel_proposal, Sigma_kernel.at(i), locs, w_for_B, J, L);
+    //Rcout << "chk 6" << std::endl;
     
     G_proposal = FtFiFt * B; 
     mh_ratio  = ldmvnorm(mu_kernel_proposal, mu_kernel.slice(0), mu_kernel_var);
     mh_ratio -= ldmvnorm(mu_kernel.slice(i), mu_kernel.slice(0), mu_kernel_var);
-    Rcout << "chk 7" << std::endl;
+    //Rcout << "chk 7" << std::endl;
     
     if (discount) {
       mh_ratio += kernelLikelihoodDiscount(G_proposal, theta.slice(i), C, lambda.at(i+1));
@@ -328,28 +324,25 @@ List ide(arma::mat Y, arma::mat locs, arma::colvec m_0, arma::mat C_0,
       mh_ratio += kernelLikelihood(G_proposal, theta.slice(i), W.slice(i+1));
       mh_ratio -= kernelLikelihood(G.slice(i), theta.slice(i), W.slice(i+1));
     }
-    Rcout << "chk 8" << std::endl;
     
-    if ( log((float) R::runif(0, 1)) < mh_ratio ) {
+    //Rcout << "chk 8" << std::endl;
+    u = R::runif(0, 1);
+    if (std::log(u) < mh_ratio) {
       mu_kernel.slice(i+1) = mu_kernel_proposal;
       G.slice(i+1) = G_proposal;
     } else {
       mu_kernel.slice(i+1) = mu_kernel.slice(i);
       G.slice(i+1) = G.slice(i);
     }
-    Rcout << "chk 9" << std::endl;
+    //Rcout << "chk 9" << std::endl;
     
     // MH step for Sigma
-    Sigma_kernel.at(i+1).slice(0) = Sigma_kernel.at(i).slice(0);
     for (int k=0; k<n_kernel_points; ++k) {
       Sigma_kernel_proposal.slice(k) = rgen::riwishart(Sigma_kernel_proposal_df,
                                                        Sigma_kernel.at(i).slice(k) * Sigma_kernel_adjustment);
     }
-    Rcout << "chk 9.1" << std::endl;
     makeB(B, mu_kernel.slice(i+1), Sigma_kernel_proposal, locs, w_for_B, J, L);
-    Rcout << "chk 9.2" << std::endl;
     G_proposal = FtFiFt * B; 
-    Rcout << "chk 9.3" << std::endl;
     mh_ratio  = ldiwishart(Sigma_kernel_proposal.slice(0), Sigma_kernel_df, 
                            Sigma_kernel_scale.slice(0));
     mh_ratio -= ldiwishart(Sigma_kernel.at(i).slice(0), Sigma_kernel_df,
@@ -365,13 +358,15 @@ List ide(arma::mat Y, arma::mat locs, arma::colvec m_0, arma::mat C_0,
     }
     Rcout << "chk 11" << std::endl;
     
+    // FIXME: make ldiwishart accept cubes instead of matrices
     mh_ratio -= ldiwishart(Sigma_kernel_proposal.slice(0), Sigma_kernel_proposal_df,
                            Sigma_kernel.at(i).slice(0) * Sigma_kernel_adjustment);
     mh_ratio += ldiwishart(Sigma_kernel.at(i).slice(0), Sigma_kernel_proposal_df,
                            Sigma_kernel_proposal.slice(0) * Sigma_kernel_adjustment);
     Rcout << "chk 12" << std::endl;
     
-    if ( log((float) R::runif(0, 1)) < mh_ratio ) {
+    u = R::runif(0, 1);
+    if (std::log(u) < mh_ratio) {
       Sigma_kernel.at(i+1).slice(0) = Sigma_kernel_proposal.slice(0);
       G.slice(i+1) = G_proposal;}
     else {
