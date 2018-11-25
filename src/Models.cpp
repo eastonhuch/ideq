@@ -9,6 +9,7 @@
 #include "Sample.h"
 #include "Distributions.h"
 #include "IDE_helpers.h"
+#include "misc_helpers.h"
 
 using namespace Rcpp;
 
@@ -194,10 +195,12 @@ List ide(arma::mat Y, arma::mat locs, arma::colvec m_0, arma::mat C_0,
   const double beta_lambda   = params["beta_lambda"];
   const double df_W = params["df_W"];
   const bool discount = C_W.at(0, 0) == NA;
-  const double proposal_factor_mu = params["proposal_factor_mu"];
+  const float proposal_factor_mu = params["proposal_factor_mu"];
   const double proposal_factor_Sigma = params["proposal_factor_Sigma"];
   const double Sigma_kernel_df = params["Sigma_kernel_df"];
   const bool SV = params["SV"] > 0;
+  const bool dyanamic_K = K.n_slices > 1;
+  int K_idx = 0;
   
   // Create matrices and cubes for FFBS
   Y.insert_cols(0, 1); // make Y true-indexed; i.e. index 1 is t_1
@@ -209,18 +212,24 @@ List ide(arma::mat Y, arma::mat locs, arma::colvec m_0, arma::mat C_0,
   C.slice(0) = C_0;
   
   // Create objects for storing sampled mu_kernel and Sigma_kernel
-  arma::cube mu_kernel, Sigma_kernel_proposal;
-  arma::field<arma::cube> Sigma_kernel(n_samples+1);
   float u;
-  
+  arma::cube mu_kernel, mu_kernel_fixed, Sigma_kernel_proposal;
+  arma::field<arma::cube> Sigma_kernel(n_samples+1);
+  arma::field<arma::cube> Sigma_kernel_fixed(n_samples+1);
   //Rcout << "chk 1 " << std::endl;
+  
   if (SV) {
-    mu_kernel.set_size(locs_dim, n_kernel_points, n_samples+1);
-    mu_kernel.slice(0) = arma::reshape(mu_kernel_mean, locs_dim, n_kernel_points);
+    mu_kernel.set_size(locs_dim, S, n_samples+1);
+    mu_kernel_fixed.set_size(locs_dim, n_kernel_points, n_samples+1);
+    mu_kernel_fixed.slice(0) = arma::reshape(mu_kernel_mean, locs_dim, n_kernel_points);
+    mu_kernel.slice(0) = mu_kernel_fixed.slice(0) * K.slice(K_idx);
     Sigma_kernel_proposal.set_size(locs_dim, locs_dim, n_kernel_points);
     for (int i=0; i<=n_samples; ++i) {
-      Sigma_kernel.at(i).set_size(locs_dim, locs_dim, n_kernel_points);
+      Sigma_kernel.at(i).set_size(locs_dim, locs_dim, S);
+      Sigma_kernel_fixed.at(i).set_size(locs_dim, locs_dim, n_kernel_points);
     }
+    Sigma_kernel_fixed.at(0) = Sigma_kernel_scale / (Sigma_kernel_df-locs_dim-1);
+    mapSigma(Sigma_kernel.at(0), Sigma_kernel_fixed.at(0), K);
   }
   else {
     mu_kernel.set_size(locs_dim, 1, n_samples+1);
@@ -229,10 +238,9 @@ List ide(arma::mat Y, arma::mat locs, arma::colvec m_0, arma::mat C_0,
     for (int i=0; i<=n_samples; ++i) {
       Sigma_kernel.at(i).set_size(locs_dim, locs_dim, 1);
     }
+    Sigma_kernel.at(0) = Sigma_kernel_scale / (Sigma_kernel_df-locs_dim-1);
   }
-  Sigma_kernel.at(0) = Sigma_kernel_scale / (Sigma_kernel_df-locs_dim-1);
-  
-  //Rcout << "chk 2 " << std::endl;
+  Rcout << "chk 2 " << std::endl;
   
   arma::colvec mu_kernel_proposal;
   arma::mat G_proposal;
@@ -249,7 +257,6 @@ List ide(arma::mat Y, arma::mat locs, arma::colvec m_0, arma::mat C_0,
   arma::mat B(S, 2*J*J + 1);
   makeB(B, mu_kernel.slice(0), Sigma_kernel.at(0), locs, w_for_B, J, L);
   G.slice(0) = FtFiFt * B;
-  
   //Rcout << "chk 4 " << std::endl;
   
   // Observation error
@@ -305,8 +312,8 @@ List ide(arma::mat Y, arma::mat locs, arma::colvec m_0, arma::mat C_0,
     else {
       SampleW(W.slice(i+1), theta.slice(i), G.slice(i), C_W, df_W);
     }
-    
     //Rcout << "chk 5" << std::endl;
+    
     // MH step for mu
     mu_kernel_proposal = mvnorm(mu_kernel.slice(i), mu_kernel_proposal_var);
     makeB(B, mu_kernel_proposal, Sigma_kernel.at(i), locs, w_for_B, J, L);

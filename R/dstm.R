@@ -434,7 +434,7 @@ dstm_ide <- function(Y, locs=NULL, kernel_locs=NULL, proc_error = "discount", J=
     K <- pdist::pdist(kernel_locs, locs)
     K <- as.matrix(K)
     K <- apply(K, 2, function(x) x / sum(x))
-    K <- array(t(K), dim=c(dim(K), 1))
+    K <- array(K, dim=c(dim(K), 1))
     
   } else if (is.null(kernel_locs)) {
     SV <- FALSE
