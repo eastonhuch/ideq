@@ -43,12 +43,20 @@ double ldmvnorm(const arma::colvec x, const arma::colvec & mean,
   return -tmp.at(0)/2;
 };
 
-double ldiwishart(const arma::mat x, const double df,
-                  const arma::mat & scale) {
+double ldiwishart(const arma::cube & x, const double df,
+                  const arma::cube & scale) {
   const int p = x.n_cols;
-  double d = df/2 * log(arma::det(scale));
-  d -= (df+p+1)/2 * log(arma::det(x));
-  d -= 1/2 * log(arma::trace(arma::solve(x, scale)));
+  double d = 0;
+  
+  if (x.n_slices != scale.n_slices) {
+    throw std::invalid_argument("x and scale must have same number of slices");
+  }
+  
+  for (int i=0; i<x.n_slices; ++i) {
+    d += df/2 * log(arma::det(scale.slice(i)));
+    d -= (df+p+1)/2 * log(arma::det(x.slice(i)));
+    d -= 1/2 * log(arma::trace(arma::solve(x.slice(i), scale.slice(i))));
+  }
   return d;
 }
 

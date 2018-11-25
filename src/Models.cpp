@@ -343,11 +343,11 @@ List ide(arma::mat Y, arma::mat locs, arma::colvec m_0, arma::mat C_0,
     }
     makeB(B, mu_kernel.slice(i+1), Sigma_kernel_proposal, locs, w_for_B, J, L);
     G_proposal = FtFiFt * B; 
-    mh_ratio  = ldiwishart(Sigma_kernel_proposal.slice(0), Sigma_kernel_df, 
-                           Sigma_kernel_scale.slice(0));
-    mh_ratio -= ldiwishart(Sigma_kernel.at(i).slice(0), Sigma_kernel_df,
-                           Sigma_kernel_scale.slice(0));
-    Rcout << "chk 10" << std::endl;
+    mh_ratio  = ldiwishart(Sigma_kernel_proposal, Sigma_kernel_df, 
+                           Sigma_kernel_scale);
+    mh_ratio -= ldiwishart(Sigma_kernel.at(i), Sigma_kernel_df,
+                           Sigma_kernel_scale);
+    //Rcout << "chk 10" << std::endl;
     
     if (discount) {
       mh_ratio += kernelLikelihoodDiscount(G_proposal, theta.slice(i), C, lambda.at(i+1));
@@ -356,14 +356,13 @@ List ide(arma::mat Y, arma::mat locs, arma::colvec m_0, arma::mat C_0,
       mh_ratio += kernelLikelihood(G_proposal, theta.slice(i), W.slice(i+1));
       mh_ratio -= kernelLikelihood(G.slice(i), theta.slice(i), W.slice(i+1));
     }
-    Rcout << "chk 11" << std::endl;
+    //Rcout << "chk 11" << std::endl;
     
-    // FIXME: make ldiwishart accept cubes instead of matrices
-    mh_ratio -= ldiwishart(Sigma_kernel_proposal.slice(0), Sigma_kernel_proposal_df,
-                           Sigma_kernel.at(i).slice(0) * Sigma_kernel_adjustment);
-    mh_ratio += ldiwishart(Sigma_kernel.at(i).slice(0), Sigma_kernel_proposal_df,
-                           Sigma_kernel_proposal.slice(0) * Sigma_kernel_adjustment);
-    Rcout << "chk 12" << std::endl;
+    mh_ratio -= ldiwishart(Sigma_kernel_proposal, Sigma_kernel_proposal_df,
+                           Sigma_kernel.at(i) * Sigma_kernel_adjustment);
+    mh_ratio += ldiwishart(Sigma_kernel.at(i), Sigma_kernel_proposal_df,
+                           Sigma_kernel_proposal * Sigma_kernel_adjustment);
+    //Rcout << "chk 12" << std::endl;
     
     u = R::runif(0, 1);
     if (std::log(u) < mh_ratio) {
