@@ -433,6 +433,7 @@ dstm_ide <- function(Y, locs=NULL, kernel_locs=NULL, proc_error = "discount", J=
     # Create K matrix
     K <- pdist::pdist(kernel_locs, locs)
     K <- as.matrix(K)
+    K <- exp(-K)
     K <- apply(K, 2, function(x) x / sum(x))
     K <- array(K, dim=c(dim(K), 1))
     

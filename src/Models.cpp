@@ -186,7 +186,7 @@ List ide(arma::mat Y, arma::mat locs, arma::colvec m_0, arma::mat C_0,
   const int T = Y.n_cols;
   const int S = Y.n_rows;
   const int locs_dim = locs.n_cols;
-  const int n_kernel_points = K.n_cols;
+  const int n_knots = K.n_cols;
   const double alpha_sigma2  = params["alpha_sigma2"];
   const double beta_sigma2   = params["beta_sigma2"];
   double       sigma2_i      = params["sigma2"];
@@ -213,23 +213,26 @@ List ide(arma::mat Y, arma::mat locs, arma::colvec m_0, arma::mat C_0,
   
   // Create objects for storing sampled mu_kernel and Sigma_kernel
   float u;
-  arma::cube mu_kernel, mu_kernel_fixed, Sigma_kernel_proposal;
+  arma::cube mu_kernel, mu_kernel_knots, Sigma_kernel_proposal;
   arma::field<arma::cube> Sigma_kernel(n_samples+1);
-  arma::field<arma::cube> Sigma_kernel_fixed(n_samples+1);
+  arma::field<arma::cube> Sigma_kernel_knots(n_samples+1);
   //Rcout << "chk 1 " << std::endl;
   
   if (SV) {
+    // Set size of kernel parameter objects
     mu_kernel.set_size(locs_dim, S, n_samples+1);
-    mu_kernel_fixed.set_size(locs_dim, n_kernel_points, n_samples+1);
-    mu_kernel_fixed.slice(0) = arma::reshape(mu_kernel_mean, locs_dim, n_kernel_points);
-    mu_kernel.slice(0) = mu_kernel_fixed.slice(0) * K.slice(K_idx);
-    Sigma_kernel_proposal.set_size(locs_dim, locs_dim, n_kernel_points);
+    mu_kernel_knots.set_size(locs_dim, n_knots, n_samples+1);
+    Sigma_kernel_proposal.set_size(locs_dim, locs_dim, n_knots);
     for (int i=0; i<=n_samples; ++i) {
       Sigma_kernel.at(i).set_size(locs_dim, locs_dim, S);
-      Sigma_kernel_fixed.at(i).set_size(locs_dim, locs_dim, n_kernel_points);
+      Sigma_kernel_knots.at(i).set_size(locs_dim, locs_dim, n_knots);
     }
-    Sigma_kernel_fixed.at(0) = Sigma_kernel_scale / (Sigma_kernel_df-locs_dim-1);
-    mapSigma(Sigma_kernel.at(0), Sigma_kernel_fixed.at(0), K);
+    
+    // Set initial values
+    mu_kernel_knots.slice(0) = arma::reshape(mu_kernel_mean, locs_dim, n_knots);
+    mu_kernel.slice(0) = mu_kernel_knots.slice(0) * K.slice(K_idx);
+    Sigma_kernel_knots.at(0) = Sigma_kernel_scale / (Sigma_kernel_df-locs_dim-1);
+    mapSigma(Sigma_kernel.at(0), Sigma_kernel_knots.at(0), K);
   }
   else {
     mu_kernel.set_size(locs_dim, 1, n_samples+1);
@@ -240,7 +243,7 @@ List ide(arma::mat Y, arma::mat locs, arma::colvec m_0, arma::mat C_0,
     }
     Sigma_kernel.at(0) = Sigma_kernel_scale / (Sigma_kernel_df-locs_dim-1);
   }
-  Rcout << "chk 2 " << std::endl;
+  //Rcout << "chk 2 " << std::endl;
   
   arma::colvec mu_kernel_proposal;
   arma::mat G_proposal;
@@ -320,6 +323,7 @@ List ide(arma::mat Y, arma::mat locs, arma::colvec m_0, arma::mat C_0,
     //Rcout << "chk 6" << std::endl;
     
     G_proposal = FtFiFt * B; 
+    //FIXME: allow x and mean to be matrices by resizing them in ldmvnorm
     mh_ratio  = ldmvnorm(mu_kernel_proposal, mu_kernel.slice(0), mu_kernel_var);
     mh_ratio -= ldmvnorm(mu_kernel.slice(i), mu_kernel.slice(0), mu_kernel_var);
     //Rcout << "chk 7" << std::endl;
@@ -344,7 +348,7 @@ List ide(arma::mat Y, arma::mat locs, arma::colvec m_0, arma::mat C_0,
     //Rcout << "chk 9" << std::endl;
     
     // MH step for Sigma
-    for (int k=0; k<n_kernel_points; ++k) {
+    for (int k=0; k<n_knots; ++k) {
       Sigma_kernel_proposal.slice(k) = rgen::riwishart(Sigma_kernel_proposal_df,
                                                        Sigma_kernel.at(i).slice(k) * Sigma_kernel_adjustment);
     }
