@@ -233,9 +233,9 @@ dstm_eof <- function(Y, proc_model = "RW",
 #'             point, then `locs` is an S by 2 matrix. 
 #'             If the locations change at different time points,
 #'             then `locs` is an array with dimension (S, 2, T)
-#' @param kernel_locs integer or matrix.
+#' @param knot_locs integer or matrix.
 #'                    if integer, then kernel parameters are calculated on a 2-D grid
-#'                    with dimension (`kernel_locs`, `kernel_locs`)
+#'                    with dimension (`knot_locs`, `knot_locs`)
 #' @param proc_error "discount" or "IW".
 #'                   If "discount", then the process error is estimated using a discount factor.
 #'                   If "IW", then the process error is estimated as a realization from
@@ -252,7 +252,7 @@ dstm_eof <- function(Y, proc_model = "RW",
 #' @export
 #' @examples
 #' # Duhh...nothing yet
-dstm_ide <- function(Y, locs=NULL, kernel_locs=NULL, proc_error = "discount", J=4L,
+dstm_ide <- function(Y, locs=NULL, knot_locs=NULL, proc_error = "discount", J=4L,
                      n_samples = 1L, sample_sigma2 = TRUE,
                      verbose = FALSE, params = NULL) {
 
@@ -343,7 +343,7 @@ dstm_ide <- function(Y, locs=NULL, kernel_locs=NULL, proc_error = "discount", J=
   # Process Model; creates kernel parameters
   # FIXME: Add ability to use different locs
   
-  num_kernel_locs <- 1
+  n_knots <- 1
   locs_dim <- ncol(locs)
   if ("mu_kernel_mean" %in% names(params)) {
     mu_kernel_mean <- params[["mu_kernel_mean"]]
@@ -411,40 +411,40 @@ dstm_ide <- function(Y, locs=NULL, kernel_locs=NULL, proc_error = "discount", J=
             proposal_factor_Sigma))
   }
   
-  # Error checking for kernel_locs
+  # Error checking for knot_locs
   # Also, adjustment to above quantities if using spatially varying kernel params
   SV <- FALSE
   K  <- array(0, dim=c(1, 1, 1))
-  if (is.numeric(kernel_locs)) {
+  if (is.numeric(knot_locs)) {
     SV <- TRUE
-    # prepare kernel_locs
-    if (length(kernel_locs) > 1) {
-      kernel_locs <- center_all(kernel_locs, L)
+    # prepare knot_locs
+    if (length(knot_locs) > 1) {
+      knot_locs <- center_all(knot_locs, L)
     } else {
-      kernel_locs <- gen_grid(as.integer(kernel_locs), L)
+      knot_locs <- gen_grid(as.integer(knot_locs), L)
     }
     
     # Modify kernel parameters
-    num_kernel_locs <- nrow(kernel_locs)
-    mu_kernel_mean <- rep(1, num_kernel_locs) %x% mu_kernel_mean
-    R <- exp(-as.matrix(dist(kernel_locs))) # Correlation matrix
+    n_knots <- nrow(knot_locs)
+    mu_kernel_mean <- rep(1, n_knots) %x% mu_kernel_mean
+    R <- exp(-as.matrix(dist(knot_locs))) # Correlation matrix
     mu_kernel_var <- R %x% mu_kernel_var
     
     # Create K matrix
-    K <- pdist::pdist(kernel_locs, locs)
+    K <- pdist::pdist(knot_locs, locs)
     K <- as.matrix(K)
     K <- exp(-K)
     K <- apply(K, 2, function(x) x / sum(x))
     K <- array(K, dim=c(dim(K), 1))
     
-  } else if (is.null(kernel_locs)) {
+  } else if (is.null(knot_locs)) {
     SV <- FALSE
   } else {
-    stop("kernel_locs must be numeric or NULL")
+    stop("knot_locs must be numeric or NULL")
   }
   
-  if (is.null(num_kernel_locs)) num_kernel_locs <- 1
-  Sigma_kernel_scale <- array(1, dim=c(1, 1, num_kernel_locs)) %x%
+  if (is.null(n_knots)) n_knots <- 1
+  Sigma_kernel_scale <- array(1, dim=c(1, 1, n_knots)) %x%
                         Sigma_kernel_scale
   
   # Process Error; creates alpha_lambda, beta_lambda, etc.
