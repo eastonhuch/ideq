@@ -426,15 +426,15 @@ dstm_ide <- function(Y, locs=NULL, knot_locs=NULL, proc_error = "discount", J=4L
     
     # Modify kernel parameters
     n_knots <- nrow(knot_locs)
-    mu_kernel_mean <- rep(1, n_knots) %x% mu_kernel_mean
-    R <- exp(-as.matrix(dist(knot_locs))) # Correlation matrix
-    mu_kernel_var <- R %x% mu_kernel_var
+    mu_kernel_mean <- mu_kernel_mean %x% rep(1, n_knots)
+    mu_kernel_var <- mu_kernel_var %x% diag(n_knots)
     
     # Create K matrix
     K <- pdist::pdist(knot_locs, locs)
     K <- as.matrix(K)
     K <- exp(-K)
     K <- apply(K, 2, function(x) x / sum(x))
+    K <- t(K) # Makes K of dimension n_locs by n_knots
     K <- array(K, dim=c(dim(K), 1))
     
   } else if (is.null(knot_locs)) {
