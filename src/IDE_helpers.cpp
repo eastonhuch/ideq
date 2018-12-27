@@ -3,6 +3,8 @@
 
 // [[Rcpp::depends(RcppArmadillo)]]
 
+#include "Distributions.h"
+
 using namespace Rcpp;
 
 arma::mat makeW(const int J, const int L) {
@@ -96,4 +98,18 @@ double kernelLikelihood(const arma::mat & G, const arma::mat & theta,
   }
   
   return -tmp(0)/2; 
+};
+
+arma::mat proposeMu(arma::mat mu, arma::mat Sigma) {
+  arma::colvec mu_vec = arma::vectorise(mu);
+  if (!Sigma.is_square()) {
+    throw std::invalid_argument("Sigma must be square");
+  }
+  if (mu_vec.n_elem != Sigma.n_rows) {
+    throw std::invalid_argument("Number of elements in mu must equal dimension of Sigma");
+  }
+  
+  arma::colvec tmp = mvnorm(mu_vec, Sigma);
+  arma::mat mu_proposal = arma::reshape(tmp, mu.n_rows, mu.n_cols);
+  return mu_proposal;
 };

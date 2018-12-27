@@ -256,9 +256,7 @@ List ide(arma::mat Y, arma::mat locs, arma::colvec m_0, arma::mat C_0,
   const arma::mat FtFiFt = arma::solve(F.t() * F, F.t());
   arma::mat B(S, 2*J*J + 1);
   makeB(B, mu_kernel.slice(0), Sigma_kernel.at(0), locs, w_for_B, J, L);
-  Rcout << "chk 3b" << std::endl;
   G.slice(0) = FtFiFt * B;
-  Rcout << "chk 4 " << std::endl;
   
   // Observation error
   arma::vec sigma2;
@@ -313,10 +311,16 @@ List ide(arma::mat Y, arma::mat locs, arma::colvec m_0, arma::mat C_0,
     else {
       SampleW(W.slice(i+1), theta.slice(i), G.slice(i), C_W, df_W);
     }
-    Rcout << "chk 5" << std::endl;
     
     // MH step for mu
-    mu_kernel_proposal = mvnorm(mu_kernel.slice(i), mu_kernel_proposal_var);
+    if (SV) {
+      mu_kernel_proposal = proposeMu(mu_kernel_knots.slice(i), mu_kernel_proposal_var);
+    } else {
+      mu_kernel_proposal = mvnorm(mu_kernel.slice(i), mu_kernel_proposal_var);
+      //mu_kernel_proposal = proposeMu(mu_kernel.slice(i), mu_kernel_proposal_var);
+    }
+    Rcout << "chk 5" << std::endl;
+    //mu_kernel_proposal = mvnorm(mu_kernel.slice(i), mu_kernel_proposal_var);
     makeB(B, mu_kernel_proposal, Sigma_kernel.at(i), locs, w_for_B, J, L);
     Rcout << "chk 6" << std::endl;
     

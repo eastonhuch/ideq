@@ -18,4 +18,6 @@ double kernelLikelihoodDiscount(const arma::mat & G, const arma::mat & theta,
 double kernelLikelihood(const arma::mat & G, const arma::mat & theta, 
                         const arma::mat W);
 
+arma::mat proposeMu(arma::mat mu, arma::mat Sigma);
+
 #endif
