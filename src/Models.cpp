@@ -352,7 +352,6 @@ List ide(arma::mat Y, arma::mat locs, arma::colvec m_0, arma::mat C_0,
       if (SV) mu_kernel_knots.slice(i+1) = mu_kernel_knots.slice(i);
     }
     
-    Rcout << "chk 7" << std::endl;
     // MH step for Sigma
     // Propose Sigma and calculate probabilities under prior
     if (SV) {
@@ -377,6 +376,7 @@ List ide(arma::mat Y, arma::mat locs, arma::colvec m_0, arma::mat C_0,
                              Sigma_kernel_scale);
     }
     
+    // Calculate likelihood
     makeB(B, mu_kernel.slice(i+1), Sigma_kernel_proposal, locs, w_for_B, J, L);
     G_proposal = FtFiFt * B; 
     
@@ -387,20 +387,22 @@ List ide(arma::mat Y, arma::mat locs, arma::colvec m_0, arma::mat C_0,
       mh_ratio += kernelLikelihood(G_proposal, theta.slice(i), W.slice(i+1));
       mh_ratio -= kernelLikelihood(G.slice(i), theta.slice(i), W.slice(i+1));
     }
-    Rcout << "chk 11" << std::endl;
     
+    // Calculate transition probabilities
     mh_ratio -= ldiwishart(Sigma_kernel_proposal, Sigma_kernel_proposal_df,
                            Sigma_kernel.at(i) * Sigma_kernel_adjustment);
     mh_ratio += ldiwishart(Sigma_kernel.at(i), Sigma_kernel_proposal_df,
                            Sigma_kernel_proposal * Sigma_kernel_adjustment);
-    Rcout << "chk 12" << std::endl;
     
+    // Accept according to mh-ratio
     u = R::runif(0, 1);
     if (std::log(u) < mh_ratio) {
-      Sigma_kernel.at(i+1).slice(0) = Sigma_kernel_proposal.slice(0);
-      G.slice(i+1) = G_proposal;}
-    else {
-      Sigma_kernel.at(i+1).slice(0) = Sigma_kernel.at(i).slice(0);
+      Sigma_kernel.at(i+1) = Sigma_kernel_proposal;
+      G.slice(i+1) = G_proposal;
+      Sigma_kernel_knots.at(i+1) = Sigma_kernel_knots_proposal; 
+    } else {
+      Sigma_kernel.at(i+1) = Sigma_kernel.at(i);
+      Sigma_kernel_knots.at(i+1) = Sigma_kernel_knots.at(i);
     }
   }
   
