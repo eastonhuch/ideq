@@ -7,29 +7,35 @@
 
 using namespace Rcpp;
 
-arma::mat makeW(const int J, const int L) {
-  arma::colvec freqs = 2*PI/L * arma::regspace(1, J);
-  arma::mat w(J*J, 2);
-  w.col(0) = arma::repmat(freqs, J, 1);
-  w.col(1) = arma::repelem(freqs, J, 1);
-  return w;
-}
+double kernelLikelihood(const arma::mat & G, const arma::mat & theta,
+                        const arma::mat W) {
+  const int T = theta.n_cols-1;
+  const int p = theta.n_rows;
+  arma::mat tmp = arma::zeros(1, 1);
+  arma::colvec d;
+  
+  for (int t=1; t<=T; ++t) {
+    d = theta.col(t) - G * theta.col(t-1);
+    tmp += d.t() * arma::solve(W, d);
+  }
+  
+  return -tmp(0)/2; 
+};
 
-// Observation matrix
-// The number of total basis function is J^2+1
-// L is the range of the Fourier approximation
-// locs are the centered/scaled spatial locations
-arma::mat makeF(const arma::mat & locs, const arma::mat & w,
-                  const int J, const int L) {
-  arma::mat Jmat = locs.col(0) * w.col(0).t() +
-                   locs.col(1) * w.col(1).t();
-  arma::mat Phi(Jmat.n_rows, 2*J*J + 1);
-  Phi.col(0).fill(0.5);
-  Phi.cols(1, J*J) = arma::cos(Jmat);
-  Phi.cols(J*J + 1, 2*J*J) = arma::sin(Jmat);
-  Phi /= std::sqrt(L);
-  return Phi;
-}
+double kernelLikelihoodDiscount(const arma::mat & G, const arma::mat & theta, 
+                        const arma::cube & C, const double lambda) {
+  const int T = theta.n_cols-1;
+  const int p = theta.n_rows;
+  arma::mat tmp = arma::zeros(1, 1);
+  arma::colvec d;
+  
+  for (int t=1; t<=T; ++t) {
+    d = theta.col(t) - G * theta.col(t-1);
+    tmp += d.t() * arma::solve(lambda * G * C.slice(t) * G.t(), d);
+  }
+  
+  return -tmp(0)/2; 
+};
 
 // The function makeB returns the matrix B used as part of the process matrix
 // mu and Sigma are the parameters of the IDE kernel
@@ -75,48 +81,28 @@ void makeB(arma::mat & B, const arma::mat & mu, const arma::cube & Sigma,
   return;
 };
 
-double kernelLikelihoodDiscount(const arma::mat & G, const arma::mat & theta, 
-                        const arma::cube & C, const double lambda) {
-  const int T = theta.n_cols-1;
-  const int p = theta.n_rows;
-  arma::mat tmp = arma::zeros(1, 1);
-  arma::colvec d;
-  
-  for (int t=1; t<=T; ++t) {
-    d = theta.col(t) - G * theta.col(t-1);
-    tmp += d.t() * arma::solve(lambda * G * C.slice(t) * G.t(), d);
-  }
-  
-  return -tmp(0)/2; 
+// Observation matrix
+// The number of total basis function is J^2+1
+// L is the range of the Fourier approximation
+// locs are the centered/scaled spatial locations
+arma::mat makeF(const arma::mat & locs, const arma::mat & w,
+                  const int J, const int L) {
+  arma::mat Jmat = locs.col(0) * w.col(0).t() +
+                   locs.col(1) * w.col(1).t();
+  arma::mat Phi(Jmat.n_rows, 2*J*J + 1);
+  Phi.col(0).fill(0.5);
+  Phi.cols(1, J*J) = arma::cos(Jmat);
+  Phi.cols(J*J + 1, 2*J*J) = arma::sin(Jmat);
+  Phi /= std::sqrt(L);
+  return Phi;
 };
 
-double kernelLikelihood(const arma::mat & G, const arma::mat & theta,
-                        const arma::mat W) {
-  const int T = theta.n_cols-1;
-  const int p = theta.n_rows;
-  arma::mat tmp = arma::zeros(1, 1);
-  arma::colvec d;
-  
-  for (int t=1; t<=T; ++t) {
-    d = theta.col(t) - G * theta.col(t-1);
-    tmp += d.t() * arma::solve(W, d);
-  }
-  
-  return -tmp(0)/2; 
-};
-
-arma::mat proposeMu(arma::mat mu, arma::mat Sigma) {
-  arma::colvec mu_vec = arma::vectorise(mu);
-  if (!Sigma.is_square()) {
-    throw std::invalid_argument("Sigma must be square");
-  }
-  if (mu_vec.n_elem != Sigma.n_rows) {
-    throw std::invalid_argument("Number of elements in mu must equal dimension of Sigma");
-  }
-  
-  arma::colvec tmp = mvnorm(mu_vec, Sigma);
-  arma::mat mu_proposal = arma::reshape(tmp, mu.n_rows, mu.n_cols);
-  return mu_proposal;
+arma::mat makeW(const int J, const int L) {
+  arma::colvec freqs = 2*PI/L * arma::regspace(1, J);
+  arma::mat w(J*J, 2);
+  w.col(0) = arma::repmat(freqs, J, 1);
+  w.col(1) = arma::repelem(freqs, J, 1);
+  return w;
 };
 
 void mapSigma(arma::cube & s_many, const arma::cube & s_few,
@@ -134,4 +120,18 @@ void mapSigma(arma::cube & s_many, const arma::cube & s_few,
   }
   
   return;
-}
+};
+
+arma::mat proposeMu(arma::mat mu, arma::mat Sigma) {
+  arma::colvec mu_vec = arma::vectorise(mu);
+  if (!Sigma.is_square()) {
+    throw std::invalid_argument("Sigma must be square");
+  }
+  if (mu_vec.n_elem != Sigma.n_rows) {
+    throw std::invalid_argument("Number of elements in mu must equal dimension of Sigma");
+  }
+  
+  arma::colvec tmp = rmvnorm(mu_vec, Sigma);
+  arma::mat mu_proposal = arma::reshape(tmp, mu.n_rows, mu.n_cols);
+  return mu_proposal;
+};

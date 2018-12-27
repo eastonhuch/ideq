@@ -4,7 +4,7 @@
 \alias{dstm_ide}
 \title{Fits an integrodifference equation model (IDE)}
 \usage{
-dstm_ide(Y, locs = NULL, kernel_locs = NULL, proc_error = "discount",
+dstm_ide(Y, locs = NULL, knot_locs = NULL, proc_error = "discount",
   J = 4L, n_samples = 1L, sample_sigma2 = TRUE, verbose = FALSE,
   params = NULL)
 }
@@ -18,9 +18,9 @@ point, then `locs` is an S by 2 matrix.
 If the locations change at different time points,
 then `locs` is an array with dimension (S, 2, T)}
 
-\item{kernel_locs}{integer or matrix.
+\item{knot_locs}{integer or matrix.
 if integer, then kernel parameters are calculated on a 2-D grid
-with dimension (`kernel_locs`, `kernel_locs`)}
+with dimension (`knot_locs`, `knot_locs`)}
 
 \item{proc_error}{"discount" or "IW".
 If "discount", then the process error is estimated using a discount factor.

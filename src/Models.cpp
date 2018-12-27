@@ -9,7 +9,7 @@
 #include "Sample.h"
 #include "Distributions.h"
 #include "IDE_helpers.h"
-#include "misc_helpers.h"
+#include "Misc_helpers.h"
 
 using namespace Rcpp;
 
@@ -57,11 +57,11 @@ List eof(arma::mat Y, arma::mat F, arma::mat G_0, arma::mat Sigma_G_inv,
     tmp = G_0.diag();
     G_0.set_size(P, 1);
     G_0 = tmp;
-    G.slice(0).diag() = mvnorm(G_0, arma::inv_sympd(Sigma_G_inv));
+    G.slice(0).diag() = rmvnorm(G_0, arma::inv_sympd(Sigma_G_inv));
   } else if (FULL) {
     G.set_size(P, P, n_samples+1);
     G_0.reshape(P*P, 1);
-    tmp = mvnorm(G_0, arma::inv_sympd(Sigma_G_inv));
+    tmp = rmvnorm(G_0, arma::inv_sympd(Sigma_G_inv));
     tmp.reshape(P, P);
     G.slice(0) = tmp;
   } else {
@@ -73,7 +73,7 @@ List eof(arma::mat Y, arma::mat F, arma::mat G_0, arma::mat Sigma_G_inv,
   arma::vec sigma2;
   if (sample_sigma2) {
     sigma2.set_size(n_samples+1);
-    SampleSigma2(sigma2.at(0), alpha_sigma2, beta_sigma2, Y, F, theta.slice(0));
+    sampleSigma2(sigma2.at(0), alpha_sigma2, beta_sigma2, Y, F, theta.slice(0));
   }
   else {
     sigma2_i = params["sigma2"];
@@ -105,44 +105,44 @@ List eof(arma::mat Y, arma::mat F, arma::mat G_0, arma::mat Sigma_G_inv,
       Rcout << "Filtering sample number " << i+1 << std::endl;
     }
     if (discount) {
-      KalmanDiscount(m, C, a, R_inv, Y, F, G.slice(G_idx), sigma2_i, lambda.at(i));
+      kalmanDiscount(m, C, a, R_inv, Y, F, G.slice(G_idx), sigma2_i, lambda.at(i));
       C_T.slice(i+1) = C.slice(T); // Save for predictions
     } else {
-      Kalman(m, C, a, R_inv, Y, F, G.slice(G_idx), sigma2_i, W.slice(i));
+      kalman(m, C, a, R_inv, Y, F, G.slice(G_idx), sigma2_i, W.slice(i));
     }
     
     if (verbose) {
       Rcout << "Drawing sample number " << i+1 << std::endl;
     }
-    BackwardSample(theta.slice(i), m, a, C, G.slice(G_idx), R_inv);
+    backwardSample(theta.slice(i), m, a, C, G.slice(G_idx), R_inv);
     
     // Sample Sigma2
     if (sample_sigma2) {
-      SampleSigma2(sigma2.at(i+1), alpha_sigma2, beta_sigma2, Y, F, theta.slice(i));
+      sampleSigma2(sigma2.at(i+1), alpha_sigma2, beta_sigma2, Y, F, theta.slice(i));
     }
     
     // Sample W
     if (discount) {
-      SampleLambda(lambda.at(i+1), alpha_lambda, beta_lambda,
+      sampleLambda(lambda.at(i+1), alpha_lambda, beta_lambda,
                    G.slice(G_idx), C, theta.slice(i));
     } else {
-      SampleW(W.slice(i+1), theta.slice(i), G.slice(G_idx), C_W, df_W);
+      sampleW(W.slice(i+1), theta.slice(i), G.slice(G_idx), C_W, df_W);
     }
     
     // Sample G
     if (AR) {
       if (discount) {
-        SampleAR(G.slice(G_idx+1), R_inv, theta.slice(i),
+        sampleAR(G.slice(G_idx+1), R_inv, theta.slice(i),
                  Sigma_G_inv, G_0, true, lambda.at(i+1));
       } else {
-        SampleAR(G.slice(G_idx+1), W.slices(i+1, i+1), theta.slice(i), Sigma_G_inv, G_0);
+        sampleAR(G.slice(G_idx+1), W.slices(i+1, i+1), theta.slice(i), Sigma_G_inv, G_0);
       }
     } else if (FULL) {
       if (discount) {
-        SampleG(G.slice(G_idx+1), R_inv, theta.slice(i),
+        sampleG(G.slice(G_idx+1), R_inv, theta.slice(i),
                 Sigma_G_inv, G_0, true, lambda.at(i+1));
       } else {
-        SampleG(G.slice(G_idx+1), W.slices(i+1, i+1), theta.slice(i), Sigma_G_inv, G_0);
+        sampleG(G.slice(G_idx+1), W.slices(i+1, i+1), theta.slice(i), Sigma_G_inv, G_0);
       }
     }
     ++G_idx;
@@ -165,7 +165,7 @@ List eof(arma::mat Y, arma::mat F, arma::mat G_0, arma::mat Sigma_G_inv,
   }
   
   return results;
-}
+};
 
 //' Fits an integrodifference equation model (IDE)
 //'
@@ -263,7 +263,7 @@ List ide(arma::mat Y, arma::mat locs, arma::colvec m_0, arma::mat C_0,
   arma::vec sigma2;
   if (sample_sigma2) {
     sigma2.set_size(n_samples+1);
-    SampleSigma2(sigma2.at(0), alpha_sigma2, beta_sigma2, Y, F, theta.slice(0));
+    sampleSigma2(sigma2.at(0), alpha_sigma2, beta_sigma2, Y, F, theta.slice(0));
   }
   
   // Process error
@@ -289,28 +289,28 @@ List ide(arma::mat Y, arma::mat locs, arma::colvec m_0, arma::mat C_0,
     if (sample_sigma2) sigma2_i = sigma2.at(i);
     
     if (discount) {
-      KalmanDiscount(m, C, a, R_inv, Y, F, G.slice(i), sigma2_i, lambda.at(i));
+      kalmanDiscount(m, C, a, R_inv, Y, F, G.slice(i), sigma2_i, lambda.at(i));
     } else {
-      Kalman(m, C, a, R_inv, Y, F, G.slice(i), sigma2_i, W.slice(i));
+      kalman(m, C, a, R_inv, Y, F, G.slice(i), sigma2_i, W.slice(i));
     }
     
     if (verbose) {
       Rcout << "Drawing sample number " << i+1 << std::endl;
     }
-    BackwardSample(theta.slice(i), m, a, C, G.slice(i), R_inv);
+    backwardSample(theta.slice(i), m, a, C, G.slice(i), R_inv);
     C_T.slice(i+1) = C.slice(T); // Save for predictions
     
     // Sigma2
     if (sample_sigma2) {
-      SampleSigma2(sigma2.at(i+1), alpha_sigma2, beta_sigma2, Y, F, theta.slice(i));
+      sampleSigma2(sigma2.at(i+1), alpha_sigma2, beta_sigma2, Y, F, theta.slice(i));
     }
     
     // Process error
     if (discount) {
-      SampleLambda(lambda.at(i+1), alpha_lambda, beta_lambda,
+      sampleLambda(lambda.at(i+1), alpha_lambda, beta_lambda,
                    G.slice(i), C, theta.slice(i));}
     else {
-      SampleW(W.slice(i+1), theta.slice(i), G.slice(i), C_W, df_W);
+      sampleW(W.slice(i+1), theta.slice(i), G.slice(i), C_W, df_W);
     }
     
     // MH step for mu
@@ -426,4 +426,4 @@ List ide(arma::mat Y, arma::mat locs, arma::colvec m_0, arma::mat C_0,
     results["sigma2"] = sigma2_i;
   }
   return results;
-}
+};

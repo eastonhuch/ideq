@@ -6,15 +6,15 @@
 
 using namespace Rcpp;
 
-// mvnorm
-arma::colvec mvnorm(const arma::colvec& mean, const arma::mat& Sigma);
-RcppExport SEXP _ideq_mvnorm(SEXP meanSEXP, SEXP SigmaSEXP) {
+// rmvnorm
+arma::colvec rmvnorm(const arma::colvec& mean, const arma::mat& Sigma);
+RcppExport SEXP _ideq_rmvnorm(SEXP meanSEXP, SEXP SigmaSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< const arma::colvec& >::type mean(meanSEXP);
     Rcpp::traits::input_parameter< const arma::mat& >::type Sigma(SigmaSEXP);
-    rcpp_result_gen = Rcpp::wrap(mvnorm(mean, Sigma));
+    rcpp_result_gen = Rcpp::wrap(rmvnorm(mean, Sigma));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -63,7 +63,7 @@ END_RCPP
 }
 
 static const R_CallMethodDef CallEntries[] = {
-    {"_ideq_mvnorm", (DL_FUNC) &_ideq_mvnorm, 2},
+    {"_ideq_rmvnorm", (DL_FUNC) &_ideq_rmvnorm, 2},
     {"_ideq_eof", (DL_FUNC) &_ideq_eof, 11},
     {"_ideq_ide", (DL_FUNC) &_ideq_ide, 12},
     {NULL, NULL, 0}

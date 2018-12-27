@@ -4,8 +4,8 @@
 \alias{ide}
 \title{Fits an integrodifference equation model (IDE)}
 \usage{
-ide(Y, locs, m_0, C_0, mu_kernel_mean, mu_kernel_var, Sigma_kernel_scale,
-  C_W, params, n_samples, verbose)
+ide(Y, locs, m_0, C_0, mu_kernel_mean, mu_kernel_var, K,
+  Sigma_kernel_scale, C_W, params, n_samples, verbose)
 }
 \description{
 Fits an integrodifference equation model (IDE)

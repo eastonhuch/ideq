@@ -8,8 +8,8 @@
 #' # Duhh...nothing yet
 #' @importFrom Rcpp sourceCpp evalCpp
 #' @useDynLib ideq
-mvnorm <- function(mean, Sigma) {
-    .Call('_ideq_mvnorm', PACKAGE = 'ideq', mean, Sigma)
+rmvnorm <- function(mean, Sigma) {
+    .Call('_ideq_rmvnorm', PACKAGE = 'ideq', mean, Sigma)
 }
 
 #' Fits a DSTM using a wishart prior for W

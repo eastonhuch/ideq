@@ -4,11 +4,11 @@
 #include <RcppArmadillo.h>
 using namespace Rcpp;
 
-void Kalman(arma::mat & m, arma::cube & C, arma::mat & a, arma::cube & R_inv,
+void kalman(arma::mat & m, arma::cube & C, arma::mat & a, arma::cube & R_inv,
             const arma::mat & Y, const arma::mat & F, const arma::mat & G,
             const double sigma2, const arma::mat & W);
 
-void KalmanDiscount(arma::mat & m, arma::cube & C, arma::mat & a, arma::cube & R_inv,
+void kalmanDiscount(arma::mat & m, arma::cube & C, arma::mat & a, arma::cube & R_inv,
                     const arma::mat & Y, const arma::mat & F, const arma::mat & G,
                     const double sigma2 , const double lambda);
 

@@ -4,6 +4,43 @@
 
 using namespace Rcpp;
 
+double ldiwishart(const arma::cube & x, const double df,
+                  const arma::cube & scale) {
+  const int p = x.n_cols;
+  double d = 0;
+  
+  if (x.n_slices != scale.n_slices) {
+    throw std::invalid_argument("x and scale must have same number of slices");
+  }
+  
+  for (int i=0; i<x.n_slices; ++i) {
+    d += df/2 * log(arma::det(scale.slice(i)));
+    d -= (df+p+1)/2 * log(arma::det(x.slice(i)));
+    d -= 1/2 * log(arma::trace(arma::solve(x.slice(i), scale.slice(i))));
+  }
+  return d;
+}
+
+double ldmvnorm(const arma::mat & x, const arma::mat & mu, const arma::mat & Sigma) {
+  if (arma::size(x) != arma::size(mu)) {
+    throw std::invalid_argument("x and mu must have same size");
+  }
+  if (!Sigma.is_square()) {
+    throw std::invalid_argument("Sigma must be square");
+  }
+  if (mu.n_elem != Sigma.n_rows) {
+    throw std::invalid_argument("Number of elements in x, mu must equal dimension of Sigma");
+  }
+  
+  arma::colvec d = arma::vectorise(x - mu);
+  arma::mat tmp = d.t() * arma::solve(Sigma, d);
+  return -arma::as_scalar(tmp)/2;
+};
+
+double rigamma(const double a, const double scl) {
+  return (1 / R::rgamma(a, 1/scl));
+};
+
 //' Samples from a multivariate normal distribution
 //'
 //' @export
@@ -12,7 +49,7 @@ using namespace Rcpp;
 //' @importFrom Rcpp sourceCpp evalCpp
 //' @useDynLib ideq
 // [[Rcpp::export]]
-arma::colvec mvnorm(const arma::colvec & mean, const arma::mat & Sigma) {
+arma::colvec rmvnorm(const arma::colvec & mean, const arma::mat & Sigma) {
   int n = mean.n_elem;
   arma::colvec z(n);
   for (int i = 0; i < n; ++i) {
@@ -34,41 +71,4 @@ arma::colvec mvnorm(const arma::colvec & mean, const arma::mat & Sigma) {
 
   arma::colvec x = mean + Sigma_sqrt * z;
   return x;
-};
-
-double ldmvnorm(const arma::mat & x, const arma::mat & mu, const arma::mat & Sigma) {
-  if (arma::size(x) != arma::size(mu)) {
-    throw std::invalid_argument("x and mu must have same size");
-  }
-  if (!Sigma.is_square()) {
-    throw std::invalid_argument("Sigma must be square");
-  }
-  if (mu.n_elem != Sigma.n_rows) {
-    throw std::invalid_argument("Number of elements in x, mu must equal dimension of Sigma");
-  }
-  
-  arma::colvec d = arma::vectorise(x - mu);
-  arma::mat tmp = d.t() * arma::solve(Sigma, d);
-  return -arma::as_scalar(tmp)/2;
-};
-
-double ldiwishart(const arma::cube & x, const double df,
-                  const arma::cube & scale) {
-  const int p = x.n_cols;
-  double d = 0;
-  
-  if (x.n_slices != scale.n_slices) {
-    throw std::invalid_argument("x and scale must have same number of slices");
-  }
-  
-  for (int i=0; i<x.n_slices; ++i) {
-    d += df/2 * log(arma::det(scale.slice(i)));
-    d -= (df+p+1)/2 * log(arma::det(x.slice(i)));
-    d -= 1/2 * log(arma::trace(arma::solve(x.slice(i), scale.slice(i))));
-  }
-  return d;
-}
-
-double rigamma(const double a, const double scl) {
-  return (1 / R::rgamma(a, 1/scl));
 };

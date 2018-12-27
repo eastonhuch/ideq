@@ -4,14 +4,14 @@
 \alias{dstm_eof}
 \title{Fits a dynamic spatio-temporal model with EOFs}
 \usage{
-dstm_eof(Y, proc_model = "RW", proc_error = "IW", p = 10L,
+dstm_eof(Y, proc_model = "RW", proc_error = "IW", P = 10L,
   n_samples = 1L, sample_sigma2 = TRUE, verbose = FALSE,
   params = NULL)
 }
 \arguments{
 \item{Y}{S by T matrix containing response variable at S spatial locations and T time points}
 
-\item{p}{integer; dimension of G in the state equation \eqn{\theta_{t+1} = G \theta_{t}}}
+\item{P}{integer; dimension of G in the state equation \eqn{\theta_{t+1} = G \theta_{t}}}
 
 \item{n_samples}{integer; number of posterior samples to take}
 
