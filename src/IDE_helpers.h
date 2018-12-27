@@ -20,4 +20,7 @@ double kernelLikelihood(const arma::mat & G, const arma::mat & theta,
 
 arma::mat proposeMu(arma::mat mu, arma::mat Sigma);
 
+void mapSigma(arma::cube & s_many, const arma::cube & s_few,
+              const arma::mat K);
+
 #endif

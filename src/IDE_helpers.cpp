@@ -36,14 +36,21 @@ arma::mat makeF(const arma::mat & locs, const arma::mat & w,
 void makeB(arma::mat & B, const arma::mat & mu, const arma::cube & Sigma, 
            const arma::mat & locs, const arma::mat & w, const int J, const int L) {
   
-  const bool SV = mu.n_cols > 1;
+  const bool SV_mu = mu.n_cols > 1;
+  const bool SV_Sigma = Sigma.n_slices > 1;
   
   // Jmat1 and Jmat2
   arma::mat Jmat1, Jmat2;
   
-  if (SV) {
+  if (SV_mu) {
     Jmat1 = (locs.col(0) + mu.col(0)) * w.col(0).t() +
             (locs.col(1) + mu.col(1)) * w.col(1).t();
+  } else {
+    Jmat1 = (locs.col(0) + mu(0)) * w.col(0).t() +
+            (locs.col(1) + mu(1)) * w.col(1).t();
+  }
+  
+  if (SV_Sigma) {
     arma::colvec tmp = Sigma.tube(0, 0);
     Jmat2 = tmp * arma::square(w.col(0).t());
     tmp = Sigma.tube(1, 1);
@@ -51,8 +58,6 @@ void makeB(arma::mat & B, const arma::mat & mu, const arma::cube & Sigma,
     tmp = Sigma.tube(0, 1);
     Jmat2 += tmp * arma::prod(w.t(), 0);
   } else {
-    Jmat1 = (locs.col(0) + mu(0)) * w.col(0).t() +
-            (locs.col(1) + mu(1)) * w.col(1).t();
     arma::mat Jvec = Sigma.at(0, 0, 0) * arma::square(w.col(0)) +
                      Sigma.at(1, 1, 0) * arma::square(w.col(1)) +
                      Sigma.at(0, 1, 0) * arma::prod(w, 1);
@@ -113,3 +118,20 @@ arma::mat proposeMu(arma::mat mu, arma::mat Sigma) {
   arma::mat mu_proposal = arma::reshape(tmp, mu.n_rows, mu.n_cols);
   return mu_proposal;
 };
+
+void mapSigma(arma::cube & s_many, const arma::cube & s_few,
+              const arma::mat K) {
+  if (s_many.n_rows != s_few.n_rows || s_many.n_cols != s_few.n_cols) {
+    throw std::invalid_argument("s_many and s_few must have same number of rows and columns");
+  }
+  arma::colvec tmp;
+  
+  for (int r=0; r<s_few.n_rows; ++r) {
+    for (int c=0; c<s_few.n_cols; ++c) {
+      tmp = s_few.tube(r, c);
+      s_many.tube(r, c) = K * tmp;
+    }
+  }
+  
+  return;
+}

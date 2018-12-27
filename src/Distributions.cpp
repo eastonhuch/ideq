@@ -36,11 +36,20 @@ arma::colvec mvnorm(const arma::colvec & mean, const arma::mat & Sigma) {
   return x;
 };
 
-double ldmvnorm(const arma::colvec x, const arma::colvec & mean,
-                const arma::mat & Sigma) {
-  arma::colvec d = x - mean;
+double ldmvnorm(const arma::mat & x, const arma::mat & mu, const arma::mat & Sigma) {
+  if (arma::size(x) != arma::size(mu)) {
+    throw std::invalid_argument("x and mu must have same size");
+  }
+  if (!Sigma.is_square()) {
+    throw std::invalid_argument("Sigma must be square");
+  }
+  if (mu.n_elem != Sigma.n_rows) {
+    throw std::invalid_argument("Number of elements in x, mu must equal dimension of Sigma");
+  }
+  
+  arma::colvec d = arma::vectorise(x - mu);
   arma::mat tmp = d.t() * arma::solve(Sigma, d);
-  return -tmp.at(0)/2;
+  return -arma::as_scalar(tmp)/2;
 };
 
 double ldiwishart(const arma::cube & x, const double df,

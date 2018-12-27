@@ -213,7 +213,8 @@ List ide(arma::mat Y, arma::mat locs, arma::colvec m_0, arma::mat C_0,
   
   // Create objects for storing sampled mu_kernel and Sigma_kernel
   float u;
-  arma::cube mu_kernel, mu_kernel_knots, Sigma_kernel_proposal;
+  arma::cube mu_kernel, mu_kernel_knots;
+  arma::cube Sigma_kernel_proposal, Sigma_kernel_knots_proposal;
   arma::field<arma::cube> Sigma_kernel(n_samples+1);
   arma::field<arma::cube> Sigma_kernel_knots(n_samples+1);
   
@@ -221,7 +222,8 @@ List ide(arma::mat Y, arma::mat locs, arma::colvec m_0, arma::mat C_0,
     // Set size of kernel parameter objects
     mu_kernel.set_size(S, locs_dim, n_samples+1);
     mu_kernel_knots.set_size(n_knots, locs_dim, n_samples+1);
-    Sigma_kernel_proposal.set_size(locs_dim, locs_dim, n_knots);
+    Sigma_kernel_proposal.set_size(locs_dim, locs_dim, S);
+    Sigma_kernel_knots_proposal.set_size(locs_dim, locs_dim, n_knots);
     for (int i=0; i<=n_samples; ++i) {
       Sigma_kernel.at(i).set_size(locs_dim, locs_dim, S);
       Sigma_kernel_knots.at(i).set_size(locs_dim, locs_dim, n_knots);
@@ -243,8 +245,7 @@ List ide(arma::mat Y, arma::mat locs, arma::colvec m_0, arma::mat C_0,
     Sigma_kernel.at(0) = Sigma_kernel_scale / (Sigma_kernel_df-locs_dim-1);
   }
   
-  arma::colvec mu_kernel_proposal;
-  arma::mat G_proposal;
+  arma::mat mu_kernel_proposal, mu_kernel_knots_proposal, G_proposal;
   arma::mat mu_kernel_proposal_var = std::sqrt(proposal_factor_mu) * mu_kernel_var;
   double Sigma_kernel_proposal_df = locs_dim + Sigma_kernel_df/proposal_factor_Sigma;
   const double Sigma_kernel_adjustment = Sigma_kernel_proposal_df - locs_dim - 1;
@@ -313,22 +314,23 @@ List ide(arma::mat Y, arma::mat locs, arma::colvec m_0, arma::mat C_0,
     }
     
     // MH step for mu
+    // Propose mu and calculate probabilities under prior
     if (SV) {
-      mu_kernel_proposal = proposeMu(mu_kernel_knots.slice(i), mu_kernel_proposal_var);
+      mu_kernel_knots_proposal = proposeMu(mu_kernel_knots.slice(i), mu_kernel_proposal_var);
+      mh_ratio  = ldmvnorm(mu_kernel_knots_proposal, mu_kernel_knots.slice(0),
+                           mu_kernel_var);
+      mh_ratio -= ldmvnorm(mu_kernel_knots.slice(i), mu_kernel_knots.slice(0),
+                           mu_kernel_var);
+      mu_kernel_proposal = K.slice(0) * mu_kernel_knots_proposal; // map to spatial locations
     } else {
-      mu_kernel_proposal = mvnorm(mu_kernel.slice(i), mu_kernel_proposal_var);
-      //mu_kernel_proposal = proposeMu(mu_kernel.slice(i), mu_kernel_proposal_var);
+      mu_kernel_proposal = proposeMu(mu_kernel.slice(i), mu_kernel_proposal_var);
+      mh_ratio  = ldmvnorm(mu_kernel_proposal, mu_kernel.slice(0), mu_kernel_var);
+      mh_ratio -= ldmvnorm(mu_kernel.slice(i), mu_kernel.slice(0), mu_kernel_var);
     }
-    Rcout << "chk 5" << std::endl;
-    //mu_kernel_proposal = mvnorm(mu_kernel.slice(i), mu_kernel_proposal_var);
-    makeB(B, mu_kernel_proposal, Sigma_kernel.at(i), locs, w_for_B, J, L);
-    Rcout << "chk 6" << std::endl;
     
+    // Calculate implied proposal for G and likelihood
+    makeB(B, mu_kernel_proposal, Sigma_kernel.at(i), locs, w_for_B, J, L);
     G_proposal = FtFiFt * B; 
-    //FIXME: allow x and mean to be matrices by resizing them in ldmvnorm
-    mh_ratio  = ldmvnorm(mu_kernel_proposal, mu_kernel.slice(0), mu_kernel_var);
-    mh_ratio -= ldmvnorm(mu_kernel.slice(i), mu_kernel.slice(0), mu_kernel_var);
-    Rcout << "chk 7" << std::endl;
     
     if (discount) {
       mh_ratio += kernelLikelihoodDiscount(G_proposal, theta.slice(i), C, lambda.at(i+1));
@@ -338,29 +340,45 @@ List ide(arma::mat Y, arma::mat locs, arma::colvec m_0, arma::mat C_0,
       mh_ratio -= kernelLikelihood(G.slice(i), theta.slice(i), W.slice(i+1));
     }
     
-    Rcout << "chk 8" << std::endl;
+    // Accept according to mh-ratio
     u = R::runif(0, 1);
     if (std::log(u) < mh_ratio) {
       mu_kernel.slice(i+1) = mu_kernel_proposal;
       G.slice(i+1) = G_proposal;
+      if (SV) mu_kernel_knots.slice(i+1) = mu_kernel_knots_proposal;
     } else {
       mu_kernel.slice(i+1) = mu_kernel.slice(i);
       G.slice(i+1) = G.slice(i);
+      if (SV) mu_kernel_knots.slice(i+1) = mu_kernel_knots.slice(i);
     }
-    Rcout << "chk 9" << std::endl;
     
+    Rcout << "chk 7" << std::endl;
     // MH step for Sigma
-    for (int k=0; k<n_knots; ++k) {
-      Sigma_kernel_proposal.slice(k) = rgen::riwishart(Sigma_kernel_proposal_df,
-                                                       Sigma_kernel.at(i).slice(k) * Sigma_kernel_adjustment);
+    // Propose Sigma and calculate probabilities under prior
+    if (SV) {
+      for (int k=0; k<n_knots; ++k) {
+        Sigma_kernel_knots_proposal.slice(k) = rgen::riwishart(
+                                                 Sigma_kernel_proposal_df,
+                                                 Sigma_kernel_knots.at(i).slice(k) *
+                                                 Sigma_kernel_adjustment);
+      }
+      mh_ratio  = ldiwishart(Sigma_kernel_knots_proposal, Sigma_kernel_df, 
+                             Sigma_kernel_scale);
+      mh_ratio -= ldiwishart(Sigma_kernel_knots.at(i), Sigma_kernel_df,
+                             Sigma_kernel_scale);
+      mapSigma(Sigma_kernel_proposal, Sigma_kernel_knots_proposal, K.slice(0));
+    } else {
+      Sigma_kernel_proposal.slice(0) = rgen::riwishart(Sigma_kernel_proposal_df,
+                                                       Sigma_kernel.at(i).slice(0) * 
+                                                       Sigma_kernel_adjustment);
+      mh_ratio  = ldiwishart(Sigma_kernel_proposal, Sigma_kernel_df, 
+                             Sigma_kernel_scale);
+      mh_ratio -= ldiwishart(Sigma_kernel.at(i), Sigma_kernel_df,
+                             Sigma_kernel_scale);
     }
+    
     makeB(B, mu_kernel.slice(i+1), Sigma_kernel_proposal, locs, w_for_B, J, L);
     G_proposal = FtFiFt * B; 
-    mh_ratio  = ldiwishart(Sigma_kernel_proposal, Sigma_kernel_df, 
-                           Sigma_kernel_scale);
-    mh_ratio -= ldiwishart(Sigma_kernel.at(i), Sigma_kernel_df,
-                           Sigma_kernel_scale);
-    Rcout << "chk 10" << std::endl;
     
     if (discount) {
       mh_ratio += kernelLikelihoodDiscount(G_proposal, theta.slice(i), C, lambda.at(i+1));
