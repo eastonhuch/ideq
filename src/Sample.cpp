@@ -121,37 +121,6 @@ void sampleLambda(double & lambda_new, const double & alpha_lambda, const double
   return;
 };
 
-void sampleMuKernel(const arma::mat & mu_kernel_var,
-                    const arma::mat & mu_kernel_proposal_var,
-                    const arma::mat & mu_kernel_initial,
-                    const arma::mat & mu_kernel_curr,
-                    const arma::cube & K,
-                    const arma::mat & mu_kernel_knots_initial,
-                    const arma::mat & mu_kernel_knots_curr) {
-  double mh_ratio = 0;
-  arma::mat mu_kernel_proposal;
-  
-  if (SV) {
-    arma::mat mu_kernel_knots_proposal = proposeMu(mu_kernel_knots_curr,
-                                                   mu_kernel_proposal_var);
-    mh_ratio  = ldmvnorm(mu_kernel_knots_proposal, mu_kernel_knots_initial,
-                         mu_kernel_var);
-    mh_ratio -= ldmvnorm(mu_kernel_knots_curr, mu_kernel_knots_initial,
-                         mu_kernel_var);
-    mu_kernel_proposal = K.slice(0) * mu_kernel_knots_proposal; // map to spatial locations
-  } else {
-    mu_kernel_proposal = proposeMu(mu_kernel_curr, mu_kernel_proposal_var);
-    mh_ratio  = ldmvnorm(mu_kernel_proposal, mu_kernel_initial, mu_kernel_var);
-    mh_ratio -= ldmvnorm(mu_kernel_curr, mu_kernel_initial, mu_kernel_var);
-  }
-  return;
-};
-
-void sampleSigmaKernel() {
-  
-  return;
-};
-
 void sampleSigma2(double & sigma2_new, const double & alpha_sigma2, const double & beta_sigma2,
                   const arma::mat & Y, const arma::mat & F, const arma::mat & theta) {
   const int S = Y.n_rows, T = Y.n_cols-1;
