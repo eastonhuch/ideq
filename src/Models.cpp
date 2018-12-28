@@ -28,7 +28,7 @@ List eof(arma::mat Y, arma::mat F, arma::mat G_0, arma::mat Sigma_G_inv,
   
   // Extract scalar parameters
   bool AR = proc_model(0) == "AR";
-  bool FULL = proc_model(0) == "Full";
+  bool FULL = proc_model(0) == "Dense";
   const int P = G_0.n_rows;
   const int T = Y.n_cols;
   const int S = Y.n_rows;
@@ -93,7 +93,7 @@ List eof(arma::mat Y, arma::mat F, arma::mat G_0, arma::mat Sigma_G_inv,
   }
   
   // Sampling loop
-  int G_idx = 0; // This value is incremented each iteration for AR and Full models
+  int G_idx = 0; // This value is incremented each iteration for AR and Dense models
   for (int i = 0; i < n_samples; ++i) {
     checkUserInterrupt();
     

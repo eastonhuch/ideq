@@ -111,7 +111,7 @@ dstm_eof <- function(Y, proc_model = "RW",
       Sigma_G_inv <- diag(P)
     }
 
-  } else if (proc_model == "Full") {
+  } else if (proc_model == "Dense") {
     if ("mu_G" %in% names(params)) {
       if (is.matrix(params$mu_G) && all(dim(params$mu_G) != c(P, P))) {
         G_0 <- params$mu_G
@@ -147,7 +147,7 @@ dstm_eof <- function(Y, proc_model = "RW",
   # Process Error; creates all necessary params (e.g., alpha_lambda)
   alpha_lambda <- beta_lambda <- df_W <- NA
   C_W <- matrix(NA)
-  if (proc_error == "discount") {
+  if (proc_error == "Discount") {
     # Set prior for lambda
     if ("alpha_lambda" %in% names(params)) {
       alpha_lambda <- params[["alpha_lambda"]]
@@ -236,8 +236,8 @@ dstm_eof <- function(Y, proc_model = "RW",
 #' @param knot_locs integer or matrix.
 #'                    if integer, then kernel parameters are calculated on a 2-D grid
 #'                    with dimension (`knot_locs`, `knot_locs`)
-#' @param proc_error "discount" or "IW".
-#'                   If "discount", then the process error is estimated using a discount factor.
+#' @param proc_error "Discount" or "IW".
+#'                   If "Discount", then the process error is estimated using a discount factor.
 #'                   If "IW", then the process error is estimated as a realization from
 #'                   an inverse-Wishart distribution
 #' @param J integer. Extent of Fourier approximation.
@@ -252,7 +252,7 @@ dstm_eof <- function(Y, proc_model = "RW",
 #' @export
 #' @examples
 #' # Duhh...nothing yet
-dstm_ide <- function(Y, locs=NULL, knot_locs=NULL, proc_error = "discount", J=4L,
+dstm_ide <- function(Y, locs=NULL, knot_locs=NULL, proc_error = "Discount", J=4L,
                      n_samples = 1L, sample_sigma2 = TRUE,
                      verbose = FALSE, params = NULL) {
 
@@ -450,7 +450,7 @@ dstm_ide <- function(Y, locs=NULL, knot_locs=NULL, proc_error = "discount", J=4L
   # Process Error; creates alpha_lambda, beta_lambda, etc.
   alpha_lambda <- beta_lambda <- df_W <- NA
   C_W <- matrix(NA)
-  if (proc_error == "discount") {
+  if (proc_error == "Discount") {
     if ("alpha_lambda" %in% names(params)) {
       alpha_lambda <- params[["alpha_lambda"]]
     }
