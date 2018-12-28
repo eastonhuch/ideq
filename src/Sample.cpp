@@ -6,6 +6,7 @@
 
 #include "Distributions.h"
 #include "Misc_helpers.h"
+#include "IDE_helpers.h"
 
 using namespace Rcpp;
 
@@ -117,6 +118,37 @@ void sampleLambda(double & lambda_new, const double & alpha_lambda, const double
   }
   const double beta_new = beta_lambda + total / 2;
   lambda_new = rigamma(alpha_new, beta_new);
+  return;
+};
+
+void sampleMuKernel(const arma::mat & mu_kernel_var,
+                    const arma::mat & mu_kernel_proposal_var,
+                    const arma::mat & mu_kernel_initial,
+                    const arma::mat & mu_kernel_curr,
+                    const arma::cube & K,
+                    const arma::mat & mu_kernel_knots_initial,
+                    const arma::mat & mu_kernel_knots_curr) {
+  double mh_ratio = 0;
+  arma::mat mu_kernel_proposal;
+  
+  if (SV) {
+    arma::mat mu_kernel_knots_proposal = proposeMu(mu_kernel_knots_curr,
+                                                   mu_kernel_proposal_var);
+    mh_ratio  = ldmvnorm(mu_kernel_knots_proposal, mu_kernel_knots_initial,
+                         mu_kernel_var);
+    mh_ratio -= ldmvnorm(mu_kernel_knots_curr, mu_kernel_knots_initial,
+                         mu_kernel_var);
+    mu_kernel_proposal = K.slice(0) * mu_kernel_knots_proposal; // map to spatial locations
+  } else {
+    mu_kernel_proposal = proposeMu(mu_kernel_curr, mu_kernel_proposal_var);
+    mh_ratio  = ldmvnorm(mu_kernel_proposal, mu_kernel_initial, mu_kernel_var);
+    mh_ratio -= ldmvnorm(mu_kernel_curr, mu_kernel_initial, mu_kernel_var);
+  }
+  return;
+};
+
+void sampleSigmaKernel() {
+  
   return;
 };
 
