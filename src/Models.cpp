@@ -28,7 +28,7 @@ List eof(arma::mat Y, arma::mat F, arma::mat G_0, arma::mat Sigma_G_inv,
   
   // Extract scalar parameters
   bool AR = proc_model(0) == "AR";
-  bool FULL = proc_model(0) == "Dense";
+  bool DENSE = proc_model(0) == "Dense";
   const int P = G_0.n_rows;
   const int T = Y.n_cols;
   const int S = Y.n_rows;
@@ -58,7 +58,7 @@ List eof(arma::mat Y, arma::mat F, arma::mat G_0, arma::mat Sigma_G_inv,
     G_0.set_size(P, 1);
     G_0 = tmp;
     G.slice(0).diag() = rmvnorm(G_0, arma::inv_sympd(Sigma_G_inv));
-  } else if (FULL) {
+  } else if (DENSE) {
     G.set_size(P, P, n_samples+1);
     G_0.reshape(P*P, 1);
     tmp = rmvnorm(G_0, arma::inv_sympd(Sigma_G_inv));
@@ -137,7 +137,7 @@ List eof(arma::mat Y, arma::mat F, arma::mat G_0, arma::mat Sigma_G_inv,
       } else {
         sampleAR(G.slice(G_idx+1), W.slices(i+1, i+1), theta.slice(i), Sigma_G_inv, G_0);
       }
-    } else if (FULL) {
+    } else if (DENSE) {
       if (discount) {
         sampleG(G.slice(G_idx+1), R_inv, theta.slice(i),
                 Sigma_G_inv, G_0, true, lambda.at(i+1));
@@ -145,7 +145,9 @@ List eof(arma::mat Y, arma::mat F, arma::mat G_0, arma::mat Sigma_G_inv,
         sampleG(G.slice(G_idx+1), W.slices(i+1, i+1), theta.slice(i), Sigma_G_inv, G_0);
       }
     }
-    ++G_idx;
+    
+    // Increment G_idx for AR and Dense models
+    if (AR || DENSE) ++G_idx;
   }
   
   List results;
@@ -155,7 +157,7 @@ List eof(arma::mat Y, arma::mat F, arma::mat G_0, arma::mat Sigma_G_inv,
   } else {
     results["sigma2"] = sigma2_i;
   }
-  if (AR || FULL) {
+  if (AR || DENSE) {
     results["G"] = G;
   }
   if (discount) {
