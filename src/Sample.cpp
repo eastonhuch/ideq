@@ -60,7 +60,7 @@ void sampleAR(arma::mat & G, const arma::cube & W_inv, const arma::mat & theta,
   }
 
   arma::mat Sigma_G_new = arma::inv_sympd(sum + Sigma_G_inv);
-  G.diag() = rmvnorm(Sigma_G_new * sum2 + Sigma_G_inv * mu_G, Sigma_G_new);
+  G.diag() = rmvnorm(Sigma_G_new * (Sigma_G_inv * mu_G + sum2), Sigma_G_new);
   return;
 };
 
