@@ -34,7 +34,11 @@
 #' If proc_model = "AR", then mu_G must also be diagonal.
 #' If proc_model = "Dense", then mu_G has no contraints.
 #' 
-#' -"Sigma_G": The prior variance-covariance matrix of vec(G).
+#' -"Sigma_G": The prior variance-covariance matrix for the process matrix.
+#' If proc_model = "AR", then Sigma_G should be P by P and is the 
+#' variance-covariance matrix for diag(G).
+#' If proc_model = "Dense", then Sigma_G should be P^2 by P^2 and is the 
+#' variance-covariance matrix for vec(G)
 #' 
 #' @examples
 #' # Duhh...nothing yet
@@ -67,11 +71,10 @@ dstm_eof <- function(Y, proc_model = "RW",
   }
   else {
     message("No prior was provided for C_0 so I am using 1e-6I")
-    C_0 <- diag(1e-3, P)
+    C_0 <- diag(1e-6, P)
   }
 
   # Observation Error; creates alpha_sigma2, beta_sigma2, sigma2
-  # NOTE: We could also draw this from a Wishart distribution...nah
   alpha_sigma2 <- beta_sigma2 <- sigma2 <- -1
   if (sample_sigma2) {
     if ("alpha_sigma2" %in% names(params)) {
@@ -129,10 +132,11 @@ dstm_eof <- function(Y, proc_model = "RW",
 
     if ("Sigma_G" %in% names(params)) {
       if (matrixcalc::is.positive.definite(params$Sigma_G) &&
-          matrixcalc::is.symmetric.matrix(params$Sigma_G)) {
+          matrixcalc::is.symmetric.matrix(params$Sigma_G) &&
+          all(dim(params$Sigma_G) == P)) {
         Sigma_G <- params[["Sigma_G"]]
       } else {
-        stop("Sigma_G must be symmetric positive definite matrix")
+        stop("Sigma_G must be P by P symmetric positive definite matrix")
       }
     } else {
       k <- 1e-3
@@ -222,11 +226,12 @@ dstm_eof <- function(Y, proc_model = "RW",
       }
     }
     else {
-      message("df_W was not provided so I am using P")
-      df_W <- P
+      k <- 1e3
+      message(paste("df_W was not provided so I am using", k, "* P"))
+      df_W <- k * P
     }
   } else {
-    stop("I don't know that type of process error")
+    stop("proc_error not recognized")
   }
   
   # Group scalar params into vector

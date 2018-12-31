@@ -145,7 +145,6 @@ predict.dstm <- function(x, K = 1, only_K = FALSE, return_ys = TRUE,
 
 summary.dstm <- function(x, object_name = deparse(substitute(x))) {
   cat("Summary for dstm object \`", object_name, "\`\n", sep = "")
-  cat("Observation model: `", attr(x, "obs_model"), "`\n", sep="")
   cat("Process model: `", attr(x, "proc_model"), "`\n", sep="")
   cat("Process error: `", attr(x, "proc_error"), "`\n", sep="")
   if (attr(x, "sample_sigma2")) {
