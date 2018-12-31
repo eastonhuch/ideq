@@ -4,7 +4,7 @@
 \alias{dstm_ide}
 \title{Fits an integrodifference equation model (IDE)}
 \usage{
-dstm_ide(Y, locs = NULL, knot_locs = NULL, proc_error = "discount",
+dstm_ide(Y, locs = NULL, knot_locs = NULL, proc_error = "Discount",
   J = 4L, n_samples = 1L, sample_sigma2 = TRUE, verbose = FALSE,
   params = NULL)
 }
@@ -22,8 +22,8 @@ then `locs` is an array with dimension (S, 2, T)}
 if integer, then kernel parameters are calculated on a 2-D grid
 with dimension (`knot_locs`, `knot_locs`)}
 
-\item{proc_error}{"discount" or "IW".
-If "discount", then the process error is estimated using a discount factor.
+\item{proc_error}{"Discount" or "IW".
+If "Discount", then the process error is estimated using a discount factor.
 If "IW", then the process error is estimated as a realization from
 an inverse-Wishart distribution}
 

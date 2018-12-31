@@ -1,13 +1,41 @@
 #' Fits a dynamic spatio-temporal model with EOFs
 #'
-#' @param Y S by T matrix containing response variable at S spatial locations and T time points
-#' @param model character string; options include `discount`, `sample_G`, `AR`, and `IDE`
-#' @param n_samples integer; number of posterior samples to take
-#' @param P integer; dimension of G in the state equation \eqn{\theta_{t+1} = G \theta_{t}}
-#' @param verbose boolean; controls verbosity
-#' @param sample_sigma2 whether boolean; to sample \eqn{\sigma^2}
+#' @param Y (numeric matrix) S by T data matrix containing response variable
+#'          at S spatial locations and T time points
+#' @param proc_model (character string) Process model; one of "RW" (random walk), 
+#'                  "AR" (diagonal process matrix), or "Dense" (dense process matrix)
+#' @param proc_error (character string) Process error; "IW" (inverse-Wishart) or 
+#'                   "Discount" (discount factor)
+#' @param P (integer) Number of EOFs
+#' @param sample_sigma2 (logical) whether to sample the variance of the iid
+#'                      observation error
+#' @param verbose (logical) Whether to print additional information 
+#'                (e.g., iteration in sampling algorithm)
+#' @param params (list) List of hyperparameter values (see details)
+#' @details 
+#' This section explains how to specify custom hyperparameters using the `params` argument.
+#' You may specify the following as named elements of the `params` list:
+#' 
+#' -"m_0": (numeric vector) The prior mean of the state vector at time zero
+#'  (\eqn{\theta_0})
 #'
-#' @export
+#' -"C_0": (numeric matrix) The prior variance-covariance matrix of the state
+#'  vector at time zero (\eqn{\theta_0})
+#'
+#' -"alpha_sigma2", "beta_sigma2": The inverse-Gamma parameters (scale parameterization)
+#' of the prior distribution on \eqn{\sigma^2}
+#' 
+#' -"sigma2": The value to use for \eqn{\sigma^2} if sample_sigma2 = FALSE
+#' 
+#' -"alpha_lambda", "beta_lambda": The inverse-Gamma parameters (scale parameterization)
+#' of the prior distribution on \eqn{\lambda = \delta / (1 - \delta)}
+#' 
+#' -"mu_G": The prior mean for the process matrix G.
+#' If proc_model = "AR", then mu_G must also be diagonal.
+#' If proc_model = "Dense", then mu_G has no contraints.
+#' 
+#' -"Sigma_G": The prior variance-covariance matrix of vec(G).
+#' 
 #' @examples
 #' # Duhh...nothing yet
 dstm_eof <- function(Y, proc_model = "RW",
@@ -79,8 +107,8 @@ dstm_eof <- function(Y, proc_model = "RW",
     message(paste("sigma2 was not provided so I am using", sigma2))
   }
 
-  # Process Model; creates G_0 (mu_G) and Sigma_G_inv
-  Sigma_G_inv <- matrix()
+  # Process Model; creates G_0 (mu_G) and Sigma_G
+  Sigma_G <- Sigma_G_inv <- matrix()
   if (proc_model == "RW") {
     G_0 <- diag(P)
   } else if (proc_model == "AR") {
@@ -95,21 +123,23 @@ dstm_eof <- function(Y, proc_model = "RW",
 
     }
     else {
-      message("mu_G was not provided, so I am using 10I")
-      G_0 <- 1e1 * diag(P)
+      message("mu_G was not provided, so I am using I")
+      G_0 <- diag(P)
     }
 
-    if ("Sigma_G_inv" %in% names(params)) {
-      if (matrixcalc::is.positive.definite(params$Sigma_G_inv) &&
-          matrixcalc::is.symmetric.matrix(params$Sigma_G_inv)) {
-        Sigma_G_inv <- params[["Sigma_G_inv"]]
+    if ("Sigma_G" %in% names(params)) {
+      if (matrixcalc::is.positive.definite(params$Sigma_G) &&
+          matrixcalc::is.symmetric.matrix(params$Sigma_G)) {
+        Sigma_G <- params[["Sigma_G"]]
       } else {
-        stop("Sigma_G_inv must be symmetric positive definite matrix")
+        stop("Sigma_G must be symmetric positive definite matrix")
       }
     } else {
-      message("Sigma_G_inv was not provided, so I am using 1e3I")
-      Sigma_G_inv <- diag(P)
+      k <- 1e-3
+      message(paste("Sigma_G was not provided, so I am using", k, "* I"))
+      Sigma_G <- diag(k, P)
     }
+    Sigma_G_inv <- chol2inv(chol(Sigma_G))
 
   } else if (proc_model == "Dense") {
     if ("mu_G" %in% names(params)) {
@@ -125,21 +155,23 @@ dstm_eof <- function(Y, proc_model = "RW",
       G_0 <- diag(P)
     }
 
-    if ("Sigma_G_inv" %in% names(params)) {
-      if (matrixcalc::is.positive.definite(params$Sigma_G_inv) &&
-          matrixcalc::is.symmetric.matrix(params$Sigma_G_inv) &&
-          nrow(params$Sigma_G_inv) == P^2) {
-        Sigma_G_inv <- params$Sigma_G_inv
+    if ("Sigma_G" %in% names(params)) {
+      if (matrixcalc::is.positive.definite(params$Sigma_G) &&
+          matrixcalc::is.symmetric.matrix(params$Sigma_G) &&
+          nrow(params$Sigma_G) == P^2) {
+        Sigma_G <- params$Sigma_G
       }
       else {
-        stop("Sigma_G_inv must be a P^2 by P^2 symmetric positive definite matrix")
+        stop("Sigma_G must be a P^2 by P^2 symmetric positive definite matrix")
       }
     }
     else {
-      message("Sigma_G_inv was not provided, so I am using 1e5I")
-      Sigma_G_inv <- 1e5*diag(P^2)
+      k <- 1e-5
+      message(paste("Sigma_G was not provided, so I am using", k, "* I"))
+      Sigma_G <- diag(k, P^2)
     }
-
+    Sigma_G_inv <- chol2inv(chol(Sigma_G))
+    
   } else {
     stop("proc_model not supported")
   }

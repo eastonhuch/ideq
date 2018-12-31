@@ -9,20 +9,43 @@ dstm_eof(Y, proc_model = "RW", proc_error = "IW", P = 10L,
   params = NULL)
 }
 \arguments{
-\item{Y}{S by T matrix containing response variable at S spatial locations and T time points}
+\item{Y}{(numeric matrix) S by T data matrix containing response variable
+at S spatial locations and T time points}
 
-\item{P}{integer; dimension of G in the state equation \eqn{\theta_{t+1} = G \theta_{t}}}
+\item{proc_model}{(character string) Process model; one of "RW" (random walk), 
+"AR" (diagonal process matrix), or "Dense" (dense process matrix)}
 
-\item{n_samples}{integer; number of posterior samples to take}
+\item{proc_error}{(character string) Process error; "IW" (inverse-Wishart) or 
+"Discount" (discount factor)}
 
-\item{sample_sigma2}{whether boolean; to sample \eqn{\sigma^2}}
+\item{P}{(integer) Number of EOFs}
 
-\item{verbose}{boolean; controls verbosity}
+\item{sample_sigma2}{(logical) whether to sample the variance of the iid
+observation error}
 
-\item{model}{character string; options include `discount`, `sample_G`, `AR`, and `IDE`}
+\item{verbose}{(logical) Whether to print additional information 
+(e.g., iteration in sampling algorithm)}
+
+\item{params}{(list) List of hyperparameter values (see details)}
 }
 \description{
 Fits a dynamic spatio-temporal model with EOFs
+}
+\details{
+This section explains how to specify custom hyperparameters using the `params` argument.
+You may specify the following as named elements of the `params` list:
+
+-"m_0": (numeric vector) The prior mean of the state vector at time zero
+ (\eqn{\theta_0})
+
+-"C_0": (numeric matrix) The prior variance-covariance matrix of the state
+ vector at time zero (\eqn{\theta_0})
+
+-"alpha_sigma2", "beta_sigma2": The inverse-Gamma parameters (scale parameterization)
+of the prior distribution on \eqn{\sigma^2}
+
+-"alpha_lambda", "beta_lambda": The inverse-Gamma parameters (scale parameterization)
+of the prior distribution on \eqn{\lambda = \delta / (1 - \delta)}
 }
 \examples{
 # Duhh...nothing yet
