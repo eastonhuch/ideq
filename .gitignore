@@ -1,8 +1,0 @@
-ideq.Rproj
-.Rproj.user
-.Rhistory
-.RData
-src/Models.o
-src/Sample.o
-src/ideq.so
-.gitignore
