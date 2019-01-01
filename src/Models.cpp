@@ -408,6 +408,13 @@ List ide(arma::mat Y, arma::mat locs, arma::colvec m_0, arma::mat C_0,
     }
   }
   
+  // Drop starting values
+  G.shed_slice(0);
+  C_T.shed_slice(0);
+  mu_kernel.shed_slice(0);
+  // Last element of Sigma_kernel is removed in dstm_ide in dstm.R
+  
+  // Save results to list
   List results;
   results["theta"]  = theta;
   results["G"] = G;
@@ -419,6 +426,7 @@ List ide(arma::mat Y, arma::mat locs, arma::colvec m_0, arma::mat C_0,
     results["lambda"] = lambda;
   }
   else {
+    W.shed_slice(0);
     results["W"] = W;
   }
   if (sample_sigma2) {

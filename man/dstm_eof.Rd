@@ -10,7 +10,8 @@ dstm_eof(Y, proc_model = "RW", proc_error = "IW", P = 10L,
 }
 \arguments{
 \item{Y}{(numeric matrix) S by T data matrix containing response variable
-at S spatial locations and T time points}
+at S spatial locations and T time points.
+The t-th column (NOT row) corresponds to the t-th observation vector.}
 
 \item{proc_model}{(character string) Process model; one of "RW" (random walk), 
 "AR" (diagonal process matrix), or "Dense" (dense process matrix)}
@@ -33,6 +34,8 @@ Fits a dynamic spatio-temporal model with EOFs
 }
 \details{
 This section explains how to specify custom hyperparameters using the `params` argument.
+For each distribution referenced below,
+we use the scale parameterization found on the distribution's Wikipedia page.
 You may specify the following as named elements of the `params` list:
 
 -"m_0": (numeric vector) The prior mean of the state vector at time zero
@@ -44,9 +47,47 @@ You may specify the following as named elements of the `params` list:
 -"alpha_sigma2", "beta_sigma2": The inverse-Gamma parameters (scale parameterization)
 of the prior distribution on \eqn{\sigma^2}
 
+-"sigma2": The value to use for \eqn{\sigma^2} if sample_sigma2 = FALSE
+
+-"mu_G": The prior mean for the process matrix G.
+If proc_model = "AR", then mu_G must also be diagonal.
+If proc_model = "Dense", then mu_G has no contraints.
+
+-"Sigma_G": The prior variance-covariance matrix for the process matrix.
+If proc_model = "AR", then Sigma_G should be P by P and is the 
+variance-covariance matrix for diag(G).
+If proc_model = "Dense", then Sigma_G should be P^2 by P^2 and is the 
+variance-covariance matrix for vec(G)
+
 -"alpha_lambda", "beta_lambda": The inverse-Gamma parameters (scale parameterization)
 of the prior distribution on \eqn{\lambda = \delta / (1 - \delta)}
+
+-C_W: The scale matrix for the inverse-Wishart prior distribution on W,
+the variance-covariance matrix of the process error.
+
+-df_W: The degees of freedom for the inverse-Wishart prior distribution on W,
+the variance-covariance matrix of the process error.
 }
 \examples{
-# Duhh...nothing yet
+# Create example data
+num_time_points <- 5
+num_spatial_locations <- 100
+z <- rnorm(num_time_points * num_spatial_locations)
+Y <- matrix(z, nrow=num_spatial_locations, ncol=num_time_points)
+
+# Illustrate methods
+rw_model <- dstm_eof(Y, proc_model="RW") # Random walk model
+summary(rw_model) # print(rw_model) is equivalent
+predictions <- predict(rw_model) 
+
+# Other model types
+dstm_eof(Y, proc_model="AR") # Diagonal process matrix
+dstm_eof(Y, proc_model="Dense") # Dense process matrix
+dstm_eof(Y, proc_error="Discount") # Discount factor process error
+
+# Specify hyperparameters
+dstm_eof(Y, sample_sigma2=FALSE, params=list(sigma2=1)) # Fix sigma2
+dstm_eof(Y, params=list(alpha_lambda=10, beta_lambda=11)) # Prior for lambda
+dstm_eof(Y, P=10, params=list(m_0=rep(1, 10) , C_0=diag(0.01, 10))) # Prior for theta_0
+dstm_eof(Y, params=list(C_W=diag(10), df_W=100)) # Prior for W
 }

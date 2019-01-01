@@ -4,8 +4,8 @@
 \alias{dstm_ide}
 \title{Fits an integrodifference equation model (IDE)}
 \usage{
-dstm_ide(Y, locs = NULL, knot_locs = NULL, proc_error = "Discount",
-  J = 4L, n_samples = 1L, sample_sigma2 = TRUE, verbose = FALSE,
+dstm_ide(Y, locs = NULL, knot_locs = NULL, proc_error = "IW",
+  J = 4L, n_samples = 10L, sample_sigma2 = TRUE, verbose = FALSE,
   params = NULL)
 }
 \arguments{

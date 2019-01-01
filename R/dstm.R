@@ -1,7 +1,8 @@
 #' Fits a dynamic spatio-temporal model with EOFs
 #'
 #' @param Y (numeric matrix) S by T data matrix containing response variable
-#'          at S spatial locations and T time points
+#'          at S spatial locations and T time points.
+#'          The t-th column (NOT row) corresponds to the t-th observation vector.
 #' @param proc_model (character string) Process model; one of "RW" (random walk), 
 #'                  "AR" (diagonal process matrix), or "Dense" (dense process matrix)
 #' @param proc_error (character string) Process error; "IW" (inverse-Wishart) or 
@@ -14,6 +15,8 @@
 #' @param params (list) List of hyperparameter values (see details)
 #' @details 
 #' This section explains how to specify custom hyperparameters using the `params` argument.
+#' For each distribution referenced below,
+#' we use the scale parameterization found on the distribution's Wikipedia page.
 #' You may specify the following as named elements of the `params` list:
 #' 
 #' -"m_0": (numeric vector) The prior mean of the state vector at time zero
@@ -27,9 +30,6 @@
 #' 
 #' -"sigma2": The value to use for \eqn{\sigma^2} if sample_sigma2 = FALSE
 #' 
-#' -"alpha_lambda", "beta_lambda": The inverse-Gamma parameters (scale parameterization)
-#' of the prior distribution on \eqn{\lambda = \delta / (1 - \delta)}
-#' 
 #' -"mu_G": The prior mean for the process matrix G.
 #' If proc_model = "AR", then mu_G must also be diagonal.
 #' If proc_model = "Dense", then mu_G has no contraints.
@@ -40,8 +40,38 @@
 #' If proc_model = "Dense", then Sigma_G should be P^2 by P^2 and is the 
 #' variance-covariance matrix for vec(G)
 #' 
+#' -"alpha_lambda", "beta_lambda": The inverse-Gamma parameters (scale parameterization)
+#' of the prior distribution on \eqn{\lambda = \delta / (1 - \delta)}
+#' 
+#' -C_W: The scale matrix for the inverse-Wishart prior distribution on W,
+#' the variance-covariance matrix of the process error.
+#' 
+#' -df_W: The degees of freedom for the inverse-Wishart prior distribution on W,
+#' the variance-covariance matrix of the process error.
+#' 
 #' @examples
-#' # Duhh...nothing yet
+#' # Create example data
+#' num_time_points <- 5
+#' num_spatial_locations <- 100
+#' z <- rnorm(num_time_points * num_spatial_locations)
+#' Y <- matrix(z, nrow=num_spatial_locations, ncol=num_time_points)
+#' 
+#' # Illustrate methods
+#' rw_model <- dstm_eof(Y, proc_model="RW") # Random walk model
+#' summary(rw_model) # print(rw_model) is equivalent
+#' predictions <- predict(rw_model) 
+#' 
+#' # Other model types
+#' dstm_eof(Y, proc_model="AR") # Diagonal process matrix
+#' dstm_eof(Y, proc_model="Dense") # Dense process matrix
+#' dstm_eof(Y, proc_error="Discount") # Discount factor process error
+#' 
+#' # Specify hyperparameters
+#' dstm_eof(Y, sample_sigma2=FALSE, params=list(sigma2=1)) # Fix sigma2
+#' dstm_eof(Y, params=list(alpha_lambda=10, beta_lambda=11)) # Prior for lambda
+#' dstm_eof(Y, P=10, params=list(m_0=rep(1, 10) , C_0=diag(0.01, 10))) # Prior for theta_0
+#' dstm_eof(Y, params=list(C_W=diag(10), df_W=100)) # Prior for W
+#' @export
 dstm_eof <- function(Y, proc_model = "RW",
                      proc_error = "IW", P = 10L,
                      n_samples = 1L, sample_sigma2 = TRUE,
@@ -221,7 +251,7 @@ dstm_eof <- function(Y, proc_model = "RW",
 
     if ("df_W" %in% names(params)) {
       df_W <- as.integer(params[["df_W"]])
-      if (!is.numeric(params[["df_W"]] || params[["df_W"]] < P)) {
+      if (!is.numeric(params[["df_W"]]) || params[["df_W"]] < P) {
         stop("df_W must be numeric >= P")
       }
     }
@@ -289,13 +319,18 @@ dstm_eof <- function(Y, proc_model = "RW",
 #' @export
 #' @examples
 #' # Duhh...nothing yet
-dstm_ide <- function(Y, locs=NULL, knot_locs=NULL, proc_error = "Discount", J=4L,
-                     n_samples = 1L, sample_sigma2 = TRUE,
+dstm_ide <- function(Y, locs=NULL, knot_locs=NULL, proc_error = "IW", J=4L,
+                     n_samples = 10L, sample_sigma2 = TRUE,
                      verbose = FALSE, params = NULL) {
 
   # Error checking for J, L, locs
   if (is.null(locs)) {
-    stop("locs must be specified for obs_model == IDE")
+    stop("locs must be specified for IDE models")
+  } else {
+    if (class(locs) == "data.frame") locs <- as.matrix(locs)
+    if (class(locs) != "matrix") {
+      stop("locs must be data.frame or matrix")
+    }
   }
 
   J <- as.integer(J)
@@ -541,8 +576,19 @@ dstm_ide <- function(Y, locs=NULL, knot_locs=NULL, proc_error = "Discount", J=4L
                  mu_kernel_var, K, Sigma_kernel_scale, C_W,
                  scalar_params, n_samples, verbose)
   
-  # Process output
+  # Process results
+  if ("lambda" %in% names(results)) {
+    results[["lambda"]] <- as.numeric(results[["lambda"]])
+  }
+  if ("sigma2" %in% names(results)) {
+    results[["sigma2"]] <- as.numeric(results[["sigma2"]])
+  }
+  if (length(results[["Sigma_kernel"]]) > 1) {
+    results[["Sigma_kernel"]] <- results[["Sigma_kernel"]][-1]
+  }
+  
   class(results) <- c("dstm_ide" , "dstm", "list")
+  attr(results, "proc_model") <- "ide"
   attr(results, "proc_error") <- proc_error
   attr(results, "sample_sigma2") <- sample_sigma2
 
