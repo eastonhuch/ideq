@@ -2,7 +2,7 @@
 % Please edit documentation in R/dstm.R
 \name{dstm_ide}
 \alias{dstm_ide}
-\title{Fits an integrodifference equation model (IDE)}
+\title{Fits an integrodifference equation (IDE) model}
 \usage{
 dstm_ide(Y, locs = NULL, knot_locs = NULL, proc_error = "IW",
   J = 4L, n_samples = 10L, sample_sigma2 = TRUE, verbose = FALSE,
@@ -39,11 +39,62 @@ The size of the state space is 2 * J^2 + 1}
 \item{params}{list; Used to specify hyperparameters}
 }
 \description{
-Detailed description
+Fits an integrodifference equation (IDE) model
 }
 \details{
 How to specify hyperparameters such as priors
 }
 \examples{
-# Duhh...nothing yet
+
+# Create example data
+num_time_points <- 5
+spatial_locations <- expand.grid(seq(10), seq(10))
+num_spatial_locations <- nrow(spatial_locations)
+z <- rnorm(num_time_points * num_spatial_locations)
+Y <- matrix(z, nrow=num_spatial_locations, ncol=num_time_points)
+
+# Basic IDE model with one kernel
+dstm_ide(Y, spatial_locations)
+
+# IDE model with spatially varying kernel
+# Estimates kernel parameters at knot locations and maps to others
+dstm_ide(Y, spatial_locations, knot_locs=4)
+
+# Discount factor method for estimating process error variance
+dstm_ide(Y, spatial_locations, proc_error="Discount")
+
+# Fix sigma2
+dstm_ide(Y, spatial_locations, sample_sigma2=FALSE, params=list(sigma2=1))
+
+# Set prior on sigma2
+dstm_ide(Y, spatial_locations, 
+         params=list(alpha_sigma2=10, beta_sigma2=11))
+
+# Rescale spatial locations to have range of 10
+# For spatially varying case, this controls degree of smoothing
+# with higher values of L leading to less smoothing
+dstm_ide(Y, spatial_locations, params=list(L=10)) 
+
+# Set prior on kernel mean
+dstm_ide(Y, spatial_locations, 
+         params=list(mu_kernel_mean=c(0.2, 0.4),
+                     mu_kernel_var=diag(2))) 
+
+# Set prior on kernel variance-covariance matrix
+dstm_ide(Y, spatial_locations, 
+         params=list(Sigma_kernel_df=100, Sigma_kernel_scale=diag(2)))
+
+# Set prior on state vector (Fourier basis coefficients)
+dstm_ide(Y, spatial_locations, 
+         params=list(m_0=rep(0.1, 33), C_0=diag(0.01, 33))) 
+
+# Set prior on process error
+dstm_ide(Y, spatial_locations, 
+         params=list(C_W=diag(33), df_W=100))
+
+# Set proposal scaling factors
+dstm_ide(Y, spatial_locations, 
+         params=list(proposal_factor_mu=2,
+                     proposal_factor_Sigma=3))
+                     
 }

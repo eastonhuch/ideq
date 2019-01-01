@@ -248,7 +248,8 @@ List ide(arma::mat Y, arma::mat locs, arma::colvec m_0, arma::mat C_0,
   }
   
   arma::mat mu_kernel_proposal, mu_kernel_knots_proposal, G_proposal;
-  arma::mat mu_kernel_proposal_var = std::sqrt(proposal_factor_mu) * mu_kernel_var;
+  arma::mat mu_kernel_proposal_var = proposal_factor_mu * proposal_factor_mu
+                                                        * mu_kernel_var;
   double Sigma_kernel_proposal_df = locs_dim + Sigma_kernel_df/proposal_factor_Sigma;
   const double Sigma_kernel_adjustment = Sigma_kernel_proposal_df - locs_dim - 1;
   double mh_ratio;

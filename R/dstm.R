@@ -87,7 +87,7 @@ dstm_eof <- function(Y, proc_model = "RW",
     if(length(params[["m_0"]]) != P) stop("m_0 must have length P")
     m_0 <- params[["m_0"]]
   } else {
-    message("No prior was provided for m_0 so I am using a vector of zeros")
+    message("m_0 was not provided so I am using a vector of zeros")
     m_0 <- rep(0, P)
   }
 
@@ -100,7 +100,7 @@ dstm_eof <- function(Y, proc_model = "RW",
     C_0 <- params[["C_0"]]
   }
   else {
-    message("No prior was provided for C_0 so I am using 1e-6I")
+    message("C_0 was not provided so I am using 1e-6I")
     C_0 <- diag(1e-6, P)
   }
 
@@ -290,8 +290,7 @@ dstm_eof <- function(Y, proc_model = "RW",
   return(results)
 }
 
-#' Fits an integrodifference equation model (IDE)
-#' @description Detailed description
+#' Fits an integrodifference equation (IDE) model
 #'
 #' @param Y matrix.
 #'          S by T matrix containing response variable at S spatial locations and T time points
@@ -318,7 +317,58 @@ dstm_eof <- function(Y, proc_model = "RW",
 #'
 #' @export
 #' @examples
-#' # Duhh...nothing yet
+#' 
+#' # Create example data
+#' num_time_points <- 5
+#' spatial_locations <- expand.grid(seq(10), seq(10))
+#' num_spatial_locations <- nrow(spatial_locations)
+#' z <- rnorm(num_time_points * num_spatial_locations)
+#' Y <- matrix(z, nrow=num_spatial_locations, ncol=num_time_points)
+#' 
+#' # Basic IDE model with one kernel
+#' dstm_ide(Y, spatial_locations)
+#' 
+#' # IDE model with spatially varying kernel
+#' # Estimates kernel parameters at knot locations and maps to others
+#' dstm_ide(Y, spatial_locations, knot_locs=4)
+#' 
+#' # Discount factor method for estimating process error variance
+#' dstm_ide(Y, spatial_locations, proc_error="Discount")
+#' 
+#' # Fix sigma2
+#' dstm_ide(Y, spatial_locations, sample_sigma2=FALSE, params=list(sigma2=1))
+#' 
+#' # Set prior on sigma2
+#' dstm_ide(Y, spatial_locations, 
+#'          params=list(alpha_sigma2=10, beta_sigma2=11))
+#' 
+#' # Rescale spatial locations to have range of 10
+#' # For spatially varying case, this controls degree of smoothing
+#' # with higher values of L leading to less smoothing
+#' dstm_ide(Y, spatial_locations, params=list(L=10)) 
+#' 
+#' # Set prior on kernel mean
+#' dstm_ide(Y, spatial_locations, 
+#'          params=list(mu_kernel_mean=c(0.2, 0.4),
+#'                      mu_kernel_var=diag(2))) 
+#' 
+#' # Set prior on kernel variance-covariance matrix
+#' dstm_ide(Y, spatial_locations, 
+#'          params=list(Sigma_kernel_df=100, Sigma_kernel_scale=diag(2)))
+#' 
+#' # Set prior on state vector (Fourier basis coefficients)
+#' dstm_ide(Y, spatial_locations, 
+#'          params=list(m_0=rep(0.1, 33), C_0=diag(0.01, 33))) 
+#' 
+#' # Set prior on process error
+#' dstm_ide(Y, spatial_locations, 
+#'          params=list(C_W=diag(33), df_W=100))
+#' 
+#' # Set proposal scaling factors
+#' dstm_ide(Y, spatial_locations, 
+#'          params=list(proposal_factor_mu=2,
+#'                      proposal_factor_Sigma=3))
+#'                      
 dstm_ide <- function(Y, locs=NULL, knot_locs=NULL, proc_error = "IW", J=4L,
                      n_samples = 10L, sample_sigma2 = TRUE,
                      verbose = FALSE, params = NULL) {
@@ -359,7 +409,7 @@ dstm_ide <- function(Y, locs=NULL, knot_locs=NULL, proc_error = "IW", J=4L,
     if(length(params[["m_0"]]) != P) stop("m_0 must have length P")
     m_0 <- params[["m_0"]]
   } else {
-    message("No prior was provided for m_0 so I am using a vector of zeros")
+    message("m_0 was not provided so I am using a vector of zeros")
     m_0 <- rep(0, P)
   }
 
@@ -371,7 +421,7 @@ dstm_ide <- function(Y, locs=NULL, knot_locs=NULL, proc_error = "IW", J=4L,
     }
     C_0 <- params[["C_0"]]
   } else {
-    message("No prior was provided for C_0 so I am using I/9")
+    message("C_0 was not provided so I am using I/9")
     C_0 <- diag(1/9, P)
   }
   
@@ -464,7 +514,7 @@ dstm_ide <- function(Y, locs=NULL, knot_locs=NULL, proc_error = "IW", J=4L,
   if ("Sigma_kernel_scale" %in% names(params)) {
     Sigma_kernel_scale <- params[["Sigma_kernel_scale"]]
     if (!matrixcalc::is.positive.definite(Sigma_kernel_scale) ||
-        any(dim(Sigma) != locs_dim)) {
+        any(dim(Sigma_kernel_scale) != locs_dim)) {
       stop("Sigma_kernel_scale must be positive definite with dimensions == ncol(locs)")
     }
   } else {
@@ -553,7 +603,7 @@ dstm_ide <- function(Y, locs=NULL, knot_locs=NULL, proc_error = "IW", J=4L,
 
     if ("df_W" %in% names(params)) {
       df_W <- as.integer(params[["df_W"]])
-      if (!is.numeric(params[["df_W"]] || params[["df_W"]] < P)) {
+      if ( !is.numeric(params[["df_W"]]) || params[["df_W"]] < P ) {
         stop("df_W must be numeric >= P")
       }
     }
