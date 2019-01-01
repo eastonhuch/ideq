@@ -3,7 +3,7 @@
 
 // [[Rcpp::depends(RcppArmadillo)]]
 
-#include "Distributions.h"
+#include "distributions.h"
 
 using namespace Rcpp;
 

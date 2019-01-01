@@ -5,11 +5,11 @@
 #include <rgen.h>
 // [[Rcpp::depends(rgen)]]
 
-#include "Kalman.h"
-#include "Sample.h"
-#include "Distributions.h"
-#include "IDE_helpers.h"
-#include "Misc_helpers.h"
+#include "kalman.h"
+#include "sample.h"
+#include "distributions.h"
+#include "ide_helpers.h"
+#include "misc_helpers.h"
 
 using namespace Rcpp;
 

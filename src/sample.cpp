@@ -4,9 +4,9 @@
 #include <rgen.h>
 // [[Rcpp::depends(rgen)]]
 
-#include "Distributions.h"
-#include "Misc_helpers.h"
-#include "IDE_helpers.h"
+#include "distributions.h"
+#include "misc_helpers.h"
+#include "ide_helpers.h"
 
 using namespace Rcpp;
 
