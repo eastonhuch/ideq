@@ -25,17 +25,16 @@ List eof(arma::mat Y, arma::mat F, arma::mat G_0, arma::mat Sigma_G_inv,
   const int S = Y.n_rows;
   const double alpha_sigma2 = params["alpha_sigma2"];
   const double beta_sigma2  = params["beta_sigma2"];
-  double sigma2_i = params["sigma2"];
-  const bool sample_sigma2  = sigma2_i < 0;
   const double alpha_lambda = params["alpha_lambda"];
   const double beta_lambda  = params["beta_lambda"];
-  const double df_W = params["df_W"];
-  const bool discount = C_W.at(0, 0) == NA;
+  const double df_W         = params["df_W"];
+  double sigma2_i = params["sigma2"];
+  const bool sample_sigma2  = sigma2_i < 0;
+  const bool discount = df_W == NA;
   
   // Create matrices and cubes for FFBS
   Y.insert_cols(0, 1); // make Y true-indexed; i.e. index 1 is t_1
   arma::cube theta(P, T+1, n_samples), G;
-  theta.slice(0).zeros();
   arma::mat a(P, T+1), m(P, T+1), tmp;
   arma::cube R_inv(P, P, T+1), C(P, P, T+1), C_T; // C_T for discount models only
   m.col(0) = m_0;
@@ -53,21 +52,18 @@ List eof(arma::mat Y, arma::mat F, arma::mat G_0, arma::mat Sigma_G_inv,
     G.set_size(P, P, n_samples+1);
     G_0.reshape(P*P, 1);
     tmp = rmvnorm(G_0, arma::inv_sympd(Sigma_G_inv));
-    tmp.reshape(P, P);
-    G.slice(0) = tmp;
+    G.slice(0) = arma::reshape(tmp, P, P);
+    tmp.reset();
   } else {
     G.set_size(P, P, 1);
-    G.slice(0) = G_0;
+    G.slice(0).eye();
   }
   
   // Observation error
   arma::vec sigma2;
   if (sample_sigma2) {
     sigma2.set_size(n_samples+1);
-    sampleSigma2(sigma2.at(0), alpha_sigma2, beta_sigma2, Y, F, theta.slice(0));
-  }
-  else {
-    sigma2_i = params["sigma2"];
+    sigma2.at(0) = rigamma(alpha_sigma2, beta_sigma2);
   }
   
   // Process error
@@ -80,21 +76,19 @@ List eof(arma::mat Y, arma::mat F, arma::mat G_0, arma::mat Sigma_G_inv,
   } 
   else {
     W.set_size(P, P, n_samples+1);
-    W.slice(0) = df_W * C_W;
+    W.slice(0) = rgen::riwishart(df_W, C_W);
   }
   
   // Sampling loop
-  int G_idx = 0; // This value is incremented each iteration for AR and Dense models
-  for (int i = 0; i < n_samples; ++i) {
+  int G_idx = 0; // Incremented each iteration for AR and Dense models
+  for (int i=0; i<n_samples; ++i) {
     checkUserInterrupt();
     
     // Set sigma2_i for FFBS
     if (sample_sigma2) sigma2_i = sigma2.at(i);
     
     // FFBS
-    if (verbose) {
-      Rcout << "Filtering sample number " << i+1 << std::endl;
-    }
+    if (verbose) Rcout << "Filtering sample number " << i+1 << std::endl;
     if (discount) {
       kalmanDiscount(m, C, a, R_inv, Y, F, G.slice(G_idx), sigma2_i, lambda.at(i));
       C_T.slice(i+1) = C.slice(T); // Save for predictions
@@ -102,14 +96,13 @@ List eof(arma::mat Y, arma::mat F, arma::mat G_0, arma::mat Sigma_G_inv,
       kalman(m, C, a, R_inv, Y, F, G.slice(G_idx), sigma2_i, W.slice(i));
     }
     
-    if (verbose) {
-      Rcout << "Drawing sample number " << i+1 << std::endl;
-    }
+    if (verbose) Rcout << "Drawing sample number " << i+1 << std::endl;
     backwardSample(theta.slice(i), m, a, C, G.slice(G_idx), R_inv);
     
     // Sample Sigma2
     if (sample_sigma2) {
-      sampleSigma2(sigma2.at(i+1), alpha_sigma2, beta_sigma2, Y, F, theta.slice(i));
+      sampleSigma2(sigma2.at(i+1), alpha_sigma2, beta_sigma2,
+                   Y, F, theta.slice(i));
     }
     
     // Sample W
@@ -122,20 +115,23 @@ List eof(arma::mat Y, arma::mat F, arma::mat G_0, arma::mat Sigma_G_inv,
     
     // Sample G
     if (AR) {
+      // Update depends on W
       if (discount) {
         sampleAR(G.slice(G_idx+1), R_inv, theta.slice(i),
                  Sigma_G_inv, G_0, true, lambda.at(i+1));
       } else {
-        sampleAR(G.slice(G_idx+1), W.slices(i+1, i+1), theta.slice(i), Sigma_G_inv, G_0);
+        sampleAR(G.slice(G_idx+1), W.slices(i+1, i+1), 
+                 theta.slice(i), Sigma_G_inv, G_0);
       }
     } else if (DENSE) {
       if (discount) {
         sampleG(G.slice(G_idx+1), R_inv, theta.slice(i),
                 Sigma_G_inv, G_0, true, lambda.at(i+1));
       } else {
-        sampleG(G.slice(G_idx+1), W.slices(i+1, i+1), theta.slice(i), Sigma_G_inv, G_0);
+        sampleG(G.slice(G_idx+1), W.slices(i+1, i+1), 
+                theta.slice(i), Sigma_G_inv, G_0);
       }
-    }
+    } // Nothing to update for RW case
     
     // Increment G_idx for AR and Dense models
     if (AR || DENSE) ++G_idx;
