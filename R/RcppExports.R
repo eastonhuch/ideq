@@ -12,24 +12,10 @@ rmvnorm <- function(mean, Sigma) {
     .Call('_ideq_rmvnorm', PACKAGE = 'ideq', mean, Sigma)
 }
 
-#' Fits a DSTM using a wishart prior for W
-#'
-#' @export
-#' @examples
-#' # Duhh...nothing yet
-#' @importFrom Rcpp sourceCpp evalCpp
-#' @useDynLib ideq
 eof <- function(Y, F, G_0, Sigma_G_inv, m_0, C_0, C_W, params, proc_model, n_samples, verbose) {
     .Call('_ideq_eof', PACKAGE = 'ideq', Y, F, G_0, Sigma_G_inv, m_0, C_0, C_W, params, proc_model, n_samples, verbose)
 }
 
-#' Fits an integrodifference equation model (IDE)
-#'
-#' @export
-#' @examples @importFrom Rcpp sour
-#' # Duhh...nothing yet
-#'ceCpp evalCpp
-#' @useDynLib ideq
 ide <- function(Y, locs, m_0, C_0, mu_kernel_mean, mu_kernel_var, K, Sigma_kernel_scale, C_W, params, n_samples, verbose) {
     .Call('_ideq_ide', PACKAGE = 'ideq', Y, locs, m_0, C_0, mu_kernel_mean, mu_kernel_var, K, Sigma_kernel_scale, C_W, params, n_samples, verbose)
 }

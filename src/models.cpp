@@ -1,10 +1,8 @@
 #include <math.h>
 #include <RcppArmadillo.h>
 // [[Rcpp::depends(RcppArmadillo)]]
-
 #include <rgen.h>
 // [[Rcpp::depends(rgen)]]
-
 #include "kalman.h"
 #include "sample.h"
 #include "distributions.h"
@@ -13,13 +11,6 @@
 
 using namespace Rcpp;
 
-//' Fits a DSTM using a wishart prior for W
-//'
-//' @export
-//' @examples
-//' # Duhh...nothing yet
-//' @importFrom Rcpp sourceCpp evalCpp
-//' @useDynLib ideq
 // [[Rcpp::export]]
 List eof(arma::mat Y, arma::mat F, arma::mat G_0, arma::mat Sigma_G_inv,
          arma::colvec m_0, arma::mat C_0, arma::mat C_W,
@@ -27,8 +18,8 @@ List eof(arma::mat Y, arma::mat F, arma::mat G_0, arma::mat Sigma_G_inv,
          const int n_samples, const bool verbose) {
   
   // Extract scalar parameters
-  bool AR = proc_model(0) == "AR";
-  bool DENSE = proc_model(0) == "Dense";
+  const bool AR = proc_model(0) == "AR";
+  const bool DENSE = proc_model(0) == "Dense";
   const int P = G_0.n_rows;
   const int T = Y.n_cols;
   const int S = Y.n_rows;
@@ -169,13 +160,6 @@ List eof(arma::mat Y, arma::mat F, arma::mat G_0, arma::mat Sigma_G_inv,
   return results;
 };
 
-//' Fits an integrodifference equation model (IDE)
-//'
-//' @export
-//' @examples @importFrom Rcpp sour
-//' # Duhh...nothing yet
-//'ceCpp evalCpp
-//' @useDynLib ideq
 // [[Rcpp::export]]
 List ide(arma::mat Y, arma::mat locs, arma::colvec m_0, arma::mat C_0,
          arma::colvec mu_kernel_mean, arma::mat mu_kernel_var, arma::cube K,
