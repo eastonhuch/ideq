@@ -203,6 +203,8 @@ List ide(arma::mat Y, arma::mat locs, arma::colvec m_0, arma::mat C_0,
   const bool SV = params["SV"] > 0;
   const bool dyanamic_K = K.n_slices > 1;
   int K_idx = 0;
+  int mu_acceptances = 0;
+  int Sigma_acceptances = 0;
   
   // Create matrices and cubes for FFBS
   Y.insert_cols(0, 1); // make Y true-indexed; i.e. index 1 is t_1
@@ -346,6 +348,7 @@ List ide(arma::mat Y, arma::mat locs, arma::colvec m_0, arma::mat C_0,
     // Accept according to mh-ratio
     u = R::runif(0, 1);
     if (std::log(u) < mh_ratio) {
+      ++mu_acceptances;
       mu_kernel.slice(i+1) = mu_kernel_proposal;
       G.slice(i+1) = G_proposal;
       if (SV) mu_kernel_knots.slice(i+1) = mu_kernel_knots_proposal;
@@ -400,6 +403,7 @@ List ide(arma::mat Y, arma::mat locs, arma::colvec m_0, arma::mat C_0,
     // Accept according to mh-ratio
     u = R::runif(0, 1);
     if (std::log(u) < mh_ratio) {
+      ++Sigma_acceptances;
       Sigma_kernel.at(i+1) = Sigma_kernel_proposal;
       G.slice(i+1) = G_proposal;
       Sigma_kernel_knots.at(i+1) = Sigma_kernel_knots_proposal; 
@@ -436,5 +440,7 @@ List ide(arma::mat Y, arma::mat locs, arma::colvec m_0, arma::mat C_0,
   else {
     results["sigma2"] = sigma2_i;
   }
+  results["mu_acceptances"] = mu_acceptances;
+  results["Sigma_acceptances"] = Sigma_acceptances;
   return results;
 };

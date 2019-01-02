@@ -157,25 +157,38 @@ summary.dstm <- function(x, object_name = deparse(substitute(x))) {
 
   cat("List elements (in order) are as follows:\n")
   cat(names(x), "\n")
+  
+  # Numeric Scalars
+  numeric_bool <- sapply(x, function(y) is.vector(y) && is.numeric(y))
+  scalar_bool <- sapply(x, function(y) length(y) == 1)
+  scalar_idx <- which(numeric_bool &  scalar_bool)
+  vector_idx <- which(numeric_bool & !scalar_bool)
+  
+  if ( length(scalar_idx) > 0 ) {
+    cat("\nScalar Objects:\n")
+    scalars <- numeric()
+    for (i in scalar_idx) scalars <- c(scalars, x[[i]])
+    names(scalars) <- names(x)[scalar_idx]
+    print(scalars)
+  }
 
   # Numeric Vectors
-  numeric_idx <- which(sapply(x, function(y) is.vector(y) && is.numeric(y)))
-  if ( length(numeric_idx) > 0 ) {
+  if ( length(vector_idx) > 0 ) {
     cat("\nVector Objects:\n")
-    numeric_summary <- matrix(NA, nrow = length(numeric_idx), ncol = 8)
+    vector_summary <- matrix(NA, nrow = length(vector_idx), ncol = 8)
     my_probs = c(0.0, 0.25, 0.5, 0.75, 1.0)
     counter <- 1
-    for (i in numeric_idx) {
-      numeric_summary[counter, 1]   <- length(x[[i]])
-      numeric_summary[counter, 2]   <- mean(x[[i]])
-      numeric_summary[counter, 3]   <- var(x[[i]])
-      numeric_summary[counter, 4:8] <- quantile(x[[i]], probs = my_probs)
+    for (i in vector_idx) {
+      vector_summary[counter, 1]   <- length(x[[i]])
+      vector_summary[counter, 2]   <- mean(x[[i]])
+      vector_summary[counter, 3]   <- var(x[[i]])
+      vector_summary[counter, 4:8] <- quantile(x[[i]], probs = my_probs)
       counter <- counter + 1
     }
-    colnames(numeric_summary) <- c("Length", "Mean", "Var",
+    colnames(vector_summary) <- c("Length", "Mean", "Var",
                                  paste0(as.character(my_probs * 100), "%"))
-    rownames(numeric_summary) <- names(x)[numeric_idx]
-    print(numeric_summary)
+    rownames(vector_summary) <- names(x)[vector_idx]
+    print(vector_summary)
   }
 
   # Matrices/Arrays

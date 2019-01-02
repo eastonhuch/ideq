@@ -742,6 +742,10 @@ dstm_ide <- function(Y, locs=NULL, knot_locs=NULL, proc_error = "IW", J=4L,
   if (length(results[["Sigma_kernel"]]) > 1) {
     results[["Sigma_kernel"]] <- results[["Sigma_kernel"]][-1]
   }
+  results[["mu_acceptance_rate"]] <- results[["mu_acceptances"]] / n_samples
+  results[["Sigma_acceptance_rate"]] <- results[["Sigma_acceptances"]] / n_samples
+  results[["mu_acceptances"]] <- NULL
+  results[["Sigma_acceptances"]] <- NULL
   
   class(results) <- c("dstm_ide" , "dstm", "list")
   attr(results, "proc_model") <- "ide"
