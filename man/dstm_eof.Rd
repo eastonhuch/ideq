@@ -2,35 +2,54 @@
 % Please edit documentation in R/dstm.R
 \name{dstm_eof}
 \alias{dstm_eof}
-\title{Fits a dynamic spatio-temporal model with EOFs}
+\title{Dynamic spatio-temporal model with EOFs}
 \usage{
-dstm_eof(Y, proc_model = "RW", proc_error = "IW", P = 10L,
+dstm_eof(Y, proc_model = "Dense", P = 10L, proc_error = "IW",
   n_samples = 1L, sample_sigma2 = TRUE, verbose = FALSE,
   params = NULL)
 }
 \arguments{
-\item{Y}{(numeric matrix) S by T data matrix containing response variable
+\item{Y}{(numeric matrix) S by T data matrix containing the response variable
 at S spatial locations and T time points.
 The t-th column (NOT row) corresponds to the t-th observation vector.}
 
-\item{proc_model}{(character string) Process model; one of "RW" (random walk), 
-"AR" (diagonal process matrix), or "Dense" (dense process matrix)}
+\item{proc_model}{(character string) Process model: one of "RW" (identity process matrix),
+"AR" (diagonal process matrix), or "Dense" (dense process matrix).}
 
-\item{proc_error}{(character string) Process error; "IW" (inverse-Wishart) or 
-"Discount" (discount factor)}
+\item{P}{(integer) Number of EOFs.}
 
-\item{P}{(integer) Number of EOFs}
+\item{proc_error}{(character string) Process error: 
+"IW" (inverse-Wishart) or "Discount" (discount factor).}
 
-\item{sample_sigma2}{(logical) whether to sample the variance of the iid
-observation error}
+\item{sample_sigma2}{(logical) whether to sample the variance of the iid observation error.}
 
-\item{verbose}{(logical) Whether to print additional information 
-(e.g., iteration in sampling algorithm)}
+\item{verbose}{(logical) Whether to print additional information;
+e.g., iteration in sampling algorithm.}
 
-\item{params}{(list) List of hyperparameter values (see details)}
+\item{params}{(list) List of hyperparameter values; see details.}
 }
 \description{
-Fits a dynamic spatio-temporal model with EOFs
+Fits a dynamic spatio-temporal model using empirical orthogonal functions
+(EOFs).
+The model does not require the spatial locations because the process model
+is based on the principal components of the data matrix.
+Three broad model types are supported:
+
+1. RW: A random walk model for which the process matrix is the identity.
+
+2. AR: An auto-regressive model for which the process matrix is diagonal
+   and its elements are estimated.
+   
+3. Dense: A model in which the process matrix is a dense, estimated
+   matrix.
+   
+For each broad model type,
+users can specify a variety of options including
+the size of the state space,
+the form of the process error,
+and whether to sample the observation error.
+Users can specify prior distributions for all sampled quantities using the
+`params` argument.
 }
 \details{
 This section explains how to specify custom hyperparameters using the `params` argument.
@@ -38,35 +57,37 @@ For each distribution referenced below,
 we use the scale parameterization found on the distribution's Wikipedia page.
 You may specify the following as named elements of the `params` list:
 
--"m_0": (numeric vector) The prior mean of the state vector at time zero
+m_0: (numeric vector) The prior mean of the state vector at time zero
  (\eqn{\theta_0})
 
--"C_0": (numeric matrix) The prior variance-covariance matrix of the state
- vector at time zero (\eqn{\theta_0})
+C_0: (numeric matrix) The prior variance-covariance matrix of the state
+vector at time zero (\eqn{\theta_0})
 
--"alpha_sigma2", "beta_sigma2": The inverse-Gamma parameters (scale parameterization)
-of the prior distribution on \eqn{\sigma^2}
+alpha_sigma2, beta_sigma2: (numeric scalars) The inverse-Gamma parameters 
+(scale parameterization) of the prior distribution on \eqn{\sigma^2}
 
--"sigma2": The value to use for \eqn{\sigma^2} if sample_sigma2 = FALSE
+sigma2: (numeric scalar) The value to use for \eqn{\sigma^2}
+if sample_sigma2 = FALSE
 
--"mu_G": The prior mean for the process matrix G.
+mu_G: (numeric matrix) The prior mean for the process matrix G.
 If proc_model = "AR", then mu_G must also be diagonal.
 If proc_model = "Dense", then mu_G has no contraints.
 
--"Sigma_G": The prior variance-covariance matrix for the process matrix.
-If proc_model = "AR", then Sigma_G should be P by P and is the 
-variance-covariance matrix for diag(G).
+Sigma_G: (numeric matrix) The prior variance-covariance matrix for the
+process matrix. If proc_model = "AR", then Sigma_G should be P by 
+P and is the variance-covariance matrix for diag(G).
 If proc_model = "Dense", then Sigma_G should be P^2 by P^2 and is the 
 variance-covariance matrix for vec(G)
 
--"alpha_lambda", "beta_lambda": The inverse-Gamma parameters (scale parameterization)
-of the prior distribution on \eqn{\lambda = \delta / (1 - \delta)}
+alpha_lambda, beta_lambda: (numeric scalars) The inverse-Gamma parameters 
+(scale parameterization) of the prior distribution on 
+\eqn{\lambda = \delta / (1 - \delta)}
 
--C_W: The scale matrix for the inverse-Wishart prior distribution on W,
-the variance-covariance matrix of the process error.
+C_W: (numeric matrix) The scale matrix for the inverse-Wishart prior
+distribution on W, the variance-covariance matrix of the process error.
 
--df_W: The degees of freedom for the inverse-Wishart prior distribution on W,
-the variance-covariance matrix of the process error.
+df_W: (numeric scalar) The degees of freedom for the inverse-Wishart prior
+distribution on W, the variance-covariance matrix of the process error.
 }
 \examples{
 # Create example data

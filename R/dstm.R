@@ -1,53 +1,85 @@
-#' Fits a dynamic spatio-temporal model with EOFs
-#'
-#' @param Y (numeric matrix) S by T data matrix containing response variable
-#'          at S spatial locations and T time points.
-#'          The t-th column (NOT row) corresponds to the t-th observation vector.
-#' @param proc_model (character string) Process model; one of "RW" (random walk), 
-#'                  "AR" (diagonal process matrix), or "Dense" (dense process matrix)
-#' @param proc_error (character string) Process error; "IW" (inverse-Wishart) or 
-#'                   "Discount" (discount factor)
-#' @param P (integer) Number of EOFs
-#' @param sample_sigma2 (logical) whether to sample the variance of the iid
-#'                      observation error
-#' @param verbose (logical) Whether to print additional information 
-#'                (e.g., iteration in sampling algorithm)
-#' @param params (list) List of hyperparameter values (see details)
+#' Dynamic spatio-temporal model with EOFs
+#' 
+#' @description 
+#' Fits a dynamic spatio-temporal model using empirical orthogonal functions
+#' (EOFs).
+#' The model does not require the spatial locations because the process model
+#' is based on the principal components of the data matrix.
+#' Three broad model types are supported:
+#' 
+#' 1. RW: A random walk model for which the process matrix is the identity.
+#' 
+#' 2. AR: An auto-regressive model for which the process matrix is diagonal
+#'    and its elements are estimated.
+#'    
+#' 3. Dense: A model in which the process matrix is a dense, estimated
+#'    matrix.
+#'    
+#' For each broad model type,
+#' users can specify a variety of options including
+#' the size of the state space,
+#' the form of the process error,
+#' and whether to sample the observation error.
+#' Users can specify prior distributions for all sampled quantities using the
+#' `params` argument.
+#' 
+#' @param Y 
+#' (numeric matrix) S by T data matrix containing the response variable
+#' at S spatial locations and T time points.
+#' The t-th column (NOT row) corresponds to the t-th observation vector.
+#' @param proc_model 
+#' (character string) Process model: one of "RW" (identity process matrix),
+#' "AR" (diagonal process matrix), or "Dense" (dense process matrix).
+#' @param P 
+#' (integer) Number of EOFs.
+#' @param proc_error 
+#' (character string) Process error: 
+#' "IW" (inverse-Wishart) or "Discount" (discount factor).
+#' @param sample_sigma2 
+#' (logical) whether to sample the variance of the iid observation error.
+#' @param verbose 
+#' (logical) Whether to print additional information;
+#' e.g., iteration in sampling algorithm.
+#' @param params 
+#' (list) List of hyperparameter values; see details.
+#' 
 #' @details 
 #' This section explains how to specify custom hyperparameters using the `params` argument.
 #' For each distribution referenced below,
 #' we use the scale parameterization found on the distribution's Wikipedia page.
 #' You may specify the following as named elements of the `params` list:
 #' 
-#' -"m_0": (numeric vector) The prior mean of the state vector at time zero
+#' m_0: (numeric vector) The prior mean of the state vector at time zero
 #'  (\eqn{\theta_0})
 #'
-#' -"C_0": (numeric matrix) The prior variance-covariance matrix of the state
-#'  vector at time zero (\eqn{\theta_0})
+#' C_0: (numeric matrix) The prior variance-covariance matrix of the state
+#' vector at time zero (\eqn{\theta_0})
 #'
-#' -"alpha_sigma2", "beta_sigma2": The inverse-Gamma parameters (scale parameterization)
-#' of the prior distribution on \eqn{\sigma^2}
+#' alpha_sigma2, beta_sigma2: (numeric scalars) The inverse-Gamma parameters 
+#' (scale parameterization) of the prior distribution on \eqn{\sigma^2}
 #' 
-#' -"sigma2": The value to use for \eqn{\sigma^2} if sample_sigma2 = FALSE
+#' sigma2: (numeric scalar) The value to use for \eqn{\sigma^2}
+#' if sample_sigma2 = FALSE
 #' 
-#' -"mu_G": The prior mean for the process matrix G.
+#' mu_G: (numeric matrix) The prior mean for the process matrix G.
 #' If proc_model = "AR", then mu_G must also be diagonal.
 #' If proc_model = "Dense", then mu_G has no contraints.
 #' 
-#' -"Sigma_G": The prior variance-covariance matrix for the process matrix.
-#' If proc_model = "AR", then Sigma_G should be P by P and is the 
-#' variance-covariance matrix for diag(G).
+#' Sigma_G: (numeric matrix) The prior variance-covariance matrix for the
+#' process matrix. If proc_model = "AR", then Sigma_G should be P by 
+#' P and is the variance-covariance matrix for diag(G).
 #' If proc_model = "Dense", then Sigma_G should be P^2 by P^2 and is the 
 #' variance-covariance matrix for vec(G)
 #' 
-#' -"alpha_lambda", "beta_lambda": The inverse-Gamma parameters (scale parameterization)
-#' of the prior distribution on \eqn{\lambda = \delta / (1 - \delta)}
+#' alpha_lambda, beta_lambda: (numeric scalars) The inverse-Gamma parameters 
+#' (scale parameterization) of the prior distribution on 
+#' \eqn{\lambda = \delta / (1 - \delta)}
 #' 
-#' -C_W: The scale matrix for the inverse-Wishart prior distribution on W,
-#' the variance-covariance matrix of the process error.
+#' C_W: (numeric matrix) The scale matrix for the inverse-Wishart prior
+#' distribution on W, the variance-covariance matrix of the process error.
 #' 
-#' -df_W: The degees of freedom for the inverse-Wishart prior distribution on W,
-#' the variance-covariance matrix of the process error.
+#' df_W: (numeric scalar) The degees of freedom for the inverse-Wishart prior
+#' distribution on W, the variance-covariance matrix of the process error.
 #' 
 #' @examples
 #' # Create example data
@@ -72,10 +104,9 @@
 #' dstm_eof(Y, P=10, params=list(m_0=rep(1, 10) , C_0=diag(0.01, 10))) # Prior for theta_0
 #' dstm_eof(Y, params=list(C_W=diag(10), df_W=100)) # Prior for W
 #' @export
-dstm_eof <- function(Y, proc_model = "RW",
-                     proc_error = "IW", P = 10L,
-                     n_samples = 1L, sample_sigma2 = TRUE,
-                     verbose = FALSE, params = NULL) {
+dstm_eof <- function(Y, proc_model = "Dense", P = 10L, proc_error = "IW",
+                     n_samples = 1L, sample_sigma2 = TRUE, verbose = FALSE,
+                     params = NULL) {
 
   # Observation Model; creates F, m_0, C_0
   e <- eigen(cov(t(Y)))
@@ -290,34 +321,112 @@ dstm_eof <- function(Y, proc_model = "RW",
   return(results)
 }
 
-#' Fits an integrodifference equation (IDE) model
-#'
-#' @param Y matrix.
-#'          S by T matrix containing response variable at S spatial locations and T time points
-#' @param locs matrix or array.
-#'             Spatial locations of observed data. If the locations are the same at each time
-#'             point, then `locs` is an S by 2 matrix. 
-#'             If the locations change at different time points,
-#'             then `locs` is an array with dimension (S, 2, T)
-#' @param knot_locs integer or matrix.
-#'                    if integer, then kernel parameters are calculated on a 2-D grid
-#'                    with dimension (`knot_locs`, `knot_locs`)
-#' @param proc_error "Discount" or "IW".
-#'                   If "Discount", then the process error is estimated using a discount factor.
-#'                   If "IW", then the process error is estimated as a realization from
-#'                   an inverse-Wishart distribution
-#' @param J integer. Extent of Fourier approximation.
-#'          The size of the state space is 2 * J^2 + 1
-#' @param n_samples integer; number of posterior samples to draw
-#' @param sample_sigma2 boolean; whether to sample \eqn{\sigma^2}
-#' @param verbose boolean; verbose = TRUE prints sampling progress
-#' @param params list; Used to specify hyperparameters
+#' Integrodifference equation (IDE) model
 #' 
-#' @details How to specify hyperparameters such as priors
+#' @description
+#' dstm_ide fits a type of dynamic spatio-temporal model called
+#' an integrodifference equation (IDE) model.
+#' It estimates a redistribution kernel---a
+#' probability distribution controlling dispersion across time and space.
+#' Currently, only normal redistribution kernels are supported.
+#' 
+#' The process model is decomposed with an orthonormal basis function expansion
+#' (a Fourier series).
+#' It can then be estimated as a special case of a dynamic linear model (DLM),
+#' using the forward filtering backward sampling algorithm to estimate the
+#' state vector (the Fourier coefficients).
+#' The kernel parameters are estimated with a random walk Metropolis-Hastings
+#' update.
+#' The other parameters are estimated with conditionally conjugate updates.
+#' 
+#' @param Y 
+#' (numeric matrix) S by T data matrix containing response variable at S spatial
+#' locations and T time points.
+#' The t-th column (NOT row) corresponds to the t-th observation vector.
+#' @param locs
+#' (numeric matrix)
+#' S by 2 matrix containing the spatial locations of the observed data.
+#' The rows of `locs` correspond with the rows of `Y`.
+#' @param knot_locs 
+#' (integer or numeric matrix) Knot locations.
+#' The kernel parameters are estimated at these locations and then mapped to the
+#' spatial locations of the observed data via process convolution.
+#' If an integer is provided, then the knots are located on an equally spaced
+#' grid with dimension (`knot_locs`, `knot_locs`).
+#' If a matrix is provided, 
+#' then each row of the matrix corresponds to a knot location.
+#' @param proc_error 
+#' (character string) Process error:
+#' "IW" (inverse-Wishart) or "Discount" (discount factor).
+#' @param J 
+#' (integer) Extent of the Fourier approximation.
+#' The size of the state space is 2 * J^2 + 1.
+#' @param n_samples 
+#' (integer) Number of posterior samples to draw.
+#' @param sample_sigma2 
+#' (logical) Whether to sample the variance of the iid observation error.
+#' @param verbose 
+#' (logical) Whether to print additional information;
+#' e.g., iteration in sampling algorithm.
+#' @param params 
+#' (list) List of hyperparameter values; see details.
+#' 
+#' @details
+#' This section explains how to specify custom hyperparameters using the `params` argument.
+#' For each distribution referenced below,
+#' we use the scale parameterization found on the distribution's Wikipedia page.
+#' You may specify the following as named elements of the `params` list:
+#' 
+#' m_0: (numeric vector) The prior mean of the state vector
+#' (Fourier basis coefficients) at time zero (\eqn{\theta_0}).
 #'
-#' @export
+#' C_0: (numeric matrix) The prior variance-covariance matrix of the state
+#'  vector (Fourier basis coefficients) at time zero (\eqn{\theta_0}).
+#'
+#' alpha_sigma2, beta_sigma2: (numeric scalars) The inverse-Gamma parameters
+#' (scale parameterization) of the prior distribution on \eqn{\sigma^2}.
+#' 
+#' sigma2: (numeric scalar) The value to use for \eqn{\sigma^2} 
+#' if sample_sigma2 = FALSE.
+#' 
+#' alpha_lambda, beta_lambda: (numeric scalars) The inverse-Gamma parameters 
+#' (scale parameterization) of the prior distribution on 
+#' \eqn{\lambda = \delta / (1 - \delta)}.
+#' 
+#' C_W: (numeric matrix) The scale matrix for the inverse-Wishart prior
+#' distribution on W, the variance-covariance matrix of the process error.
+#' 
+#' df_W: (numeric scalar) The degees of freedom for the inverse-Wishart prior
+#' distribution on W, the variance-covariance matrix of the process error.
+#' 
+#' L: (numeric scalar) The range of the spatial locations after rescaling.
+#' For spatially varying kernels, the value of L controls the degree of 
+#' smoothing. As L increases, the degree of smoothing decreases.
+#' 
+#' mu_kernel_mean: (numeric vector) The mean of the normal prior distribution
+#' on mu_kernel, the mean of the redistribution kernel.
+#' 
+#' mu_kernel_var: (numeric matrix) The variance of the normal prior distribution
+#' on mu_kernel, the mean of the redistribution kernel.
+#' 
+#' Sigma_kernel_scale: (numeric matrix) The scale matrix for the 
+#' inverse-Wishart prior distribution on Sigma_kernel,
+#' the variance-covariance matrix of the redistribution kernel.
+#' 
+#' Sigma_kernel_df: (numeric scalar) The degrees of freedom for the 
+#' inverse-Wishart prior distribution on Sigma_kernel,
+#' the variance-covariance matrix of the redistribution kernel.
+#' 
+#' proposal_factor_mu: (numeric scalar) Controls the variance of the proposal distribution for
+#' mu. The proposals have a variance of proposal_factor_mu^2 * mu_kernel_var.
+#' 
+#' proposal_factor_Sigma: (numeric scalar) Controls the variance of the proposal distribution
+#' for Sigma. As is the case with proposal_factor_mu, a higher value
+#' corresponds to a higher variance.
+#' The degrees of freedom for the proposal distribution for Sigma is 
+#' ncol(locs) + Sigma_kernel_df / proposal_factor_Sigma.
+#'
 #' @examples
-#' 
 #' # Create example data
 #' num_time_points <- 5
 #' spatial_locations <- expand.grid(seq(10), seq(10))
@@ -329,7 +438,6 @@ dstm_eof <- function(Y, proc_model = "RW",
 #' dstm_ide(Y, spatial_locations)
 #' 
 #' # IDE model with spatially varying kernel
-#' # Estimates kernel parameters at knot locations and maps to others
 #' dstm_ide(Y, spatial_locations, knot_locs=4)
 #' 
 #' # Discount factor method for estimating process error variance
@@ -343,8 +451,6 @@ dstm_eof <- function(Y, proc_model = "RW",
 #'          params=list(alpha_sigma2=10, beta_sigma2=11))
 #' 
 #' # Rescale spatial locations to have range of 10
-#' # For spatially varying case, this controls degree of smoothing
-#' # with higher values of L leading to less smoothing
 #' dstm_ide(Y, spatial_locations, params=list(L=10)) 
 #' 
 #' # Set prior on kernel mean
@@ -354,7 +460,7 @@ dstm_eof <- function(Y, proc_model = "RW",
 #' 
 #' # Set prior on kernel variance-covariance matrix
 #' dstm_ide(Y, spatial_locations, 
-#'          params=list(Sigma_kernel_df=100, Sigma_kernel_scale=diag(2)))
+#'          params=list(Sigma_kernel_scale=diag(2), Sigma_kernel_df=100))
 #' 
 #' # Set prior on state vector (Fourier basis coefficients)
 #' dstm_ide(Y, spatial_locations, 
@@ -368,7 +474,7 @@ dstm_eof <- function(Y, proc_model = "RW",
 #' dstm_ide(Y, spatial_locations, 
 #'          params=list(proposal_factor_mu=2,
 #'                      proposal_factor_Sigma=3))
-#'                      
+#' @export
 dstm_ide <- function(Y, locs=NULL, knot_locs=NULL, proc_error = "IW", J=4L,
                      n_samples = 10L, sample_sigma2 = TRUE,
                      verbose = FALSE, params = NULL) {
