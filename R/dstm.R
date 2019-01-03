@@ -654,7 +654,7 @@ dstm_ide <- function(Y, locs=NULL, knot_locs=NULL, proc_error = "IW", J=4L,
     
     # Modify kernel parameters
     n_knots <- nrow(knot_locs)
-    mu_kernel_mean <- mu_kernel_mean %x% rep(1, n_knots)
+    mu_kernel_mean <- rep(1, n_knots) %x% matrix(mu_kernel_mean, nrow=1)
     mu_kernel_var <- mu_kernel_var %x% diag(n_knots)
     
     # Create K matrix
@@ -728,7 +728,7 @@ dstm_ide <- function(Y, locs=NULL, knot_locs=NULL, proc_error = "IW", J=4L,
                      proposal_factor_Sigma=proposal_factor_Sigma,
                      Sigma_kernel_df=Sigma_kernel_df, SV=SV)
   
-  results <- ide(Y, locs, m_0, C_0, mu_kernel_mean,
+  results <- ide(Y, locs, m_0, C_0, as.matrix(mu_kernel_mean),
                  mu_kernel_var, K, Sigma_kernel_scale, C_W,
                  scalar_params, n_samples, verbose)
   

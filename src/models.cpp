@@ -18,32 +18,25 @@ List eof(arma::mat Y, arma::mat F, arma::mat G_0, arma::mat Sigma_G_inv,
          const int n_samples, const bool verbose) {
   
   // Extract scalar parameters
-  const bool AR = proc_model(0) == "AR";
-  const bool DENSE = proc_model(0) == "Dense";
-  const int P = G_0.n_rows;
-  const int T = Y.n_cols;
-  const int S = Y.n_rows;
+  const bool AR = proc_model(0) == "AR", DENSE = proc_model(0) == "Dense";
+  const int P = G_0.n_rows, T = Y.n_cols, S = Y.n_rows, df_W = params["df_W"];
   const double alpha_sigma2 = params["alpha_sigma2"];
   const double beta_sigma2  = params["beta_sigma2"];
   const double alpha_lambda = params["alpha_lambda"];
   const double beta_lambda  = params["beta_lambda"];
-  const double df_W         = params["df_W"];
   double sigma2_i = params["sigma2"];
-  const bool sample_sigma2  = sigma2_i < 0;
-  const bool discount = df_W == NA;
+  const bool sample_sigma2  = sigma2_i < 0, discount = df_W == NA;
   
   // Create matrices and cubes for FFBS
   Y.insert_cols(0, 1); // make Y true-indexed; i.e. index 1 is t_1
-  arma::cube theta(P, T+1, n_samples), G;
+  arma::cube theta(P, T+1, n_samples), R_inv(P, P, T+1), C(P, P, T+1), G, C_T;
   arma::mat a(P, T+1), m(P, T+1), tmp;
-  arma::cube R_inv(P, P, T+1), C(P, P, T+1), C_T; // C_T for discount models only
   m.col(0) = m_0;
   C.slice(0) = C_0;
   
-  // Process model
+  // Process matrix: G
   if (AR) {
     G.set_size(P, P, n_samples+1);
-    G.zeros();
     tmp = G_0.diag();
     G_0.set_size(P, 1);
     G_0 = tmp;
@@ -59,14 +52,14 @@ List eof(arma::mat Y, arma::mat F, arma::mat G_0, arma::mat Sigma_G_inv,
     G.slice(0).eye();
   }
   
-  // Observation error
+  // Observation error: sigma2
   arma::vec sigma2;
   if (sample_sigma2) {
     sigma2.set_size(n_samples+1);
     sigma2.at(0) = rigamma(alpha_sigma2, beta_sigma2);
   }
   
-  // Process error
+  // Process error: W or lambda
   arma::vec lambda;
   arma::cube W;
   if (discount) {
@@ -74,7 +67,7 @@ List eof(arma::mat Y, arma::mat F, arma::mat G_0, arma::mat Sigma_G_inv,
     lambda.at(0) = rigamma(alpha_lambda, beta_lambda);
     C_T.set_size(P, P, n_samples+1);
   } 
-  else {
+  else { // Sample W from inverse-Wishart distribution
     W.set_size(P, P, n_samples+1);
     W.slice(0) = rgen::riwishart(df_W, C_W);
   }
@@ -115,8 +108,7 @@ List eof(arma::mat Y, arma::mat F, arma::mat G_0, arma::mat Sigma_G_inv,
     
     // Sample G
     if (AR) {
-      // Update depends on W
-      if (discount) {
+      if (discount) { // Update depends on W
         sampleAR(G.slice(G_idx+1), R_inv, theta.slice(i),
                  Sigma_G_inv, G_0, true, lambda.at(i+1));
       } else {
@@ -124,7 +116,7 @@ List eof(arma::mat Y, arma::mat F, arma::mat G_0, arma::mat Sigma_G_inv,
                  theta.slice(i), Sigma_G_inv, G_0);
       }
     } else if (DENSE) {
-      if (discount) {
+      if (discount) { // Update depends on W
         sampleG(G.slice(G_idx+1), R_inv, theta.slice(i),
                 Sigma_G_inv, G_0, true, lambda.at(i+1));
       } else {
@@ -138,60 +130,48 @@ List eof(arma::mat Y, arma::mat F, arma::mat G_0, arma::mat Sigma_G_inv,
   }
   
   List results;
-  results["F"] = F;
-  results["theta"]  = theta;
-  if (sample_sigma2) {    results["sigma2"] = sigma2;
-  } else {
-    results["sigma2"] = sigma2_i;
-  }
-  if (AR || DENSE) {
-    results["G"] = G;
-  }
-  if (discount) {
-    results["lambda"] = lambda;
-  } else {
-    results["W"] = W;
-  }
+  results["F"] = F; // Observation matrix
+  results["theta"]  = theta; // State vector
+  if (AR || DENSE) results["G"] = G; // Process matrix
+  
+  // Observation error
+  if (sample_sigma2) results["sigma2"] = sigma2;
+  else results["sigma2"] = sigma2_i;
+  
+  // Process error
+  if (discount) results["lambda"] = lambda;
+  else results["W"] = W;
   
   return results;
 };
 
 // [[Rcpp::export]]
 List ide(arma::mat Y, arma::mat locs, arma::colvec m_0, arma::mat C_0,
-         arma::colvec mu_kernel_mean, arma::mat mu_kernel_var, arma::cube K,
+         arma::mat mu_kernel_mean, arma::mat mu_kernel_var, arma::cube K,
          arma::cube Sigma_kernel_scale, arma::mat C_W, NumericVector params, 
          const int n_samples, const bool verbose) {
-  // Extract scalar parameters
-  const double J  = params["J"];
-  const double L  = params["L"];
-  const int P = 2*J*J+1;
-  const int T = Y.n_cols;
-  const int S = Y.n_rows;
-  const int locs_dim = locs.n_cols;
-  const int n_knots = K.n_cols;
-  const double alpha_sigma2  = params["alpha_sigma2"];
-  const double beta_sigma2   = params["beta_sigma2"];
-  double       sigma2_i      = params["sigma2"];
-  const bool   sample_sigma2 = sigma2_i < 0;
-  const double alpha_lambda  = params["alpha_lambda"];
-  const double beta_lambda   = params["beta_lambda"];
-  const double df_W = params["df_W"];
-  const bool discount = C_W.at(0, 0) == NA;
-  const float proposal_factor_mu = params["proposal_factor_mu"];
+  
+  // Extract/set scalar parameters
+  const double J = params["J"], L = params["L"], df_W = params["df_W"];
+  const double alpha_sigma2 = params["alpha_sigma2"];
+  const double beta_sigma2 = params["beta_sigma2"];
+  const double alpha_lambda = params["alpha_lambda"];
+  const double beta_lambda = params["beta_lambda"];
+  const double proposal_factor_mu = params["proposal_factor_mu"];
   const double proposal_factor_Sigma = params["proposal_factor_Sigma"];
   const double Sigma_kernel_df = params["Sigma_kernel_df"];
-  const bool SV = params["SV"] > 0;
-  const bool dyanamic_K = K.n_slices > 1;
-  int K_idx = 0;
-  int mu_acceptances = 0;
-  int Sigma_acceptances = 0;
+  double sigma2_i = params["sigma2"];
+  const int P = 2*J*J + 1, T = Y.n_cols, S = Y.n_rows;
+  const int locs_dim = locs.n_cols, n_knots = K.n_cols;
+  int K_idx = 0, mu_acceptances = 0, Sigma_acceptances = 0;
+  const bool sample_sigma2 = sigma2_i < 0, discount = df_W == NA;
+  const bool dyanamic_K = K.n_slices > 1, SV = params["SV"] > 0;
   
   // Create matrices and cubes for FFBS
   Y.insert_cols(0, 1); // make Y true-indexed; i.e. index 1 is t_1
   arma::cube theta(P, T+1, n_samples), G(P, P, n_samples+1);
-  theta.slice(0).zeros();
+  arma::cube R_inv(P, P, T+1), C(P, P, T+1), C_T;
   arma::mat a(P, T+1), m(P, T+1), tmp;
-  arma::cube R_inv(P, P, T+1), C(P, P, T+1), C_T(P, P, n_samples+1);
   m.col(0) = m_0;
   C.slice(0) = C_0;
   
@@ -214,7 +194,8 @@ List ide(arma::mat Y, arma::mat locs, arma::colvec m_0, arma::mat C_0,
     }
     
     // Set initial values
-    mu_kernel_knots.slice(0) = arma::reshape(mu_kernel_mean, n_knots, locs_dim);
+    Rcout << mu_kernel_mean.n_rows << " " << mu_kernel_mean.n_cols << std::endl;
+    mu_kernel_knots.slice(0) = mu_kernel_mean;
     mu_kernel.slice(0) = K.slice(0) * mu_kernel_knots.slice(0);
     Sigma_kernel_knots.at(0) = Sigma_kernel_scale / (Sigma_kernel_df-locs_dim-1);
     mapSigma(Sigma_kernel.at(0), Sigma_kernel_knots.at(0), K);
@@ -248,7 +229,7 @@ List ide(arma::mat Y, arma::mat locs, arma::colvec m_0, arma::mat C_0,
   arma::vec sigma2;
   if (sample_sigma2) {
     sigma2.set_size(n_samples+1);
-    sampleSigma2(sigma2.at(0), alpha_sigma2, beta_sigma2, Y, F, theta.slice(0));
+    sigma2.at(0) = rigamma(alpha_sigma2, beta_sigma2);
   }
   
   // Process error
@@ -257,8 +238,9 @@ List ide(arma::mat Y, arma::mat locs, arma::colvec m_0, arma::mat C_0,
   if (discount) {
     lambda.set_size(n_samples+1);
     lambda.at(0) = rigamma(alpha_lambda, beta_lambda);
+    C_T.set_size(P, P, n_samples+1);
   } 
-  else {
+  else { // Sample W from inverse-Wishart
     W.set_size(P, P, n_samples+1);
     W.slice(0) = df_W * C_W;
   }
@@ -268,9 +250,7 @@ List ide(arma::mat Y, arma::mat locs, arma::colvec m_0, arma::mat C_0,
     checkUserInterrupt();
     
     // FFBS
-    if (verbose) {
-      Rcout << "Filtering sample number " << i+1 << std::endl;
-    }
+    if (verbose) Rcout << "Filtering sample number " << i+1 << std::endl;
     if (sample_sigma2) sigma2_i = sigma2.at(i);
     
     if (discount) {
@@ -279,11 +259,9 @@ List ide(arma::mat Y, arma::mat locs, arma::colvec m_0, arma::mat C_0,
       kalman(m, C, a, R_inv, Y, F, G.slice(i), sigma2_i, W.slice(i));
     }
     
-    if (verbose) {
-      Rcout << "Drawing sample number " << i+1 << std::endl;
-    }
+    if (verbose) Rcout << "Drawing sample number " << i+1 << std::endl;
     backwardSample(theta.slice(i), m, a, C, G.slice(i), R_inv);
-    C_T.slice(i+1) = C.slice(T); // Save for predictions
+    if (discount) C_T.slice(i+1) = C.slice(T); // Save for predictions
     
     // Sigma2
     if (sample_sigma2) {
@@ -395,8 +373,8 @@ List ide(arma::mat Y, arma::mat locs, arma::colvec m_0, arma::mat C_0,
   
   // Drop starting values
   G.shed_slice(0);
-  C_T.shed_slice(0);
   mu_kernel.shed_slice(0);
+  if (discount) C_T.shed_slice(0);
   // Last element of Sigma_kernel is removed in dstm_ide in dstm.R
   
   // Save results to list
