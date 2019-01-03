@@ -160,12 +160,14 @@ List ide(arma::mat Y, arma::mat locs, arma::colvec m_0, arma::mat C_0,
   const double proposal_factor_mu = params["proposal_factor_mu"];
   const double proposal_factor_Sigma = params["proposal_factor_Sigma"];
   const double Sigma_kernel_df = params["Sigma_kernel_df"];
-  double sigma2_i = params["sigma2"];
+  double sigma2_i = params["sigma2"], mh_ratio = 0.0;
   const int P = 2*J*J + 1, T = Y.n_cols, S = Y.n_rows;
   const int locs_dim = locs.n_cols, n_knots = K.n_cols;
   int K_idx = 0, mu_acceptances = 0, Sigma_acceptances = 0;
   const bool sample_sigma2 = sigma2_i < 0, discount = df_W == NA;
   const bool dyanamic_K = K.n_slices > 1, SV = params["SV"] > 0;
+  double Sigma_kernel_proposal_df = locs_dim + Sigma_kernel_df/proposal_factor_Sigma;
+  const double Sigma_kernel_adjustment = Sigma_kernel_proposal_df - locs_dim - 1;
   
   // Create matrices and cubes for FFBS
   Y.insert_cols(0, 1); // make Y true-indexed; i.e. index 1 is t_1
@@ -212,9 +214,6 @@ List ide(arma::mat Y, arma::mat locs, arma::colvec m_0, arma::mat C_0,
   arma::mat mu_kernel_proposal, mu_kernel_knots_proposal, G_proposal;
   arma::mat mu_kernel_proposal_var = proposal_factor_mu * proposal_factor_mu
                                                         * mu_kernel_var;
-  double Sigma_kernel_proposal_df = locs_dim + Sigma_kernel_df/proposal_factor_Sigma;
-  const double Sigma_kernel_adjustment = Sigma_kernel_proposal_df - locs_dim - 1;
-  double mh_ratio;
   
   // Create observation matrix (F) and initial process matrix (G)
   arma::mat w_for_B = makeW(J, L);
@@ -270,8 +269,8 @@ List ide(arma::mat Y, arma::mat locs, arma::colvec m_0, arma::mat C_0,
     // Process error
     if (discount) {
       sampleLambda(lambda.at(i+1), alpha_lambda, beta_lambda,
-                   G.slice(i), C, theta.slice(i));}
-    else {
+                   G.slice(i), C, theta.slice(i));
+    } else {
       sampleW(W.slice(i+1), theta.slice(i), G.slice(i), C_W, df_W);
     }
     
@@ -373,31 +372,31 @@ List ide(arma::mat Y, arma::mat locs, arma::colvec m_0, arma::mat C_0,
   // Drop starting values
   G.shed_slice(0);
   mu_kernel.shed_slice(0);
-  if (discount) C_T.shed_slice(0);
   // Last element of Sigma_kernel is removed in dstm_ide in dstm.R
   
   // Save results to list
   List results;
   results["theta"]  = theta;
-  results["G"] = G;
   results["F"] = F;
-  results["C_T"] = C_T;
+  results["G"] = G;
   results["mu_kernel"] = mu_kernel;
   results["Sigma_kernel"] = Sigma_kernel;
+  
   if (discount) {
     results["lambda"] = lambda;
+    C_T.shed_slice(0);
+    results["C_T"] = C_T;
   }
   else {
     W.shed_slice(0);
     results["W"] = W;
   }
-  if (sample_sigma2) {
-    results["sigma2"] = sigma2;
-  } 
-  else {
-    results["sigma2"] = sigma2_i;
-  }
+  
+  if (sample_sigma2) results["sigma2"] = sigma2;
+  else results["sigma2"] = sigma2_i;
+  
   results["mu_acceptances"] = mu_acceptances;
   results["Sigma_acceptances"] = Sigma_acceptances;
+  
   return results;
 };

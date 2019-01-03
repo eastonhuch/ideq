@@ -421,12 +421,16 @@ dstm_eof <- function(Y, proc_model = "Dense", P = 10L, proc_error = "IW",
 #' 
 #' proposal_factor_mu: (numeric scalar) Controls the variance of the proposal distribution for
 #' mu. The proposals have a variance of proposal_factor_mu^2 * mu_kernel_var.
+#' proposal_factor_mu must generally be set lower for spatially varying models.
 #' 
 #' proposal_factor_Sigma: (numeric scalar) Controls the variance of the proposal distribution
 #' for Sigma. As is the case with proposal_factor_mu, a higher value
 #' corresponds to a higher variance.
 #' The degrees of freedom for the proposal distribution for Sigma is 
 #' ncol(locs) + Sigma_kernel_df / proposal_factor_Sigma.
+#' proposal_factor_Sigma must generally be set lower for spatially varying 
+#' models.
+#' 
 #'
 #' @examples
 #' # Create example data
