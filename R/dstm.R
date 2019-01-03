@@ -131,8 +131,9 @@ dstm_eof <- function(Y, proc_model = "Dense", P = 10L, proc_error = "IW",
     C_0 <- params[["C_0"]]
   }
   else {
-    message("C_0 was not provided so I am using 1e-6I")
-    C_0 <- diag(1e-6, P)
+    k <- 1e-6
+    message(paste("C_0 was not provided so I am using", k, "I"))
+    C_0 <- diag(k, P)
   }
 
   # Observation Error; creates alpha_sigma2, beta_sigma2, sigma2
@@ -154,11 +155,11 @@ dstm_eof <- function(Y, proc_model = "Dense", P = 10L, proc_error = "IW",
       message(paste("beta_sigma2 was not provided so I am using", beta_sigma2))
     }
     
-    if (alpha_sigma2 <= 0) {
-      stop("alpha_sigma2 is not positive; specify manually in params")
+    if ( !is.numeric(alpha_sigma2) || alpha_sigma2 <= 0 ) {
+      stop("alpha_sigma2 is not positive numeric; specify manually in params")
     }
-    else if (beta_sigma2 <= 0) {
-      stop("beta_sigma2 is not positive; specify manually in params")
+    if ( !is.numeric(beta_sigma2) || beta_sigma2 <= 0 ) {
+      stop("beta_sigma2 is not positive numeric; specify manually in params")
     }
   } else if ("sigma2" %in% names(params)) {
     sigma2 <- params[["sigma2"]]
@@ -178,7 +179,7 @@ dstm_eof <- function(Y, proc_model = "Dense", P = 10L, proc_error = "IW",
   } else if (proc_model == "AR") {
     if ("mu_G" %in% names(params)) {
       if (matrixcalc::is.diagonal.matrix(params$mu_G) &&
-          all(dim(params$mu_G) != c(P, P))) {
+          all(dim(params$mu_G) != P)) {
         G_0 <- params[["mu_G"]]
       }
       else {
@@ -208,7 +209,7 @@ dstm_eof <- function(Y, proc_model = "Dense", P = 10L, proc_error = "IW",
 
   } else if (proc_model == "Dense") {
     if ("mu_G" %in% names(params)) {
-      if (is.matrix(params$mu_G) && all(dim(params$mu_G) != c(P, P))) {
+      if (is.matrix(params$mu_G) && all(dim(params$mu_G) == P)) {
         G_0 <- params$mu_G
       }
       else {
@@ -281,8 +282,8 @@ dstm_eof <- function(Y, proc_model = "Dense", P = 10L, proc_error = "IW",
     }
 
     if ("df_W" %in% names(params)) {
-      df_W <- as.integer(params[["df_W"]])
-      if (!is.numeric(params[["df_W"]]) || params[["df_W"]] < P) {
+      df_W <- as.numeric(params[["df_W"]])
+      if (!is.numeric(P) || df_W < P) {
         stop("df_W must be numeric >= P")
       }
     }
@@ -496,14 +497,14 @@ dstm_ide <- function(Y, locs=NULL, knot_locs=NULL, proc_error = "IW", J=4L,
   }
 
   J <- as.integer(J)
-  if (!(is.numeric(J)) || J<1 ) {
+  if ( is.na(J) || J<1 ) {
     stop("J must an integer > 0")
   }
 
   if ("L" %in% names(params)) {
     L <- params[["L"]]
     L <- as.numeric(L)
-    if (! (is.numeric(L) || L>0) ) {
+    if ( is.na(L) || L<=0 ) {
       stop("L must be numeric > 0")
     }
   } else {
@@ -528,10 +529,10 @@ dstm_ide <- function(Y, locs=NULL, knot_locs=NULL, proc_error = "IW", J=4L,
   # Set C_0
   C_0 <- matrix()
   if ("C_0" %in% names(params)) {
-    if (!is.matrix(params[["C_0"]]) || any(dim(params[["C_0"]]) != c(P, P))){
+    C_0 <- params[["C_0"]]
+    if (!is.matrix(C_0) || any(dim(C_0) != P)) {
       stop("C_0 must be a P by P matrix")
     }
-    C_0 <- params[["C_0"]]
   } else {
     message("C_0 was not provided so I am using I/9")
     C_0 <- diag(1/9, P)
@@ -557,11 +558,11 @@ dstm_ide <- function(Y, locs=NULL, knot_locs=NULL, proc_error = "IW", J=4L,
       beta_sigma2 <- (alpha_sigma2 - 1) * v
       message(paste("beta_sigma2 was not provided so I am using", beta_sigma2))
     }
-    if (alpha_sigma2 <= 0) {
-      stop("alpha_sigma2 is not positive; specify manually in params")
+    if ( !is.numeric(alpha_sigma2) || alpha_sigma2 <= 0 ) {
+      stop("alpha_sigma2 is not positive numeric; specify manually in params")
     }
-    else if (beta_sigma2 <= 0) {
-      stop("beta_sigma2 is not positive; specify manually in params")
+    if ( !is.numeric(beta_sigma2) || beta_sigma2 <= 0 ) {
+      stop("beta_sigma2 is not positive numeric; specify manually in params")
     }
   } else if ("sigma2" %in% names(params)) {
     sigma2 <- params[["sigma2"]]
@@ -687,6 +688,9 @@ dstm_ide <- function(Y, locs=NULL, knot_locs=NULL, proc_error = "IW", J=4L,
   if (proc_error == "Discount") {
     if ("alpha_lambda" %in% names(params)) {
       alpha_lambda <- params[["alpha_lambda"]]
+      if ( !is.numeric(alpha_lambda) || alpha_lambda < 0 ) {
+        stop("alpha_lambda must be numeric > 0")
+      }
     }
     else {
       alpha_lambda <- 4
@@ -695,6 +699,9 @@ dstm_ide <- function(Y, locs=NULL, knot_locs=NULL, proc_error = "IW", J=4L,
     
     if ("beta_lambda" %in% names(params)) {
       beta_lambda <- params[["beta_lambda"]]
+      if ( !is.numeric(beta_lambda) || beta_lambda < 0 ) {
+        stop("beta_lambda must be numeric > 0")
+      }
     }
     else {
       beta_lambda <- 3
@@ -705,7 +712,7 @@ dstm_ide <- function(Y, locs=NULL, knot_locs=NULL, proc_error = "IW", J=4L,
     if ("C_W" %in% names(params)) {
       C_W <- params[["C_W"]]
       if (!matrixcalc::is.positive.definite(C_W)) {
-        stop("C_W must be a square positive definite matrix")
+        stop("C_W must be a positive definite matrix")
       }
     }
     else {
@@ -714,8 +721,8 @@ dstm_ide <- function(Y, locs=NULL, knot_locs=NULL, proc_error = "IW", J=4L,
     }
 
     if ("df_W" %in% names(params)) {
-      df_W <- as.integer(params[["df_W"]])
-      if ( !is.numeric(params[["df_W"]]) || params[["df_W"]] < P ) {
+      df_W <- params[["df_W"]]
+      if ( !is.numeric(df_W) || df_W < P ) {
         stop("df_W must be numeric >= P")
       }
     }
@@ -724,7 +731,7 @@ dstm_ide <- function(Y, locs=NULL, knot_locs=NULL, proc_error = "IW", J=4L,
       df_W <- P
     } 
   } else {
-    stop("proc_error not recognized; must be `discount` or `IW`")
+    stop("proc_error not recognized; must be `Discount` or `IW`")
   }
   
   scalar_params <- c(alpha_sigma2=alpha_sigma2, beta_sigma2=beta_sigma2,
