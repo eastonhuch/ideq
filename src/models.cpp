@@ -194,7 +194,6 @@ List ide(arma::mat Y, arma::mat locs, arma::colvec m_0, arma::mat C_0,
     }
     
     // Set initial values
-    Rcout << mu_kernel_mean.n_rows << " " << mu_kernel_mean.n_cols << std::endl;
     mu_kernel_knots.slice(0) = mu_kernel_mean;
     mu_kernel.slice(0) = K.slice(0) * mu_kernel_knots.slice(0);
     Sigma_kernel_knots.at(0) = Sigma_kernel_scale / (Sigma_kernel_df-locs_dim-1);

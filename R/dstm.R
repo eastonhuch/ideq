@@ -405,6 +405,8 @@ dstm_eof <- function(Y, proc_model = "Dense", P = 10L, proc_error = "IW",
 #' 
 #' mu_kernel_mean: (numeric vector) The mean of the normal prior distribution
 #' on mu_kernel, the mean of the redistribution kernel.
+#' In the spatially varying case, the prior distribution for mu_kernel
+#' is assumed to be the same at every knot location.
 #' 
 #' mu_kernel_var: (numeric matrix) The variance of the normal prior distribution
 #' on mu_kernel, the mean of the redistribution kernel.
@@ -575,12 +577,12 @@ dstm_ide <- function(Y, locs=NULL, knot_locs=NULL, proc_error = "IW", J=4L,
   locs_dim <- ncol(locs)
   if ("mu_kernel_mean" %in% names(params)) {
     mu_kernel_mean <- params[["mu_kernel_mean"]]
-    mu_kernel_mean <- as.vector(mu_kernel_mean)
+    mu_kernel_mean <- as.matrix(mu_kernel_mean)
     if (!is.numeric(mu_kernel_mean) || length(mu_kernel_mean)!=locs_dim) {
       stop("mu_kernel_mean must be numeric with length==ncol(locs)")
     }
   } else {
-    mu_kernel_mean <- rep(0, locs_dim)
+    mu_kernel_mean <- matrix(rep(0, locs_dim))
     message("mu_kernel_mean was not provided so I am using a vector of zeroes")
   }
   
@@ -728,7 +730,7 @@ dstm_ide <- function(Y, locs=NULL, knot_locs=NULL, proc_error = "IW", J=4L,
                      proposal_factor_Sigma=proposal_factor_Sigma,
                      Sigma_kernel_df=Sigma_kernel_df, SV=SV)
   
-  results <- ide(Y, locs, m_0, C_0, as.matrix(mu_kernel_mean),
+  results <- ide(Y, locs, m_0, C_0, mu_kernel_mean,
                  mu_kernel_var, K, Sigma_kernel_scale, C_W,
                  scalar_params, n_samples, verbose)
   
