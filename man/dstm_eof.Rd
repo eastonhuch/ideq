@@ -5,7 +5,7 @@
 \title{Dynamic spatio-temporal model with EOFs}
 \usage{
 dstm_eof(Y, proc_model = "Dense", P = 10L, proc_error = "IW",
-  n_samples = 1L, sample_sigma2 = TRUE, verbose = FALSE,
+  n_samples = 10L, sample_sigma2 = TRUE, verbose = FALSE,
   params = NULL)
 }
 \arguments{

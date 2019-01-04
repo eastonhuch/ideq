@@ -90,6 +90,8 @@ smoothing. As L increases, the degree of smoothing decreases.
 
 mu_kernel_mean: (numeric vector) The mean of the normal prior distribution
 on mu_kernel, the mean of the redistribution kernel.
+In the spatially varying case, the prior distribution for mu_kernel
+is assumed to be the same at every knot location.
 
 mu_kernel_var: (numeric matrix) The variance of the normal prior distribution
 on mu_kernel, the mean of the redistribution kernel.
@@ -104,12 +106,15 @@ the variance-covariance matrix of the redistribution kernel.
 
 proposal_factor_mu: (numeric scalar) Controls the variance of the proposal distribution for
 mu. The proposals have a variance of proposal_factor_mu^2 * mu_kernel_var.
+proposal_factor_mu must generally be set lower for spatially varying models.
 
 proposal_factor_Sigma: (numeric scalar) Controls the variance of the proposal distribution
 for Sigma. As is the case with proposal_factor_mu, a higher value
 corresponds to a higher variance.
 The degrees of freedom for the proposal distribution for Sigma is 
 ncol(locs) + Sigma_kernel_df / proposal_factor_Sigma.
+proposal_factor_Sigma must generally be set lower for spatially varying 
+models.
 }
 \examples{
 # Create example data

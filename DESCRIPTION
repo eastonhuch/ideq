@@ -15,4 +15,5 @@ LinkingTo:
 Imports: 
   Rcpp,
   matrixcalc,
-  pdist
+  pdist,
+  mvtnorm

@@ -139,8 +139,12 @@ List eof(arma::mat Y, arma::mat F, arma::mat G_0, arma::mat Sigma_G_inv,
   else results["sigma2"] = sigma2_i;
   
   // Process error
-  if (discount) results["lambda"] = lambda;
-  else results["W"] = W;
+  if (discount) {
+    results["lambda"] = lambda; 
+  } else {
+    W.shed_slice(0);
+    results["W"] = W;
+  }
   
   return results;
 };

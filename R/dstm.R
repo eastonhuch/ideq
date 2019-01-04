@@ -105,7 +105,7 @@
 #' dstm_eof(Y, params=list(C_W=diag(10), df_W=100)) # Prior for W
 #' @export
 dstm_eof <- function(Y, proc_model = "Dense", P = 10L, proc_error = "IW",
-                     n_samples = 1L, sample_sigma2 = TRUE, verbose = FALSE,
+                     n_samples = 10L, sample_sigma2 = TRUE, verbose = FALSE,
                      params = NULL) {
 
   # Observation Model; creates F, m_0, C_0
