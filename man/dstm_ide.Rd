@@ -125,7 +125,9 @@ z <- rnorm(num_time_points * num_spatial_locations)
 Y <- matrix(z, nrow=num_spatial_locations, ncol=num_time_points)
 
 # Basic IDE model with one kernel
-dstm_ide(Y, spatial_locations)
+mod <- dstm_ide(Y, spatial_locations)
+predict(mod)
+summary(mod)
 
 # IDE model with spatially varying kernel
 dstm_ide(Y, spatial_locations, knot_locs=4)

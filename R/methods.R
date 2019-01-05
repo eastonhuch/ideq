@@ -1,6 +1,59 @@
 # Methods for dstm objects
 
+#' Predict Method for DSTM Fits
+#' @description 
+#' Generates samples from the posterior predictive distribution 
+#' at future time points for 
+#' (1) the observation vector and (2) the state vector
+#' @param x
+#' A `dstm` object
+#' 
+#' @param K 
+#' (integer scalar) The number of future time periods for which to generate
+#' predictions
+#' 
+#' @param only_K 
+#' (logical scalar) Whether to return predictions for time period T+K only
+#' (as opposed to T+1, T+2, ..., T+K)
+#' 
+#' @param return_ys
+#' (logical scalar) Whether to return samples from the posterior predictive
+#' distribution of the observation vector (ys)
+#' 
+#' @param return_thetas
+#' (logical scalar) Whether to return samples from the posterior predictive
+#' distribution of the state vector (thetas)
+#' 
+#' @param burnin
+#' (integer scalar) The number of samples to discard as burn-in.
+#' If x$burnin exists, this argument will override it.
+#' 
+#' @details
+#' The posterior predictive samples are returned in a matrix or 3-D array,
+#' depending on whether samples from multiple time points are requested.
+#' The dimensions are always in the following order:
+#' 
+#' 1. p: The index of each parameter within the state vector.
+#' 
+#' 2. t: The time index
+#' 
+#' 3. n_samples: The sample number
 #' @export
+#' @examples
+#' num_time_points <- 5
+#' spatial_locations <- expand.grid(seq(10), seq(10))
+#' num_spatial_locations <- nrow(spatial_locations)
+#' z <- rnorm(num_time_points * num_spatial_locations)
+#' Y <- matrix(z, nrow=num_spatial_locations, ncol=num_time_points)
+#' 
+#' # ide example
+#' mod_ide <- dstm_ide(Y, spatial_locations)
+#' predict(mod_ide)
+#' predict(mod_ide, K=4, return_thetas=TRUE)
+#' 
+#' # eof example
+#' mod_eof <- dstm_eof(Y)
+#' predict(mod_eof, K=2, only_K=TRUE, burnin=5)
 predict.dstm <- function(x, K = 1, only_K = FALSE, return_ys = TRUE,
                          return_thetas = FALSE, burnin = NULL) {
   # Argument burnin is used if provided
@@ -10,6 +63,8 @@ predict.dstm <- function(x, K = 1, only_K = FALSE, return_ys = TRUE,
     burnin <- if ( is.null(x$burnin) ) 0 else x$burnin
   }
   if (burnin < 0) stop("burnin must be non-negative")
+  if (!return_ys && !return_thetas)
+    stop("return_ys and/or return_thetas must be true")
   
   # Model meta information
   Discount <- attr(x, "proc_error") == "Discount"
@@ -90,6 +145,22 @@ predict.dstm <- function(x, K = 1, only_K = FALSE, return_ys = TRUE,
   return(results)
 }
 
+#' Summary Method for DSTM Fits
+#' @description 
+#' Prints summary information for `dstm` objects
+#' @param x A `dstm` object
+#' @param object_name The name to be printed in the summary (if desired)
+#' @examples
+#' num_time_points <- 5
+#' num_spatial_locations <- 100
+#' z <- rnorm(num_time_points * num_spatial_locations)
+#' Y <- matrix(z, nrow=num_spatial_locations, ncol=num_time_points)
+#' rw_model <- dstm_eof(Y, proc_model="RW") # Random walk model
+#' summary(rw_model)
+#' 
+#' # Identically
+#' print(rw_model)
+#' rw_model
 #' @export
 summary.dstm <- function(x, object_name = deparse(substitute(x))) {
   cat("Summary for dstm object \`", object_name, "\`\n", sep = "")
@@ -173,7 +244,11 @@ summary.dstm <- function(x, object_name = deparse(substitute(x))) {
   }
 }
 
-# print.dstm is just a wrapper for summary.dstm
+#' Print Method for DSTM Fits
+#' @description 
+#' Prints a summary for a `dstm` object by calling summary.dstm().
+#' @param x A `dstm` object
+#' @seealso summary.dstm
 #' @export
 print.dstm <- function(x, display = deparse(substitute(x))) {
   summary.dstm(x, object_name = display)
