@@ -25,7 +25,7 @@ List eof(arma::mat Y, arma::mat F, arma::mat G_0, arma::mat Sigma_G_inv,
   const double alpha_lambda = params["alpha_lambda"];
   const double beta_lambda  = params["beta_lambda"];
   double sigma2_i = params["sigma2"];
-  const bool sample_sigma2  = sigma2_i < 0, discount = df_W == NA;
+  const bool sample_sigma2  = sigma2_i < 0, Discount = df_W == NA;
   
   // Create matrices and cubes for FFBS
   Y.insert_cols(0, 1); // make Y true-indexed; i.e. index 1 is t_1
@@ -62,7 +62,7 @@ List eof(arma::mat Y, arma::mat F, arma::mat G_0, arma::mat Sigma_G_inv,
   // Process error: W or lambda
   arma::vec lambda;
   arma::cube W;
-  if (discount) {
+  if (Discount) {
     lambda.set_size(n_samples+1);
     lambda.at(0) = rigamma(alpha_lambda, beta_lambda);
     C_T.set_size(P, P, n_samples+1);
@@ -82,7 +82,7 @@ List eof(arma::mat Y, arma::mat F, arma::mat G_0, arma::mat Sigma_G_inv,
     
     // FFBS
     if (verbose) Rcout << "Filtering sample number " << i+1 << std::endl;
-    if (discount) {
+    if (Discount) {
       kalmanDiscount(m, C, a, R_inv, Y, F, G.slice(G_idx), sigma2_i, lambda.at(i));
       C_T.slice(i+1) = C.slice(T); // Save for predictions
     } else {
@@ -99,7 +99,7 @@ List eof(arma::mat Y, arma::mat F, arma::mat G_0, arma::mat Sigma_G_inv,
     }
     
     // Sample W
-    if (discount) {
+    if (Discount) {
       sampleLambda(lambda.at(i+1), alpha_lambda, beta_lambda,
                    G.slice(G_idx), C, theta.slice(i));
     } else {
@@ -108,7 +108,7 @@ List eof(arma::mat Y, arma::mat F, arma::mat G_0, arma::mat Sigma_G_inv,
     
     // Sample G
     if (AR) {
-      if (discount) { // Update depends on W
+      if (Discount) { // Update depends on W
         sampleAR(G.slice(G_idx+1), R_inv, theta.slice(i),
                  Sigma_G_inv, G_0, true, lambda.at(i+1));
       } else {
@@ -116,7 +116,7 @@ List eof(arma::mat Y, arma::mat F, arma::mat G_0, arma::mat Sigma_G_inv,
                  theta.slice(i), Sigma_G_inv, G_0);
       }
     } else if (DENSE) {
-      if (discount) { // Update depends on W
+      if (Discount) { // Update depends on W
         sampleG(G.slice(G_idx+1), R_inv, theta.slice(i),
                 Sigma_G_inv, G_0, true, lambda.at(i+1));
       } else {
@@ -129,6 +129,11 @@ List eof(arma::mat Y, arma::mat F, arma::mat G_0, arma::mat Sigma_G_inv,
     if (AR || DENSE) ++G_idx;
   }
   
+  // Process results
+  G.shed_slice(0);
+  if (sample_sigma2) sigma2 = sigma2.subvec(1, n_samples);
+  if (Discount) lambda = lambda.subvec(1, n_samples);
+  
   List results;
   results["F"] = F; // Observation matrix
   results["theta"]  = theta; // State vector
@@ -139,7 +144,9 @@ List eof(arma::mat Y, arma::mat F, arma::mat G_0, arma::mat Sigma_G_inv,
   else results["sigma2"] = sigma2_i;
   
   // Process error
-  if (discount) {
+  if (Discount) {
+    C_T.shed_slice(0);
+    results["C_T"] = C_T;
     results["lambda"] = lambda; 
   } else {
     W.shed_slice(0);
@@ -168,7 +175,7 @@ List ide(arma::mat Y, arma::mat locs, arma::colvec m_0, arma::mat C_0,
   const int P = 2*J*J + 1, T = Y.n_cols, S = Y.n_rows;
   const int locs_dim = locs.n_cols, n_knots = K.n_cols;
   int K_idx = 0, mu_acceptances = 0, Sigma_acceptances = 0;
-  const bool sample_sigma2 = sigma2_i < 0, discount = df_W == NA;
+  const bool sample_sigma2 = sigma2_i < 0, Discount = df_W == NA;
   const bool dyanamic_K = K.n_slices > 1, SV = params["SV"] > 0;
   double Sigma_kernel_proposal_df = locs_dim + Sigma_kernel_df/proposal_factor_Sigma;
   const double Sigma_kernel_adjustment = Sigma_kernel_proposal_df - locs_dim - 1;
@@ -237,7 +244,7 @@ List ide(arma::mat Y, arma::mat locs, arma::colvec m_0, arma::mat C_0,
   // Process error
   arma::vec lambda;
   arma::cube W;
-  if (discount) {
+  if (Discount) {
     lambda.set_size(n_samples+1);
     lambda.at(0) = rigamma(alpha_lambda, beta_lambda);
     C_T.set_size(P, P, n_samples+1);
@@ -255,7 +262,7 @@ List ide(arma::mat Y, arma::mat locs, arma::colvec m_0, arma::mat C_0,
     if (verbose) Rcout << "Filtering sample number " << i+1 << std::endl;
     if (sample_sigma2) sigma2_i = sigma2.at(i);
     
-    if (discount) {
+    if (Discount) {
       kalmanDiscount(m, C, a, R_inv, Y, F, G.slice(i), sigma2_i, lambda.at(i));
     } else {
       kalman(m, C, a, R_inv, Y, F, G.slice(i), sigma2_i, W.slice(i));
@@ -263,7 +270,7 @@ List ide(arma::mat Y, arma::mat locs, arma::colvec m_0, arma::mat C_0,
     
     if (verbose) Rcout << "Drawing sample number " << i+1 << std::endl;
     backwardSample(theta.slice(i), m, a, C, G.slice(i), R_inv);
-    if (discount) C_T.slice(i+1) = C.slice(T); // Save for predictions
+    if (Discount) C_T.slice(i+1) = C.slice(T); // Save for predictions
     
     // Sigma2
     if (sample_sigma2) {
@@ -271,7 +278,7 @@ List ide(arma::mat Y, arma::mat locs, arma::colvec m_0, arma::mat C_0,
     }
     
     // Process error
-    if (discount) {
+    if (Discount) {
       sampleLambda(lambda.at(i+1), alpha_lambda, beta_lambda,
                    G.slice(i), C, theta.slice(i));
     } else {
@@ -297,7 +304,7 @@ List ide(arma::mat Y, arma::mat locs, arma::colvec m_0, arma::mat C_0,
     makeB(B, mu_kernel_proposal, Sigma_kernel.at(i), locs, w_for_B, J, L);
     G_proposal = FtFiFt * B; 
     
-    if (discount) {
+    if (Discount) {
       mh_ratio += kernelLikelihoodDiscount(G_proposal, theta.slice(i), C, lambda.at(i+1));
       mh_ratio -= kernelLikelihoodDiscount(G.slice(i), theta.slice(i), C, lambda.at(i+1));
     } else {
@@ -346,7 +353,7 @@ List ide(arma::mat Y, arma::mat locs, arma::colvec m_0, arma::mat C_0,
     makeB(B, mu_kernel.slice(i+1), Sigma_kernel_proposal, locs, w_for_B, J, L);
     G_proposal = FtFiFt * B; 
     
-    if (discount) {
+    if (Discount) {
       mh_ratio += kernelLikelihoodDiscount(G_proposal, theta.slice(i), C, lambda.at(i+1));
       mh_ratio -= kernelLikelihoodDiscount(G.slice(i), theta.slice(i), C, lambda.at(i+1));
     } else {
@@ -376,6 +383,9 @@ List ide(arma::mat Y, arma::mat locs, arma::colvec m_0, arma::mat C_0,
   // Drop starting values
   G.shed_slice(0);
   mu_kernel.shed_slice(0);
+  if (sample_sigma2) sigma2 = sigma2.subvec(1, n_samples);
+  if (Discount) lambda = lambda.subvec(1, n_samples);
+  
   // Last element of Sigma_kernel is removed in dstm_ide in dstm.R
   
   // Save results to list
@@ -386,7 +396,7 @@ List ide(arma::mat Y, arma::mat locs, arma::colvec m_0, arma::mat C_0,
   results["mu_kernel"] = mu_kernel;
   results["Sigma_kernel"] = Sigma_kernel;
   
-  if (discount) {
+  if (Discount) {
     results["lambda"] = lambda;
     C_T.shed_slice(0);
     results["C_T"] = C_T;

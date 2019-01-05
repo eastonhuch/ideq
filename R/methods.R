@@ -1,7 +1,7 @@
 # Methods for dstm objects
 
 #' @export
-predict.dstm_eof <- function(x, K = 1, only_K = FALSE, return_ys = TRUE,
+predict.dstm <- function(x, K = 1, only_K = FALSE, return_ys = TRUE,
                          return_thetas = FALSE, burnin = NULL) {
   # Argument burnin is used if provided
   # If not, we use x$burnin if available
@@ -24,7 +24,8 @@ predict.dstm_eof <- function(x, K = 1, only_K = FALSE, return_ys = TRUE,
   
   # Create copies of objects needed for sampling
   thetas_prev <- x[["theta"]][,Tp1,idx_post_burnin]
-  if (RW) G <- array(1, dim=c(1, 1, P)) %x% diag(P)
+  sigma2 <- x[["sigma2"]][idx_post_burnin]
+  if (RW) G <- array(1, dim=c(1, 1, n_samples)) %x% diag(P)
   else  G <- x[["G"]][,,idx_post_burnin]
   if (Discount) {
     lambda <- x[["lambda"]][idx_post_burnin]
@@ -34,7 +35,7 @@ predict.dstm_eof <- function(x, K = 1, only_K = FALSE, return_ys = TRUE,
   }
   
   # Step 1: Sample thetas from posterior predictive distribution
-  thetas <- array(NA, dim = c(p, K, n_samples))
+  thetas <- array(NA, dim = c(P, K, n_samples))
   
   # Create W for discount models
   if (Discount) {
@@ -42,51 +43,14 @@ predict.dstm_eof <- function(x, K = 1, only_K = FALSE, return_ys = TRUE,
     W <- calc_W(lambda, C_Tpk)
   }
   
-  # Function to generate thetas at next time point
-  next_thetas <- function(thetas_prev, G, W) {
-    
-  }
-
-  # Generate random process error
-  get_W_chol <- function(W) lapply(W, function(M) t(chol(M)))
-  W_chol <- get_W_chol(W)
-  sample_w <- function(W_chol_) sapply(W_chol_, function(M) M %*% rnorm(p))
-  w <- sample_w(W_chol)
-
-  # Sample thetas for time T+1
-  get_thetas_prev <- function(k) {
-    if (k==1) x[["theta"]][,Tp1,j] else thetas[,k-1,]
-  }
-  
-  if (attr(x, "proc_model") %in% c("AR", "Full")) {
-    inner <- function(i, thetas_prev) {
-      j <- i+burnin
-      x[["G"]][,,j] %*% thetas_prev[,j] + w[,i]
-    }
-    get_thetas <- function(k=1) {
-      t <- get_thetas_prev(k)
-      sapply(seq(n_samples), function(i) inner(i, t))
-    }
-  } else {
-    get_thetas <- function(k=1) {
-      t <- get_thetas_prev(k)
-      t + w
-    }
-  }
-  thetas[,,1] <- get_thetas(1)
-
-  # If applicable, sample thetas for T+2 up to T+K
+  thetas[,1,] <- next_thetas(thetas_prev, G, W)
   if (K > 1) {
     for (k in seq(2, K)) {
-      # Need to recalculate W_chol if using discount factors
-      # FIXME: Need to use G
-      if (attr(x, "proc_error") == "discount") {
-        discount_W_chol <- function(i) sqrt(x[["lambda"]][i+burnin]) * W_chol[[i]]
-        W_chol <- lapply(seq_along(W_chol), discount_W_chol)
+      if (Discount) {
+        C_Tpk <- update_C(C_Tpk, G)
+        W <- calc_W(lambda, C_Tpk)
       }
-
-      w <- sample_w(W_chol)
-      thetas[,,k] <- get_thetas(k)
+      thetas[,k,] <- next_thetas(thetas[,k-1,], G, W)
     }
   }
 
@@ -95,44 +59,32 @@ predict.dstm_eof <- function(x, K = 1, only_K = FALSE, return_ys = TRUE,
     # Calculate standard deviation for observation model
     sample_sigma2 <- is.logical(attr(x, "sample_sigma2")) &&
                      attr(x, "sample_sigma2")
-    if (sample_sigma2) {
-      my_sd <- rep(sqrt(x[["sigma2"]][idx]), each = p)
-    }
-    else {
-      my_sd <- sqrt(x[["sigma2"]])
-    }
+    if (sample_sigma2) my_sd <- rep(sqrt(sigma2), each=P)
+    else my_sd <- sqrt(x[["sigma2"]])
 
     # Function to get predicted y values for a given time period
-    get_preds <- function(k) x[["F"]] %*% thetas[,,k] + rnorm(n_samples * S, 0, my_sd)
+    get_preds <- function(k) x[["F"]] %*% thetas[,k,] + rnorm(n_samples*S, sd=my_sd)
 
     # Get predicted y values for requested time period
     if (only_K || K < 2) {
       ys <- get_preds(K)
+      
     }
-    # Get predicted y values for all time period <= T+K
-    else {
-      ys <- array(NA, dim = c(S,n_samples,K))
-      for (k in seq(K)) {
-        ys[,,k] <- get_preds(k)
-      }
+    else { # Get predicted y values for all time period <= T+K
+      ys <- array(NA, dim = c(S, n_samples, K))
+      for (k in seq(K)) ys[,,k] <- get_preds(k)
     }
 
     # Create output list depending on whether user wants thetas
     if (return_thetas) {
       if (only_K || K < 2) thetas <- thetas[,,K]
       results <- list(ys = ys, thetas = thetas)
-    } else {
-      results <- ys
-    }
+    } else results <- ys
 
   # Create output for case when user does not want ys
   } else {
-    if (only_K || K < 2) {
-    results <- thetas[,,K]
-    }
-    else {
-    results <- thetas
-    }
+    if (only_K || K < 2) results <- thetas[,,K]
+    else results <- thetas
   }
 
   return(results)

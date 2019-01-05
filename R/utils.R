@@ -23,16 +23,23 @@ gen_grid <- function(kernel_locs, L) {
   g
 }
 
-# Functions for predict.dstm_eof()
+# Functions for predict.dstm()
 update_C <- function(C_prev, G) {
- C_new <- array(-1, dim=dim(C_prev))
- n_samples <- dim(C_new)[[2]]
- for (i in seq(n_samples)) C_new[,,i] <- G[,,i] %*% C_prev[,,i] %*% t(G[,,i])
- C_new
+  C_new <- array(-1, dim=dim(C_prev))
+  n_samples <- dim(C_new)[3]
+  for (i in seq(n_samples)) C_new[,,i] <- G[,,i] %*% C_prev[,,i] %*% t(G[,,i])
+  C_new
 }
 
 calc_W <- function(lambda, C_T) {
   W <- array(-1, dim=dim(C_T))
+  n_samples <- dim(C_T)[3]
   for (i in seq(n_samples)) W[,,i] <- lambda[i] * C_T[,,i]
   W
+}
+
+next_thetas <- function(thetas_prev, G, W) {
+  n_samples <- ncol(thetas_prev)
+  E_t <- sapply(seq(n_samples), function(i) G[,,i] %*% thetas_prev[,i])
+  sapply(seq(n_samples), function(i) mvtnorm::rmvnorm(1, E_t[,i], W[,,i]))
 }
