@@ -100,7 +100,8 @@
 #' 
 #' # Specify hyperparameters
 #' dstm_eof(Y, sample_sigma2=FALSE, params=list(sigma2=1)) # Fix sigma2
-#' dstm_eof(Y, params=list(alpha_lambda=10, beta_lambda=11)) # Prior for lambda
+#' dstm_eof(Y, proc_error="Discount", 
+#'          params=list(alpha_lambda=10, beta_lambda=11)) # Prior for lambda
 #' dstm_eof(Y, P=10, params=list(m_0=rep(1, 10) , C_0=diag(0.01, 10))) # Prior for theta_0
 #' dstm_eof(Y, params=list(C_W=diag(10), df_W=100)) # Prior for W
 #' @export
@@ -114,55 +115,42 @@ dstm_eof <- function(Y, proc_model = "Dense", P = 10L, proc_error = "IW",
   
   # Set m_0
   m_0 <- params[["m_0"]] %else% rep(0, P)
-  if (length(m_0) != P) stop("m_0 must have length P")
+  check.numeric.vector(m_0, P)
 
   # Set C_0
   C_0 <- params[["C_0"]] %else% diag(1e-2, P)
-  if (!is.cov.matrix(C_0))
-    stop("C_0 is not a valid variance-covariance matrix")
+  check.cov.matrix(C_0, P)
 
   # Observation Error; creates alpha_sigma2, beta_sigma2, sigma2
   alpha_sigma2 <- beta_sigma2 <- sigma2 <- -1
   if (sample_sigma2) {
     alpha_sigma2 <- params[["alpha_sigma2"]] %else% 5
     beta_sigma2  <- params[["beta_sigma2"]]  %else% 4
-    if (!is.positive.numeric(alpha_sigma2)) 
-      stop("alpha_sigma2 must be numeric > 0") 
-    if (!is.positive.numeric(beta_sigma2)) 
-      stop("beta_sigma2 must be numeric > 0")
+    check.numeric.scalar(alpha_sigma2)
+    check.numeric.scalar(beta_sigma2)
   } else {
     sigma2 <- params[["sigma2"]] %else% 1
-    if (!is.positive.numeric(sigma2)) stop("sigma2 must be numeric > 0")
+    check.numeric.scalar(sigma2)
   }
   
   # Process Model; creates mu_G and Sigma_G
   mu_G <- Sigma_G <- Sigma_G_inv <- matrix()
   
   # mu_G
-  if (proc_model == "RW") {
-    mu_G <- diag(P)
-  } else {
-    mu_G <- params[["mu_G"]] %else% diag(P)
-    if (proc_model == "AR") {
-      if (!matrixcalc::is.diagonal.matrix(mu_G) || any(dim(mu_G) != P))
-        stop("mu_G must be P by P diagonal matrix")
-    } else { # proc_model == "Dense"
-      if (!is.numeric.matrix(mu_G) || any(dim(mu_G) != P))
-        stop("mu_G must be P by P numeric matrix)")
-    }
-  }
+  mu_G <- if ( is.null(params[["mu_G"]]) ) diag(P) else params[["mu_G"]]
+  if (proc_model=="AR" && !matrixcalc::is.diagonal.matrix(mu_G))
+    stop("mu_G must be diagonal for proc_model=\"AR\"")
+  check.numeric.matrix(mu_G, P)
   
   # Sigma_G
   if (proc_model == "AR") {
     Sigma_G <- params[["Sigma_G"]] %else% diag(1e-2, P)
-    if (any(dim(Sigma_G) != P)) stop("Sigma_G must be P by P")
-    if (!is.cov.matrix(Sigma_G))
-      stop("Sigma_G is not a valid variance-covariance matrix")
+    check.dim(Sigma_G, P, "Sigma_G")
+    check.cov.matrix(Sigma_G, P)
   } else if (proc_model == "Dense") {
     Sigma_G <- params[["Sigma_G"]] %else% diag(1e-2, P^2)
-    if (any(dim(Sigma_G) != P^2)) stop("Sigma_G must be P^2 by P^2")
-    if (!is.cov.matrix(Sigma_G))
-      stop("Sigma_G is not a valid variance-covariance matrix")
+    check.dim(Sigma_G, P^2, "Sigma_G", "P^2")
+    check.cov.matrix(Sigma_G, P^2)
   }
     
   # Sigma_G_inv
@@ -174,18 +162,15 @@ dstm_eof <- function(Y, proc_model = "Dense", P = 10L, proc_error = "IW",
   
   if (proc_error == "IW") {
     k <- 100
-    C_W <- params[["C_W"]] %else% diag(k, P)
+    C_W <- params[["C_W"]] %else% diag(P, P)
     df_W <- params[["df_W"]] %else% k * P
-    if (!is.cov.matrix(C_W)) stop("C_W is not a scale matrix")
-    if (!is.numeric(df_W) || df_W < P) stop("df_W must be numeric >= P")
-    
+    check.cov.matrix(C_W, P)
+    check.numeric.scalar(df_W, x_min=P)
   } else if (proc_error == "Discount") {
     alpha_lambda <- params[["alpha_lambda"]] %else% 3
     beta_lambda <- params[["beta_lambda"]] %else% 4
-    if (!is.positive.numeric(alpha_lambda))
-      stop("alpha_lambda must be numeric > 0")
-    if (!is.positive.numeric(beta_lambda)) 
-      stop("beta_lambda must be numeric > 0") 
+    check.numeric.scalar(alpha_lambda)
+    check.numeric.scalar(beta_lambda)
     
   } else {
     stop("proc_error must be \"IW\" or \"Discount\"")
@@ -201,12 +186,10 @@ dstm_eof <- function(Y, proc_model = "Dense", P = 10L, proc_error = "IW",
                  scalar_params, proc_model, n_samples, verbose)
   
   # Process results
-  if ("lambda" %in% names(results)) {
+  if ("lambda" %in% names(results))
     results[["lambda"]] <- as.numeric(results[["lambda"]])
-  }
-  if ("sigma2" %in% names(results)) {
+  if ("sigma2" %in% names(results))
     results[["sigma2"]] <- as.numeric(results[["sigma2"]])
-  }
 
   # Process output
   class(results) <- c("dstm_eof", "dstm", "list")
@@ -384,177 +367,83 @@ dstm_ide <- function(Y, locs=NULL, knot_locs=NULL, proc_error = "IW", J=4L,
                      verbose = FALSE, params = NULL) {
 
   # Error checking for J, L, locs
-  if (is.null(locs)) {
-    stop("locs must be specified for IDE models")
-  } else {
-    if (class(locs) == "data.frame") locs <- as.matrix(locs)
-    if (class(locs) != "matrix") {
-      stop("locs must be data.frame or matrix")
-    }
-  }
+  if (is.null(locs)) stop("locs must be specified for IDE models")
+  if (class(locs) == "data.frame") locs <- as.matrix(locs)
+  if (class(locs) != "matrix") stop("locs must be data.frame or matrix")
 
-  J <- as.integer(J)
-  if ( is.na(J) || J<1 ) {
-    stop("J must an integer > 0")
-  }
-
-  if ("L" %in% names(params)) {
-    L <- params[["L"]]
-    L <- as.numeric(L)
-    if ( is.na(L) || L<=0 ) {
-      stop("L must be numeric > 0")
-    }
-  } else {
-    L <- 2
-    message(paste("L was not provided so I am using L="), L,
-            " and centering and scaling locs")
-    locs <- center_all(locs, L)
-  }
-
-  # Observation Model: creates m_0, C_0
-  # Set m_0
+  if (!is.integer(J) || J<1) stop("J must be an integer > 0")
   P <- 2*J^2 + 1
-  m_0 <- NULL
-  if ("m_0" %in% names(params)) {
-    if(length(params[["m_0"]]) != P) stop("m_0 must have length P")
-    m_0 <- params[["m_0"]]
-  } else {
-    message("m_0 was not provided so I am using a vector of zeros")
-    m_0 <- rep(0, P)
-  }
+
+  L <- params[["L"]] %else% 2
+  check.numeric.scalar(L)
+  
+  # Center spatial locations to have range of L
+  locs <- center_all(locs, L)
+  
+  # Observation Model: creates m_0, C_0
+  # m_0
+  m_0 <- params[["m_0"]] %else% rep(0, P)
+  check.numeric.vector(m_0, P)
 
   # Set C_0
-  C_0 <- matrix()
-  if ("C_0" %in% names(params)) {
-    C_0 <- params[["C_0"]]
-    if (!is.matrix(C_0) || any(dim(C_0) != P)) {
-      stop("C_0 must be a P by P matrix")
-    }
-  } else {
-    message("C_0 was not provided so I am using I/9")
-    C_0 <- diag(1/9, P)
-  }
+  C_0 <- params[["C_0"]] %else% diag(1/9, P)
+  check.cov.matrix(C_0, P)
   
   # Observation Error; creates alpha_sigma2, beta_sigma2, sigma2
-  # NOTE: We could also draw this from a Wishart distribution
   alpha_sigma2 <- beta_sigma2 <- sigma2 <- -1
   if (sample_sigma2) {
-    if ("alpha_sigma2" %in% names(params)) {
-      alpha_sigma2 <- params[["alpha_sigma2"]]
-    }
-    else {
-      v <- mean(apply(Y, 1, var))
-      alpha_sigma2 <- 2 + v / 4
-      message(paste("alpha_sigma2 was not provided so I am using", alpha_sigma2))
-    }
-    if ("beta_sigma2" %in% names(params)) {
-      beta_sigma2 <- params[["beta_sigma2"]]
-    }
-    else {
-      if (!exists("v")) v <- mean(apply(Y, 1, var))
-      beta_sigma2 <- (alpha_sigma2 - 1) * v
-      message(paste("beta_sigma2 was not provided so I am using", beta_sigma2))
-    }
-    if ( !is.numeric(alpha_sigma2) || alpha_sigma2 <= 0 ) {
-      stop("alpha_sigma2 is not positive numeric; specify manually in params")
-    }
-    if ( !is.numeric(beta_sigma2) || beta_sigma2 <= 0 ) {
-      stop("beta_sigma2 is not positive numeric; specify manually in params")
-    }
-  } else if ("sigma2" %in% names(params)) {
-    sigma2 <- params[["sigma2"]]
-    if (!is.numeric(sigma2) || sigma2 <= 0) {
-      stop("inavlid value for sigma2; must be numeric greater than zero")
-    }
+    alpha_sigma2 <- params[["alpha_sigma2"]] %else% 5
+    beta_sigma2  <- params[["beta_sigma2"]]  %else% 4
+    check.numeric.scalar(alpha_sigma2)
+    check.numeric.scalar(beta_sigma2)
   } else {
-    v <- mean(apply(Y, 1, var))
-    sigma2 <- v
-    message(paste("sigma2 was not provided so I am using", sigma2))
+    sigma2 <- params[["sigma2"]] %else% 1
+    check.numeric.scalar(sigma2)
   }
 
   # Process Model; creates kernel parameters
   # FIXME: Add ability to use different locs
   
-  n_knots <- 1
   locs_dim <- ncol(locs)
-  if ("mu_kernel_mean" %in% names(params)) {
-    mu_kernel_mean <- params[["mu_kernel_mean"]]
-    mu_kernel_mean <- as.matrix(mu_kernel_mean)
-    if (!is.numeric(mu_kernel_mean) || length(mu_kernel_mean)!=locs_dim) {
-      stop("mu_kernel_mean must be numeric with length==ncol(locs)")
-    }
-  } else {
-    mu_kernel_mean <- matrix(rep(0, locs_dim))
-    message("mu_kernel_mean was not provided so I am using a vector of zeroes")
-  }
   
-  if ("mu_kernel_var" %in% names(params)) {
-    mu_kernel_var <- params[["mu_kernel_var"]]
-    if (!matrixcalc::is.positive.definite(mu_kernel_var) ||
-        any(dim(mu_kernel_var) != locs_dim)) {
-      stop("mu_kernel_var must be positive definite with dimensions == ncol(locs)")
-    }
-  } else {
-    mu_kernel_var <- diag(1/9, locs_dim)
-    message("mu_kernel_var was not provided so I am using I/9")
-  }
+  # mu_kernel_mean
+  mu_kernel_mean <- params[["mu_kernel_mean"]] %else% rep(0, locs_dim)
+  check.numeric.vector(mu_kernel_mean, locs_dim, dim_name="ncol(locs)")
+  mu_kernel_mean <- as.matrix(mu_kernel_mean)
   
-  if ("proposal_factor_mu" %in% names(params)) {
-    proposal_factor_mu <- params[["proposal_factor_mu"]]
-    if (!is.numeric(proposal_factor_mu) || proposal_factor_mu <= 0) {
-      stop("proposal_factor_mu must be numeric > 0")
-    }
-  } else {
-    proposal_factor_mu <- 1
-    message(paste("proposal_factor_mu was not provided so I am using", 
-            proposal_factor_mu))
-  }
+  # mu_kernel_var
+  mu_kernel_var <- params[["mu_kernel_var"]] %else% diag(1/9, locs_dim)
+  check.cov.matrix(mu_kernel_var, locs_dim, dim_name="ncol(locs)")
   
-  if ("Sigma_kernel_df" %in% names(params)) {
-    Sigma_kernel_df <- params[["Sigma_kernel_df"]]
-    if (!is.numeric(Sigma_kernel_df) || Sigma_kernel_df <= 0) {
-      stop("Sigma_kernel_df must be numeric > 0")
-    }
-  } else {
-    Sigma_kernel_df <- 10
-    message(paste("Sigma_kernel_df was not provided so I am using", 
-            Sigma_kernel_df))
-  }
+  # proposal_factor_mu
+  proposal_factor_mu <- params[["proposal_factor_mu"]] %else% 1
+  check.numeric.scalar(proposal_factor_mu)
   
-  if ("Sigma_kernel_scale" %in% names(params)) {
-    Sigma_kernel_scale <- params[["Sigma_kernel_scale"]]
-    if (!matrixcalc::is.positive.definite(Sigma_kernel_scale) ||
-        any(dim(Sigma_kernel_scale) != locs_dim)) {
-      stop("Sigma_kernel_scale must be positive definite with dimensions == ncol(locs)")
-    }
-  } else {
-    Sigma_kernel_scale <- diag(1/Sigma_kernel_df, locs_dim)
-    message("Sigma_kernel_scale was not provided so I am using I/Sigma_kernel_df")
-  }
+  # Sigma_kernel_df
+  k <- 100
+  Sigma_kernel_df <- params[["Sigma_kernel_df"]] %else% k * locs_dim
+  check.numeric.scalar(Sigma_kernel_df, x_min=locs_dim)
   
-  if ("proposal_factor_Sigma" %in% names(params)) {
-    proposal_factor_Sigma <- params[["proposal_factor_Sigma"]]
-    if (!is.numeric(proposal_factor_Sigma) || proposal_factor_Sigma <= 0) {
-      stop("proposal_factor_Sigma must be numeric > 0")
-    }
-  } else {
-    proposal_factor_Sigma <- 1
-    message(paste("proposal_factor_Sigma was not provided so I am using", 
-            proposal_factor_Sigma))
-  }
+  # Sigma_kernel_scale
+  Sigma_kernel_scale <- params[["Sigma_kernel_scale"]] %else% 
+                          diag(Sigma_kernel_df, locs_dim)
+  check.cov.matrix(Sigma_kernel_scale, locs_dim, dim_name="ncol(locs)")
+  
+  # proposal_factor_Sigma
+  proposal_factor_Sigma <- params[["proposal_factor_Sigma"]] %else% 1
+  check.numeric.scalar(proposal_factor_Sigma)
   
   # Error checking for knot_locs
-  # Also, adjustment to above quantities if using spatially varying kernel params
+  # And adjustment to above quantities in spatially varying case
   SV <- FALSE
+  n_knots <- 1
   K  <- array(0, dim=c(1, 1, 1))
+  
   if (is.numeric(knot_locs)) {
     SV <- TRUE
     # prepare knot_locs
-    if (length(knot_locs) > 1) {
-      knot_locs <- center_all(knot_locs, L)
-    } else {
-      knot_locs <- gen_grid(as.integer(knot_locs), L)
-    }
+    if (length(knot_locs) > 1) knot_locs <- center_all(knot_locs, L)
+    else knot_locs <- gen_grid(as.integer(knot_locs), L)
     
     # Modify kernel parameters
     n_knots <- nrow(knot_locs)
@@ -575,60 +464,28 @@ dstm_ide <- function(Y, locs=NULL, knot_locs=NULL, proc_error = "IW", J=4L,
     stop("knot_locs must be numeric or NULL")
   }
   
-  if (is.null(n_knots)) n_knots <- 1
   Sigma_kernel_scale <- array(1, dim=c(1, 1, n_knots)) %x%
                         Sigma_kernel_scale
   
   # Process Error; creates alpha_lambda, beta_lambda, etc.
   alpha_lambda <- beta_lambda <- df_W <- NA
-  C_W <- matrix(NA)
-  if (proc_error == "Discount") {
-    if ("alpha_lambda" %in% names(params)) {
-      alpha_lambda <- params[["alpha_lambda"]]
-      if ( !is.numeric(alpha_lambda) || alpha_lambda < 0 ) {
-        stop("alpha_lambda must be numeric > 0")
-      }
-    }
-    else {
-      alpha_lambda <- 4
-      message(paste("alpha_lambda was not provided so I am using", alpha_lambda))
-    }
+  C_W <- matrix()
+  
+  if (proc_error == "IW") {
+    k <- 100
+    C_W <- params[["C_W"]] %else% diag(P, P)
+    df_W <- params[["df_W"]] %else% k * P
+    check.cov.matrix(C_W, P)
+    check.numeric.scalar(df_W, x_min=P)
     
-    if ("beta_lambda" %in% names(params)) {
-      beta_lambda <- params[["beta_lambda"]]
-      if ( !is.numeric(beta_lambda) || beta_lambda < 0 ) {
-        stop("beta_lambda must be numeric > 0")
-      }
-    }
-    else {
-      beta_lambda <- 3
-      message(paste("beta_lambda was not provided so I am using", beta_lambda))
-    }
-  } else if (proc_error == "IW") {
-    # C_W
-    if ("C_W" %in% names(params)) {
-      C_W <- params[["C_W"]]
-      if (!matrixcalc::is.positive.definite(C_W)) {
-        stop("C_W must be a positive definite matrix")
-      }
-    }
-    else {
-      message("C_W was not provided so I am using an identity matrix")
-      C_W <- diag(P)
-    }
-
-    if ("df_W" %in% names(params)) {
-      df_W <- params[["df_W"]]
-      if ( !is.numeric(df_W) || df_W < P ) {
-        stop("df_W must be numeric >= P")
-      }
-    }
-    else {
-      message("df_W was not provided so I am using P")
-      df_W <- P
-    } 
+  } else if (proc_error == "Discount") {
+    alpha_lambda <- params[["alpha_lambda"]] %else% 3
+    beta_lambda <- params[["beta_lambda"]] %else% 4
+    check.numeric.scalar(alpha_lambda)
+    check.numeric.scalar(beta_lambda)
+    
   } else {
-    stop("proc_error not recognized; must be `Discount` or `IW`")
+    stop("proc_error must be \"IW\" or \"Discount\"")
   }
   
   scalar_params <- c(alpha_sigma2=alpha_sigma2, beta_sigma2=beta_sigma2,

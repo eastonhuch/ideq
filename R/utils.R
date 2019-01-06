@@ -1,13 +1,62 @@
-# Functions for parsing arguments
+# Functions for dstm.R
+# ifelse for arguments
 `%else%` <- function(a, b) if (is.null(a) || is.na(a)) b else a
-is.numeric.matrix <- function(x) is.numeric(x) && is.matrix(x)
-is.positive.numeric <- function(x) is.numeric(x) && x > 0
+
+# check for NAs
+check.na <- function(x, x_name=deparse(substitute(x))) {
+  if (any(is.na(x)))
+    stop(paste(x_name, "may not contain NAs"))
+}
+
+# check dims
+check.dim <- function(x, P, x_name=deparse(substitute(x)), dim_name="P") {
+  if (any(dim(x) != P))
+    stop(paste(x_name, "must be of dimension", dim_name, "by", dim_name))
+}
+
+# positive numeric
+check.numeric.scalar <- function(x, x_name=deparse(substitute(x)), x_min=0,
+                                 x_min_name=deparse(substitute(x_min))) {
+  if (!is.numeric(x) || x <= x_min)
+    stop(paste(x_name, "must be numeric >", x_min))
+}
+
+# numeric vector
+check.numeric.vector <- function(x, P, x_name=deparse(substitute(x)),
+                                 dim_name="P") {
+  if (!is.numeric(x) || !is.vector(x))
+    stop(paste(x_name, "must be numeric vector"))
+  if (length(x) != P)
+    stop(paste(x_name, "must be of length", dim_name))
+  check.na(x, x_name)
+}
+
+# numeric matrix
+check.numeric.matrix <- function(x, P, x_name=deparse(substitute(x)),
+                                 dim_name="P") {
+  if (!is.numeric(x) || !is.matrix(x))
+    stop(paste(x_name, "must be numeric matrix"))
+  check.dim(x, P, x_name, dim_name)
+  check.na(x, x_name)
+}
+
+# covariance matrix
 is.cov.matrix <- function(x) {
   matrixcalc::is.positive.semi.definite(x) &&
     matrixcalc::is.symmetric.matrix(x)
 }
+check.cov.matrix <- function(x, P, x_name=deparse(substitute(x)), 
+                             dim_name="P") {
+  if (!is.cov.matrix(x))
+    stop(paste(x_name, "must be valid variance-covariance matrix"))
+  check.dim(x, P, x_name, dim_name)
+  check.na(x, x_name)
+}
+
+# Cholesky inverse
 chol_inv <- function(x) chol2inv(chol(x))
 
+################################################################################
 # Functions for dstm_ide()
 center_col <- function(x, L) {
   x_range <- diff(range(x))
@@ -33,6 +82,7 @@ gen_grid <- function(kernel_locs, L) {
   g
 }
 
+################################################################################
 # Functions for predict.dstm()
 update_C <- function(C_prev, G) {
   C_new <- array(-1, dim=dim(C_prev))
