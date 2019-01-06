@@ -107,193 +107,88 @@
 dstm_eof <- function(Y, proc_model = "Dense", P = 10L, proc_error = "IW",
                      n_samples = 10L, sample_sigma2 = TRUE, verbose = FALSE,
                      params = NULL) {
-
+  
   # Observation Model; creates F, m_0, C_0
   e <- eigen(cov(t(Y)))
   F_ <-e$vectors[, 1:P]
   
   # Set m_0
-  m_0 <- NULL
-  if ("m_0" %in% names(params)) {
-    if(length(params[["m_0"]]) != P) stop("m_0 must have length P")
-    m_0 <- params[["m_0"]]
-  } else {
-    message("m_0 was not provided so I am using a vector of zeros")
-    m_0 <- rep(0, P)
-  }
+  m_0 <- params[["m_0"]] %else% rep(0, P)
+  if (length(m_0) != P) stop("m_0 must have length P")
 
   # Set C_0
-  C_0 <- matrix()
-  if ("C_0" %in% names(params)) {
-    if (!is.matrix(params[["C_0"]]) || any(dim(params[["C_0"]]) != c(P, P))){
-      stop("C_0 must be a P by P matrix")
-    }
-    C_0 <- params[["C_0"]]
-  }
-  else {
-    k <- 1e-6
-    message(paste("C_0 was not provided so I am using", k, "I"))
-    C_0 <- diag(k, P)
-  }
+  C_0 <- params[["C_0"]] %else% diag(1e-2, P)
+  if (!is.cov.matrix(C_0))
+    stop("C_0 is not a valid variance-covariance matrix")
 
   # Observation Error; creates alpha_sigma2, beta_sigma2, sigma2
   alpha_sigma2 <- beta_sigma2 <- sigma2 <- -1
   if (sample_sigma2) {
-    if ("alpha_sigma2" %in% names(params)) {
-      alpha_sigma2 <- params[["alpha_sigma2"]]
-    } else {
-      v <- mean(apply(Y, 1, var))
-      alpha_sigma2 <- 2 + v / 4
-      message(paste("alpha_sigma2 was not provided so I am using", alpha_sigma2))
-    }
-    
-    if ("beta_sigma2" %in% names(params)) {
-      beta_sigma2 <- params[["beta_sigma2"]]
-    } else {
-      if (!exists("v")) v <- mean(apply(Y, 1, var))
-      beta_sigma2 <- (alpha_sigma2 - 1) * v
-      message(paste("beta_sigma2 was not provided so I am using", beta_sigma2))
-    }
-    
-    if ( !is.numeric(alpha_sigma2) || alpha_sigma2 <= 0 ) {
-      stop("alpha_sigma2 is not positive numeric; specify manually in params")
-    }
-    if ( !is.numeric(beta_sigma2) || beta_sigma2 <= 0 ) {
-      stop("beta_sigma2 is not positive numeric; specify manually in params")
-    }
-  } else if ("sigma2" %in% names(params)) {
-    sigma2 <- params[["sigma2"]]
-    if (!is.numeric(sigma2) || sigma2 <= 0) {
-      stop("inavlid value for sigma2; must be numeric greater than zero")
-    }
+    alpha_sigma2 <- params[["alpha_sigma2"]] %else% 5
+    beta_sigma2  <- params[["beta_sigma2"]]  %else% 4
+    if (!is.positive.numeric(alpha_sigma2)) 
+      stop("alpha_sigma2 must be numeric > 0") 
+    if (!is.positive.numeric(beta_sigma2)) 
+      stop("beta_sigma2 must be numeric > 0")
   } else {
-    v <- mean(apply(Y, 1, var))
-    sigma2 <- v
-    message(paste("sigma2 was not provided so I am using", sigma2))
+    sigma2 <- params[["sigma2"]] %else% 1
+    if (!is.positive.numeric(sigma2)) stop("sigma2 must be numeric > 0")
   }
-
-  # Process Model; creates G_0 (mu_G) and Sigma_G
-  Sigma_G <- Sigma_G_inv <- matrix()
+  
+  # Process Model; creates mu_G and Sigma_G
+  mu_G <- Sigma_G <- Sigma_G_inv <- matrix()
+  
+  # mu_G
   if (proc_model == "RW") {
-    G_0 <- diag(P)
-  } else if (proc_model == "AR") {
-    if ("mu_G" %in% names(params)) {
-      if (matrixcalc::is.diagonal.matrix(params$mu_G) &&
-          all(dim(params$mu_G) != P)) {
-        G_0 <- params[["mu_G"]]
-      }
-      else {
-        stop("mu_G must be a diagonal P by P matrix")
-      }
-
-    }
-    else {
-      message("mu_G was not provided, so I am using I")
-      G_0 <- diag(P)
-    }
-
-    if ("Sigma_G" %in% names(params)) {
-      if (matrixcalc::is.positive.definite(params$Sigma_G) &&
-          matrixcalc::is.symmetric.matrix(params$Sigma_G) &&
-          all(dim(params$Sigma_G) == P)) {
-        Sigma_G <- params[["Sigma_G"]]
-      } else {
-        stop("Sigma_G must be P by P symmetric positive definite matrix")
-      }
-    } else {
-      k <- 1e-3
-      message(paste("Sigma_G was not provided, so I am using", k, "* I"))
-      Sigma_G <- diag(k, P)
-    }
-    Sigma_G_inv <- chol2inv(chol(Sigma_G))
-
-  } else if (proc_model == "Dense") {
-    if ("mu_G" %in% names(params)) {
-      if (is.matrix(params$mu_G) && all(dim(params$mu_G) == P)) {
-        G_0 <- params$mu_G
-      }
-      else {
-        stop("mu_G must be a P by P matrix")
-      }
-    }
-    else {
-      message("mu_G was not provided, so I am using an identity matrix")
-      G_0 <- diag(P)
-    }
-
-    if ("Sigma_G" %in% names(params)) {
-      if (matrixcalc::is.positive.definite(params$Sigma_G) &&
-          matrixcalc::is.symmetric.matrix(params$Sigma_G) &&
-          nrow(params$Sigma_G) == P^2) {
-        Sigma_G <- params$Sigma_G
-      }
-      else {
-        stop("Sigma_G must be a P^2 by P^2 symmetric positive definite matrix")
-      }
-    }
-    else {
-      k <- 1e-5
-      message(paste("Sigma_G was not provided, so I am using", k, "* I"))
-      Sigma_G <- diag(k, P^2)
-    }
-    Sigma_G_inv <- chol2inv(chol(Sigma_G))
-    
+    mu_G <- diag(P)
   } else {
-    stop("proc_model not supported")
+    mu_G <- params[["mu_G"]] %else% diag(P)
+    if (proc_model == "AR") {
+      if (!matrixcalc::is.diagonal.matrix(mu_G) || any(dim(mu_G) != P))
+        stop("mu_G must be P by P diagonal matrix")
+    } else { # proc_model == "Dense"
+      if (!is.numeric.matrix(mu_G) || any(dim(mu_G) != P))
+        stop("mu_G must be P by P numeric matrix)")
+    }
   }
+  
+  # Sigma_G
+  if (proc_model == "AR") {
+    Sigma_G <- params[["Sigma_G"]] %else% diag(1e-2, P)
+    if (any(dim(Sigma_G) != P)) stop("Sigma_G must be P by P")
+    if (!is.cov.matrix(Sigma_G))
+      stop("Sigma_G is not a valid variance-covariance matrix")
+  } else if (proc_model == "Dense") {
+    Sigma_G <- params[["Sigma_G"]] %else% diag(1e-2, P^2)
+    if (any(dim(Sigma_G) != P^2)) stop("Sigma_G must be P^2 by P^2")
+    if (!is.cov.matrix(Sigma_G))
+      stop("Sigma_G is not a valid variance-covariance matrix")
+  }
+    
+  # Sigma_G_inv
+  Sigma_G_inv <- chol_inv(Sigma_G)
 
   # Process Error; creates all necessary params (e.g., alpha_lambda)
   alpha_lambda <- beta_lambda <- df_W <- NA
-  C_W <- matrix(NA)
-  if (proc_error == "Discount") {
-    # Set prior for lambda
-    if ("alpha_lambda" %in% names(params)) {
-      alpha_lambda <- params[["alpha_lambda"]]
-      if (!is.numeric(alpha_lambda) || alpha_lambda <= 0) {
-        stop("alpha_lambda must be numeric greater than 0")
-      }
-    }
-    else {
-      alpha_lambda <- 3
-      message(paste("alpha_lambda was not provided so I am using", alpha_lambda))
-    }
-
-    if ("beta_lambda" %in% names(params)) {
-      beta_lambda <- params[["beta_lambda"]]
-      if (!is.numeric(beta_lambda) || beta_lambda <= 0) {
-        stop("beta_lambda must be numeric greater than 0")
-      }
-    }
-    else {
-      beta_lambda <- 4
-      message(paste("beta_lambda was not provided so I am using", beta_lambda))
-    }
-  } else if (proc_error == "IW") {
-    # C_W
-    if ("C_W" %in% names(params)) {
-      C_W <- params[["C_W"]]
-      if (!matrixcalc::is.positive.definite(C_W)) {
-        stop("C_W must be a square positive definite matrix")
-      }
-    }
-    else {
-      message("C_W was not provided so I am using an identity matrix")
-      C_W <- diag(P)
-    }
-
-    if ("df_W" %in% names(params)) {
-      df_W <- as.numeric(params[["df_W"]])
-      if (!is.numeric(P) || df_W < P) {
-        stop("df_W must be numeric >= P")
-      }
-    }
-    else {
-      k <- 1e3
-      message(paste("df_W was not provided so I am using", k, "* P"))
-      df_W <- k * P
-    }
+  C_W <- matrix()
+  
+  if (proc_error == "IW") {
+    k <- 100
+    C_W <- params[["C_W"]] %else% diag(k, P)
+    df_W <- params[["df_W"]] %else% k * P
+    if (!is.cov.matrix(C_W)) stop("C_W is not a scale matrix")
+    if (!is.numeric(df_W) || df_W < P) stop("df_W must be numeric >= P")
+    
+  } else if (proc_error == "Discount") {
+    alpha_lambda <- params[["alpha_lambda"]] %else% 3
+    beta_lambda <- params[["beta_lambda"]] %else% 4
+    if (!is.positive.numeric(alpha_lambda))
+      stop("alpha_lambda must be numeric > 0")
+    if (!is.positive.numeric(beta_lambda)) 
+      stop("beta_lambda must be numeric > 0") 
+    
   } else {
-    stop("proc_error not recognized")
+    stop("proc_error must be \"IW\" or \"Discount\"")
   }
   
   # Group scalar params into vector
@@ -302,7 +197,7 @@ dstm_eof <- function(Y, proc_model = "Dense", P = 10L, proc_error = "IW",
                      sigma2=sigma2, df_W=df_W)
 
   # Fit the model
-  results <- eof(Y, F_, G_0, Sigma_G_inv, m_0, C_0, C_W,
+  results <- eof(Y, F_, mu_G, Sigma_G_inv, m_0, C_0, C_W,
                  scalar_params, proc_model, n_samples, verbose)
   
   # Process results

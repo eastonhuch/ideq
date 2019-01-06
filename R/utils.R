@@ -1,3 +1,13 @@
+# Functions for parsing arguments
+`%else%` <- function(a, b) if (is.null(a) || is.na(a)) b else a
+is.numeric.matrix <- function(x) is.numeric(x) && is.matrix(x)
+is.positive.numeric <- function(x) is.numeric(x) && x > 0
+is.cov.matrix <- function(x) {
+  matrixcalc::is.positive.semi.definite(x) &&
+    matrixcalc::is.symmetric.matrix(x)
+}
+chol_inv <- function(x) chol2inv(chol(x))
+
 # Functions for dstm_ide()
 center_col <- function(x, L) {
   x_range <- diff(range(x))
