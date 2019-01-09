@@ -346,27 +346,6 @@ dstm_ide <- function(Y, locs=NULL, knot_locs=NULL, proc_error = "IW", J=4L,
   # Center spatial locations to have range of L
   locs <- center_all(locs, L)
   
-  # Observation Model: creates m_0, C_0
-  # m_0
-  m_0 <- params[["m_0"]] %else% rep(0, P)
-  check.numeric.vector(m_0, P)
-
-  # Set C_0
-  C_0 <- params[["C_0"]] %else% diag(P)
-  check.cov.matrix(C_0, P)
-  
-  # Observation Error; creates alpha_sigma2, beta_sigma2, sigma2
-  alpha_sigma2 <- beta_sigma2 <- sigma2 <- -1
-  if (sample_sigma2) {
-    alpha_sigma2 <- params[["alpha_sigma2"]] %else% 5
-    beta_sigma2  <- params[["beta_sigma2"]]  %else% 4
-    check.numeric.scalar(alpha_sigma2)
-    check.numeric.scalar(beta_sigma2)
-  } else {
-    sigma2 <- params[["sigma2"]] %else% 1
-    check.numeric.scalar(sigma2)
-  }
-
   # Process Model; creates kernel parameters
   locs_dim <- ncol(locs)
   
@@ -431,37 +410,24 @@ dstm_ide <- function(Y, locs=NULL, knot_locs=NULL, proc_error = "IW", J=4L,
   Sigma_kernel_scale <- array(1, dim=c(1, 1, n_knots)) %x%
                         Sigma_kernel_scale
   
-  # Process Error; creates alpha_lambda, beta_lambda, etc.
-  alpha_lambda <- beta_lambda <- df_W <- NA
-  C_W <- matrix()
   
-  if (proc_error == "IW") {
-    k <- 100
-    C_W <- params[["C_W"]] %else% diag(P, P)
-    df_W <- params[["df_W"]] %else% k * P
-    check.cov.matrix(C_W, P)
-    check.numeric.scalar(df_W, x_min=P)
-    
-  } else if (proc_error == "Discount") {
-    alpha_lambda <- params[["alpha_lambda"]] %else% 3
-    beta_lambda <- params[["beta_lambda"]] %else% 4
-    check.numeric.scalar(alpha_lambda)
-    check.numeric.scalar(beta_lambda)
-    
-  } else {
-    stop("proc_error must be \"IW\" or \"Discount\"")
-  }
-  
-  scalar_params <- c(alpha_sigma2=alpha_sigma2, beta_sigma2=beta_sigma2,
-                     sigma2=sigma2, J=J, L=L, df_W=df_W,
-                     alpha_lambda=alpha_lambda, beta_lambda=beta_lambda, 
+  # Process remaining params
+  new_params <- process_common_params(params, proc_error, P, sample_sigma2)
+  scalar_params <- c(alpha_lambda=new_params[["alpha_lambda"]], 
+                     beta_lambda=new_params[["beta_lambda"]],
+                     alpha_sigma2=new_params[["alpha_sigma2"]], 
+                     beta_sigma2=new_params[["beta_sigma2"]],
+                     sigma2=new_params[["sigma2"]], 
+                     df_W=new_params[["df_W"]], 
                      proposal_factor_mu=proposal_factor_mu,
                      proposal_factor_Sigma=proposal_factor_Sigma,
-                     Sigma_kernel_df=Sigma_kernel_df, SV=SV)
-  
-  results <- ide(Y, locs, m_0, C_0, mu_kernel_mean,
-                 mu_kernel_var, K, Sigma_kernel_scale, C_W,
-                 scalar_params, n_samples, verbose)
+                     Sigma_kernel_df=Sigma_kernel_df,
+                     SV=SV, J=J, L=L)
+
+  # Fit the model
+  results <- ide(Y, locs, new_params[["m_0"]], new_params[["C_0"]],
+                 mu_kernel_mean, mu_kernel_var, K, Sigma_kernel_scale, 
+                 new_params[["C_W"]], scalar_params, n_samples, verbose)
   
   # Process results
   if ("lambda" %in% names(results)) {
