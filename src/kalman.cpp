@@ -7,11 +7,12 @@ using namespace Rcpp;
 
 void kalman(arma::mat & m, arma::cube & C, arma::mat & a, arma::cube & R_inv,
             const arma::mat & Y, const arma::mat & F, const arma::mat & G,
-            const double sigma2, const arma::mat & W) {
+            const double sigma2, const double lambda, const arma::mat & W) {
   // This function assumes that V is (sigma2 * I)
   const int T = Y.n_cols-1;
   const int S = Y.n_rows;
   const int p = G.n_rows;
+  const bool Discount = lambda > 0;
 
   // Don't need to keep these quantities
   arma::mat Q(S, S), Q_inv(S, S), R_t(p, p), FR(S, p), RF_t(p, S);
@@ -22,7 +23,12 @@ void kalman(arma::mat & m, arma::cube & C, arma::mat & a, arma::cube & R_inv,
     checkUserInterrupt();
     // One step ahead predictive distribution of theta
     a.col(t) = G * m.col(t-1);
-    R_t = G * C.slice(t-1) * G.t() + W;
+    Rcout << "chk1" << std::endl;
+    Rcout << lambda << std::endl;
+    if (Discount) Rcout << "Discount" << std::endl;
+    if (Discount) R_t = (1 + lambda) * G * C.slice(t-1) * G.t();
+    else R_t = G * C.slice(t-1) * G.t() + W;
+    Rcout << "chk2" << std::endl;
 
     // One step ahead predictive distribution of Y_t
     f = F * a.col(t);
@@ -33,46 +39,11 @@ void kalman(arma::mat & m, arma::cube & C, arma::mat & a, arma::cube & R_inv,
 
     // Filtering distribution of theta
     RF_t = FR.t();
+    Rcout << "chk3" << std::endl;
     m.col(t) = a.col(t) + RF_t * Q_inv * (Y.col(t) - f);
+    Rcout << "chk4" << std::endl;
     C.slice(t) = R_t - RF_t * Q_inv * FR;
-    //makeSymmetric(C.slice(t));
-
-    // Invert R for sampling
-    R_inv.slice(t) = arma::inv_sympd(R_t);
-  }
-  return;
-};
-
-void kalmanDiscount(arma::mat & m, arma::cube & C, arma::mat & a, arma::cube & R_inv,
-                    const arma::mat & Y, const arma::mat & F, const arma::mat & G,
-                    const double sigma2 , const double lambda) {
-  // This function assumes that V is (sigma2 * I)
-  const int T = Y.n_cols-1;
-  const int S = Y.n_rows;
-  const int p = G.n_rows;
-
-  // Don't need to keep these quantities
-  arma::mat Q(S, S), Q_inv(S, S), R_t(p, p), FR(S, p), RF_t(p, S);
-  arma::colvec f(S);
-  // Could also save transposed copies of F, G
-
-  for (int t = 1; t <= T; ++t) {
-    checkUserInterrupt();
-    // One step ahead predictive distribution of theta
-    a.col(t) = G * m.col(t-1);
-    R_t = (1 + lambda) * G * C.slice(t-1) * G.t();
-
-    // One step ahead predictive distribution of Y_t
-    f = F * a.col(t);
-    FR = F * R_t;
-    Q = FR * F.t();
-    Q.diag() += sigma2;
-    Q_inv = arma::inv_sympd(Q);
-
-    // Filtering distribution of theta
-    RF_t = FR.t();
-    m.col(t) = a.col(t) + RF_t * Q_inv * (Y.col(t) - f);
-    C.slice(t) = R_t - RF_t * Q_inv * FR;
+    Rcout << "chk5" << std::endl;
 
     // Invert R for sampling
     R_inv.slice(t) = arma::inv_sympd(R_t);

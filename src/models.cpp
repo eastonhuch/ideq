@@ -83,10 +83,10 @@ List eof(arma::mat Y, arma::mat F, arma::mat G_0, arma::mat Sigma_G_inv,
     // FFBS
     if (verbose) Rcout << "Filtering sample number " << i+1 << std::endl;
     if (Discount) {
-      kalmanDiscount(m, C, a, R_inv, Y, F, G.slice(G_idx), sigma2_i, lambda.at(i));
+      kalman(m, C, a, R_inv, Y, F, G.slice(G_idx), sigma2_i, lambda.at(i));
       C_T.slice(i+1) = C.slice(T); // Save for predictions
     } else {
-      kalman(m, C, a, R_inv, Y, F, G.slice(G_idx), sigma2_i, W.slice(i));
+      kalman(m, C, a, R_inv, Y, F, G.slice(G_idx), sigma2_i, -1, W.slice(i));
     }
     
     if (verbose) Rcout << "Drawing sample number " << i+1 << std::endl;
@@ -262,11 +262,11 @@ List ide(arma::mat Y, arma::mat locs, arma::colvec m_0, arma::mat C_0,
     if (verbose) Rcout << "Filtering sample number " << i+1 << std::endl;
     if (sample_sigma2) sigma2_i = sigma2.at(i);
     
-    if (Discount) {
-      kalmanDiscount(m, C, a, R_inv, Y, F, G.slice(i), sigma2_i, lambda.at(i));
-    } else {
-      kalman(m, C, a, R_inv, Y, F, G.slice(i), sigma2_i, W.slice(i));
-    }
+    if (Discount)
+      kalman(m, C, a, R_inv, Y, F, G.slice(i), sigma2_i, lambda.at(i));
+    else
+      kalman(m, C, a, R_inv, Y, F, G.slice(i), sigma2_i, -1, W.slice(i));
+    
     
     if (verbose) Rcout << "Drawing sample number " << i+1 << std::endl;
     backwardSample(theta.slice(i), m, a, C, G.slice(i), R_inv);
