@@ -413,7 +413,7 @@ dstm_ide <- function(Y, locs=NULL, knot_locs=NULL, proc_error = "IW", J=4L,
   mu_kernel_mean <- as.matrix(mu_kernel_mean)
   
   # mu_kernel_var
-  mu_kernel_var <- params[["mu_kernel_var"]] %else% diag(1/9, locs_dim)
+  mu_kernel_var <- params[["mu_kernel_var"]] %else% diag(L/9, locs_dim)
   check.cov.matrix(mu_kernel_var, locs_dim, dim_name="ncol(locs)")
   
   # proposal_factor_mu
@@ -421,13 +421,13 @@ dstm_ide <- function(Y, locs=NULL, knot_locs=NULL, proc_error = "IW", J=4L,
   check.numeric.scalar(proposal_factor_mu)
   
   # Sigma_kernel_df
-  k <- 100
+  k <- 10
   Sigma_kernel_df <- params[["Sigma_kernel_df"]] %else% k * locs_dim
-  check.numeric.scalar(Sigma_kernel_df, x_min=locs_dim)
+  check.numeric.scalar(Sigma_kernel_df, x_min=locs_dim-1)
   
   # Sigma_kernel_scale
   Sigma_kernel_scale <- params[["Sigma_kernel_scale"]] %else% 
-                          diag(Sigma_kernel_df, locs_dim)
+                          diag(Sigma_kernel_df/(100*L), locs_dim)
   check.cov.matrix(Sigma_kernel_scale, locs_dim, dim_name="ncol(locs)")
   
   # proposal_factor_Sigma

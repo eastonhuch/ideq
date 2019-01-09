@@ -23,12 +23,8 @@ void kalman(arma::mat & m, arma::cube & C, arma::mat & a, arma::cube & R_inv,
     checkUserInterrupt();
     // One step ahead predictive distribution of theta
     a.col(t) = G * m.col(t-1);
-    Rcout << "chk1" << std::endl;
-    Rcout << lambda << std::endl;
-    if (Discount) Rcout << "Discount" << std::endl;
     if (Discount) R_t = (1 + lambda) * G * C.slice(t-1) * G.t();
     else R_t = G * C.slice(t-1) * G.t() + W;
-    Rcout << "chk2" << std::endl;
 
     // One step ahead predictive distribution of Y_t
     f = F * a.col(t);
@@ -39,11 +35,8 @@ void kalman(arma::mat & m, arma::cube & C, arma::mat & a, arma::cube & R_inv,
 
     // Filtering distribution of theta
     RF_t = FR.t();
-    Rcout << "chk3" << std::endl;
     m.col(t) = a.col(t) + RF_t * Q_inv * (Y.col(t) - f);
-    Rcout << "chk4" << std::endl;
     C.slice(t) = R_t - RF_t * Q_inv * FR;
-    Rcout << "chk5" << std::endl;
 
     // Invert R for sampling
     R_inv.slice(t) = arma::inv_sympd(R_t);
