@@ -371,7 +371,8 @@ dstm_ide <- function(Y, locs=NULL, knot_locs=NULL, proc_error = "IW", J=4L,
   if (class(locs) == "data.frame") locs <- as.matrix(locs)
   if (class(locs) != "matrix") stop("locs must be data.frame or matrix")
 
-  if (!is.integer(J) || J<1) stop("J must be an integer > 0")
+  J <- as.integer(J)
+  if (is.null(J) || is.na(J) || J<1) stop("J must be an integer > 0")
   P <- 2*J^2 + 1
 
   L <- params[["L"]] %else% 2
