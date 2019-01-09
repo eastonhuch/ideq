@@ -113,26 +113,6 @@ dstm_eof <- function(Y, proc_model = "Dense", P = 10L, proc_error = "IW",
   e <- eigen(cov(t(Y)))
   F_ <-e$vectors[, 1:P]
   
-  # Set m_0
-  m_0 <- params[["m_0"]] %else% rep(0, P)
-  check.numeric.vector(m_0, P)
-
-  # Set C_0
-  C_0 <- params[["C_0"]] %else% diag(P)
-  check.cov.matrix(C_0, P)
-
-  # Observation Error; creates alpha_sigma2, beta_sigma2, sigma2
-  alpha_sigma2 <- beta_sigma2 <- sigma2 <- -1
-  if (sample_sigma2) {
-    alpha_sigma2 <- params[["alpha_sigma2"]] %else% 5
-    beta_sigma2  <- params[["beta_sigma2"]]  %else% 4
-    check.numeric.scalar(alpha_sigma2)
-    check.numeric.scalar(beta_sigma2)
-  } else {
-    sigma2 <- params[["sigma2"]] %else% 1
-    check.numeric.scalar(sigma2)
-  }
-  
   # Process Model; creates mu_G and Sigma_G
   mu_G <- Sigma_G <- Sigma_G_inv <- matrix()
   
@@ -155,34 +135,19 @@ dstm_eof <- function(Y, proc_model = "Dense", P = 10L, proc_error = "IW",
     
   # Sigma_G_inv
   Sigma_G_inv <- chol_inv(Sigma_G)
-
-  # Process Error; creates all necessary params (e.g., alpha_lambda)
-  alpha_lambda <- beta_lambda <- df_W <- NA
-  C_W <- matrix()
   
-  if (proc_error == "IW") {
-    k <- 100
-    C_W <- params[["C_W"]] %else% diag(P, P)
-    df_W <- params[["df_W"]] %else% k * P
-    check.cov.matrix(C_W, P)
-    check.numeric.scalar(df_W, x_min=P)
-  } else if (proc_error == "Discount") {
-    alpha_lambda <- params[["alpha_lambda"]] %else% 3
-    beta_lambda <- params[["beta_lambda"]] %else% 4
-    check.numeric.scalar(alpha_lambda)
-    check.numeric.scalar(beta_lambda)
-    
-  } else {
-    stop("proc_error must be \"IW\" or \"Discount\"")
-  }
-  
-  # Group scalar params into vector
-  scalar_params <- c(alpha_lambda=alpha_lambda, beta_lambda=beta_lambda,
-                     alpha_sigma2=alpha_sigma2, beta_sigma2=beta_sigma2,
-                     sigma2=sigma2, df_W=df_W)
+  # Process remaining params
+  new_params <- process_common_params(params, proc_error, P, sample_sigma2)
+  scalar_params <- c(alpha_lambda=new_params[["alpha_lambda"]], 
+                     beta_lambda=new_params[["beta_lambda"]],
+                     alpha_sigma2=new_params[["alpha_sigma2"]], 
+                     beta_sigma2=new_params[["beta_sigma2"]],
+                     sigma2=new_params[["sigma2"]], 
+                     df_W=new_params[["df_W"]])
 
   # Fit the model
-  results <- eof(Y, F_, mu_G, Sigma_G_inv, m_0, C_0, C_W,
+  results <- eof(Y, F_, mu_G, Sigma_G_inv, new_params[["m_0"]], 
+                 new_params[["C_0"]], new_params[["C_W"]],
                  scalar_params, proc_model, n_samples, verbose)
   
   # Process results

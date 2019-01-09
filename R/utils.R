@@ -99,7 +99,7 @@ process_common_params <- function(params, proc_error, P, sample_sigma2) {
   
   list(
     m_0=m_0, C_0=C_0,
-    alpha_sigma2=alpha_sigma2, beta_sigma2, sigma2,
+    alpha_sigma2=alpha_sigma2, beta_sigma2=beta_sigma2, sigma2=sigma2,
     C_W=C_W, df_W=df_W, alpha_lambda=alpha_lambda, beta_lambda=beta_lambda
   )
 }
