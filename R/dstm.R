@@ -118,7 +118,7 @@ dstm_eof <- function(Y, proc_model = "Dense", P = 10L, proc_error = "IW",
   check.numeric.vector(m_0, P)
 
   # Set C_0
-  C_0 <- params[["C_0"]] %else% diag(1e-2, P)
+  C_0 <- params[["C_0"]] %else% diag(P)
   check.cov.matrix(C_0, P)
 
   # Observation Error; creates alpha_sigma2, beta_sigma2, sigma2
@@ -387,7 +387,7 @@ dstm_ide <- function(Y, locs=NULL, knot_locs=NULL, proc_error = "IW", J=4L,
   check.numeric.vector(m_0, P)
 
   # Set C_0
-  C_0 <- params[["C_0"]] %else% diag(1/9, P)
+  C_0 <- params[["C_0"]] %else% diag(P)
   check.cov.matrix(C_0, P)
   
   # Observation Error; creates alpha_sigma2, beta_sigma2, sigma2
@@ -403,8 +403,6 @@ dstm_ide <- function(Y, locs=NULL, knot_locs=NULL, proc_error = "IW", J=4L,
   }
 
   # Process Model; creates kernel parameters
-  # FIXME: Add ability to use different locs
-  
   locs_dim <- ncol(locs)
   
   # mu_kernel_mean

@@ -56,6 +56,54 @@ check.cov.matrix <- function(x, P, x_name=deparse(substitute(x)),
 # Cholesky inverse
 chol_inv <- function(x) chol2inv(chol(x))
 
+# Processing parameters common to dstm_eof() and dstm_ide()
+process_common_params <- function(params, proc_error, P, sample_sigma2) {
+  # Set m_0
+  m_0 <- params[["m_0"]] %else% rep(0, P)
+  check.numeric.vector(m_0, P)
+
+  # Set C_0
+  C_0 <- params[["C_0"]] %else% diag(P)
+  check.cov.matrix(C_0, P)
+  
+  # Observation Error; creates alpha_sigma2, beta_sigma2, sigma2
+  alpha_sigma2 <- beta_sigma2 <- sigma2 <- -1
+  if (sample_sigma2) {
+    alpha_sigma2 <- params[["alpha_sigma2"]] %else% 5
+    beta_sigma2  <- params[["beta_sigma2"]]  %else% 4
+    check.numeric.scalar(alpha_sigma2)
+    check.numeric.scalar(beta_sigma2)
+  } else {
+    sigma2 <- params[["sigma2"]] %else% 1
+    check.numeric.scalar(sigma2)
+  }
+  
+  alpha_lambda <- beta_lambda <- df_W <- NA
+  C_W <- matrix()
+  
+  if (proc_error == "IW") {
+    k <- 100
+    C_W <- params[["C_W"]] %else% diag(P, P)
+    df_W <- params[["df_W"]] %else% k * P
+    check.cov.matrix(C_W, P)
+    check.numeric.scalar(df_W, x_min=P)
+  } else if (proc_error == "Discount") {
+    alpha_lambda <- params[["alpha_lambda"]] %else% 3
+    beta_lambda <- params[["beta_lambda"]] %else% 4
+    check.numeric.scalar(alpha_lambda)
+    check.numeric.scalar(beta_lambda)
+    
+  } else {
+    stop("proc_error must be \"IW\" or \"Discount\"")
+  }
+  
+  list(
+    m_0=m_0, C_0=C_0,
+    alpha_sigma2=alpha_sigma2, beta_sigma2, sigma2,
+    C_W=C_W, df_W=df_W, alpha_lambda=alpha_lambda, beta_lambda=beta_lambda
+  )
+}
+
 ################################################################################
 # Functions for dstm_ide()
 center_col <- function(x, L) {
