@@ -331,7 +331,7 @@ dstm_ide <- function(Y, locs=NULL, knot_locs=NULL, proc_error = "IW", J=4L,
                      n_samples = 10L, sample_sigma2 = TRUE,
                      verbose = FALSE, params = NULL) {
 
-  # Error checking for J, L, locs
+  # Error checking for J, L, locs, knot_locs
   if (is.null(locs)) stop("locs must be specified for IDE models")
   if (class(locs) == "data.frame") locs <- as.matrix(locs)
   if (class(locs) != "matrix") stop("locs must be data.frame or matrix")
@@ -342,6 +342,9 @@ dstm_ide <- function(Y, locs=NULL, knot_locs=NULL, proc_error = "IW", J=4L,
 
   L <- params[["L"]] %else% 2
   check.numeric.scalar(L)
+  
+  SV <- is.numeric(knot_locs)
+  if (!(SV || is.null(knot_locs))) stop("knot_locs must be numeric or null")
   
   # Center spatial locations to have range of L
   locs <- center_all(locs, L)
@@ -359,7 +362,7 @@ dstm_ide <- function(Y, locs=NULL, knot_locs=NULL, proc_error = "IW", J=4L,
   check.cov.matrix(mu_kernel_var, locs_dim, dim_name="ncol(locs)")
   
   # proposal_factor_mu
-  proposal_factor_mu <- params[["proposal_factor_mu"]] %else% 1
+  proposal_factor_mu <- params[["proposal_factor_mu"]] %else% ifelse(SV, 1/3, 1)
   check.numeric.scalar(proposal_factor_mu)
   
   # Sigma_kernel_df
@@ -378,12 +381,10 @@ dstm_ide <- function(Y, locs=NULL, knot_locs=NULL, proc_error = "IW", J=4L,
   
   # Error checking for knot_locs
   # And adjustment to above quantities in spatially varying case
-  SV <- FALSE
   n_knots <- 1
   K  <- array(0, dim=c(1, 1, 1))
   
-  if (is.numeric(knot_locs)) {
-    SV <- TRUE
+  if (SV) {
     # prepare knot_locs
     if (length(knot_locs) > 1) knot_locs <- center_all(knot_locs, L)
     else knot_locs <- gen_grid(as.integer(knot_locs), L)
@@ -401,10 +402,6 @@ dstm_ide <- function(Y, locs=NULL, knot_locs=NULL, proc_error = "IW", J=4L,
     K <- t(K) # Makes K of dimension n_locs by n_knots
     K <- array(K, dim=c(dim(K), 1))
     
-  } else if (is.null(knot_locs)) {
-    SV <- FALSE
-  } else {
-    stop("knot_locs must be numeric or NULL")
   }
   
   Sigma_kernel_scale <- array(1, dim=c(1, 1, n_knots)) %x%
