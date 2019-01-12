@@ -14,9 +14,9 @@ double ldiwishart(const arma::cube & x, const double df,
   }
   
   for (int i=0; i<x.n_slices; ++i) {
-    d += df/2 * log(arma::det(scale.slice(i)));
-    d -= (df+p+1)/2 * log(arma::det(x.slice(i)));
-    d -= 1/2 * log(arma::trace(arma::solve(x.slice(i), scale.slice(i))));
+    d += log(arma::det(scale.slice(i))) * df/2.0;
+    d -= log(arma::det(x.slice(i))) * (df+p+1)/2.0;
+    d -= arma::trace(arma::solve(x.slice(i), scale.slice(i))) / 2.0;
   }
   return d;
 }

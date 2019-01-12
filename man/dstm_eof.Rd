@@ -108,7 +108,8 @@ dstm_eof(Y, proc_error="Discount") # Discount factor process error
 
 # Specify hyperparameters
 dstm_eof(Y, sample_sigma2=FALSE, params=list(sigma2=1)) # Fix sigma2
-dstm_eof(Y, params=list(alpha_lambda=10, beta_lambda=11)) # Prior for lambda
+dstm_eof(Y, proc_error="Discount", 
+         params=list(alpha_lambda=10, beta_lambda=11)) # Prior for lambda
 dstm_eof(Y, P=10, params=list(m_0=rep(1, 10) , C_0=diag(0.01, 10))) # Prior for theta_0
 dstm_eof(Y, params=list(C_W=diag(10), df_W=100)) # Prior for W
 }

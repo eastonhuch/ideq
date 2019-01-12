@@ -355,10 +355,10 @@ List ide(arma::mat Y, arma::mat locs, arma::colvec m_0, arma::mat C_0,
     
     if (Discount) {
       mh_ratio += kernelLikelihoodDiscount(G_proposal, theta.slice(i), C, lambda.at(i+1));
-      mh_ratio -= kernelLikelihoodDiscount(G.slice(i), theta.slice(i), C, lambda.at(i+1));
+      mh_ratio -= kernelLikelihoodDiscount(G.slice(i+1), theta.slice(i), C, lambda.at(i+1));
     } else {
       mh_ratio += kernelLikelihood(G_proposal, theta.slice(i), W.slice(i+1));
-      mh_ratio -= kernelLikelihood(G.slice(i), theta.slice(i), W.slice(i+1));
+      mh_ratio -= kernelLikelihood(G.slice(i+1), theta.slice(i), W.slice(i+1));
     }
     
     // Calculate transition probabilities
@@ -373,10 +373,10 @@ List ide(arma::mat Y, arma::mat locs, arma::colvec m_0, arma::mat C_0,
       ++Sigma_acceptances;
       Sigma_kernel.at(i+1) = Sigma_kernel_proposal;
       G.slice(i+1) = G_proposal;
-      Sigma_kernel_knots.at(i+1) = Sigma_kernel_knots_proposal; 
+      if (SV) Sigma_kernel_knots.at(i+1) = Sigma_kernel_knots_proposal;
     } else {
       Sigma_kernel.at(i+1) = Sigma_kernel.at(i);
-      Sigma_kernel_knots.at(i+1) = Sigma_kernel_knots.at(i);
+      if (SV) Sigma_kernel_knots.at(i+1) = Sigma_kernel_knots.at(i);
     }
   }
   
