@@ -84,7 +84,7 @@ process_common_params <- function(params, proc_error, P, sample_sigma2) {
   if (proc_error == "IW") {
     k <- 100
     C_W <- params[["C_W"]] %else% diag(P, P)
-    df_W <- params[["df_W"]] %else% k * P
+    df_W <- params[["df_W"]] %else% (k * P)
     check.cov.matrix(C_W, P)
     check.numeric.scalar(df_W, x_min=P)
   } else if (proc_error == "Discount") {

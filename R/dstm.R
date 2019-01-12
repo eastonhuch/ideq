@@ -367,7 +367,7 @@ dstm_ide <- function(Y, locs=NULL, knot_locs=NULL, proc_error = "IW", J=4L,
   
   # Sigma_kernel_df
   k <- 10
-  Sigma_kernel_df <- params[["Sigma_kernel_df"]] %else% k * locs_dim
+  Sigma_kernel_df <- params[["Sigma_kernel_df"]] %else% (k * locs_dim)
   check.numeric.scalar(Sigma_kernel_df, x_min=locs_dim-1)
   
   # Sigma_kernel_scale
@@ -376,7 +376,9 @@ dstm_ide <- function(Y, locs=NULL, knot_locs=NULL, proc_error = "IW", J=4L,
   check.cov.matrix(Sigma_kernel_scale, locs_dim, dim_name="ncol(locs)")
   
   # proposal_factor_Sigma
-  proposal_factor_Sigma <- params[["proposal_factor_Sigma"]] %else% 1
+  # FIXME: Choose reasonable value in SV case
+  proposal_factor_Sigma <- params[["proposal_factor_Sigma"]] %else%
+                           ifelse(SV, 1/100, 1)
   check.numeric.scalar(proposal_factor_Sigma)
   
   # Error checking for knot_locs

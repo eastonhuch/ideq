@@ -177,7 +177,7 @@ List ide(arma::mat Y, arma::mat locs, arma::colvec m_0, arma::mat C_0,
   int K_idx = 0, mu_acceptances = 0, Sigma_acceptances = 0;
   const bool sample_sigma2 = sigma2_i < 0, Discount = df_W == NA;
   const bool dyanamic_K = K.n_slices > 1, SV = params["SV"] > 0;
-  double Sigma_kernel_proposal_df = locs_dim + Sigma_kernel_df/proposal_factor_Sigma;
+  const double Sigma_kernel_proposal_df = locs_dim + Sigma_kernel_df/proposal_factor_Sigma;
   const double Sigma_kernel_adjustment = Sigma_kernel_proposal_df - locs_dim - 1;
   
   // Create matrices and cubes for FFBS
