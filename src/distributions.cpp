@@ -40,14 +40,6 @@ double rigamma(const double a, const double scl) {
   return (1 / R::rgamma(a, 1/scl));
 };
 
-//' Samples from a multivariate normal distribution
-//'
-//' @export
-//' @examples
-//' # Duhh...nothing yet
-//' @importFrom Rcpp sourceCpp evalCpp
-//' @useDynLib ideq
-// [[Rcpp::export]]
 arma::colvec rmvnorm(const arma::colvec & mean, const arma::mat & Sigma) {
   int n = mean.n_elem;
   arma::colvec z(n);

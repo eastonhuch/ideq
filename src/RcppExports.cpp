@@ -6,18 +6,6 @@
 
 using namespace Rcpp;
 
-// rmvnorm
-arma::colvec rmvnorm(const arma::colvec& mean, const arma::mat& Sigma);
-RcppExport SEXP _ideq_rmvnorm(SEXP meanSEXP, SEXP SigmaSEXP) {
-BEGIN_RCPP
-    Rcpp::RObject rcpp_result_gen;
-    Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< const arma::colvec& >::type mean(meanSEXP);
-    Rcpp::traits::input_parameter< const arma::mat& >::type Sigma(SigmaSEXP);
-    rcpp_result_gen = Rcpp::wrap(rmvnorm(mean, Sigma));
-    return rcpp_result_gen;
-END_RCPP
-}
 // eof
 List eof(arma::mat Y, arma::mat F, arma::mat G_0, arma::mat Sigma_G_inv, arma::colvec m_0, arma::mat C_0, arma::mat C_W, NumericVector params, CharacterVector proc_model, const int n_samples, const bool verbose);
 RcppExport SEXP _ideq_eof(SEXP YSEXP, SEXP FSEXP, SEXP G_0SEXP, SEXP Sigma_G_invSEXP, SEXP m_0SEXP, SEXP C_0SEXP, SEXP C_WSEXP, SEXP paramsSEXP, SEXP proc_modelSEXP, SEXP n_samplesSEXP, SEXP verboseSEXP) {
@@ -63,7 +51,6 @@ END_RCPP
 }
 
 static const R_CallMethodDef CallEntries[] = {
-    {"_ideq_rmvnorm", (DL_FUNC) &_ideq_rmvnorm, 2},
     {"_ideq_eof", (DL_FUNC) &_ideq_eof, 11},
     {"_ideq_ide", (DL_FUNC) &_ideq_ide, 12},
     {NULL, NULL, 0}
