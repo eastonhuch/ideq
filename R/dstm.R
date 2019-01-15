@@ -362,7 +362,7 @@ dstm_ide <- function(Y, locs=NULL, knot_locs=NULL, proc_error = "IW", J=4L,
   check.cov.matrix(mu_kernel_var, locs_dim, dim_name="ncol(locs)")
   
   # proposal_factor_mu
-  proposal_factor_mu <- params[["proposal_factor_mu"]] %else% ifelse(SV, 1/3, 1)
+  proposal_factor_mu <- params[["proposal_factor_mu"]] %else% ifelse(SV, 2/5, 1)
   check.numeric.scalar(proposal_factor_mu)
   
   # Sigma_kernel_df
@@ -376,9 +376,9 @@ dstm_ide <- function(Y, locs=NULL, knot_locs=NULL, proc_error = "IW", J=4L,
   check.cov.matrix(Sigma_kernel_scale, locs_dim, dim_name="ncol(locs)")
   
   # proposal_factor_Sigma
-  # FIXME: Choose reasonable value in SV case
   proposal_factor_Sigma <- params[["proposal_factor_Sigma"]] %else%
-                           ifelse(SV, 1/100, 1)
+                           ifelse(SV, 1/12, 1)
+  print(proposal_factor_Sigma)
   check.numeric.scalar(proposal_factor_Sigma)
   
   # Error checking for knot_locs

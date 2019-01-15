@@ -6,19 +6,6 @@
 
 using namespace Rcpp;
 
-// ldiwishart
-double ldiwishart(const arma::cube& x, const double df, const arma::cube& scale);
-RcppExport SEXP _ideq_ldiwishart(SEXP xSEXP, SEXP dfSEXP, SEXP scaleSEXP) {
-BEGIN_RCPP
-    Rcpp::RObject rcpp_result_gen;
-    Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< const arma::cube& >::type x(xSEXP);
-    Rcpp::traits::input_parameter< const double >::type df(dfSEXP);
-    Rcpp::traits::input_parameter< const arma::cube& >::type scale(scaleSEXP);
-    rcpp_result_gen = Rcpp::wrap(ldiwishart(x, df, scale));
-    return rcpp_result_gen;
-END_RCPP
-}
 // rmvnorm
 arma::colvec rmvnorm(const arma::colvec& mean, const arma::mat& Sigma);
 RcppExport SEXP _ideq_rmvnorm(SEXP meanSEXP, SEXP SigmaSEXP) {
@@ -76,7 +63,6 @@ END_RCPP
 }
 
 static const R_CallMethodDef CallEntries[] = {
-    {"_ideq_ldiwishart", (DL_FUNC) &_ideq_ldiwishart, 3},
     {"_ideq_rmvnorm", (DL_FUNC) &_ideq_rmvnorm, 2},
     {"_ideq_eof", (DL_FUNC) &_ideq_eof, 11},
     {"_ideq_ide", (DL_FUNC) &_ideq_ide, 12},

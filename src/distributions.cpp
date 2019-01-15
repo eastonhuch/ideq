@@ -6,16 +6,15 @@ using namespace Rcpp;
 
 double ldiwishart(const arma::cube & x, const double df,
                   const arma::cube & scale) {
-  const int p = x.n_cols;
+  const double p = x.n_cols;
   double d = 0;
   
-  if (x.n_slices != scale.n_slices) {
+  if (x.n_slices != scale.n_slices)
     throw std::invalid_argument("x and scale must have same number of slices");
-  }
   
   for (int i=0; i<x.n_slices; ++i) {
     d += log(arma::det(scale.slice(i))) * df/2.0;
-    d -= log(arma::det(x.slice(i))) * (df+p+1)/2.0;
+    d -= log(arma::det(x.slice(i))) * (df+p+1.0)/2.0;
     d -= arma::trace(arma::solve(x.slice(i), scale.slice(i))) / 2.0;
   }
   return d;

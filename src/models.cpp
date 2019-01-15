@@ -326,27 +326,44 @@ List ide(arma::mat Y, arma::mat locs, arma::colvec m_0, arma::mat C_0,
     }
     
     // MH step for Sigma
-    // Propose Sigma and calculate probabilities under prior
     if (SV) {
+      // Propose Sigma at all knot locations
       for (int k=0; k<n_knots; ++k) {
         Sigma_kernel_knots_proposal.slice(k) = rgen::riwishart(
                                                  Sigma_kernel_proposal_df,
                                                  Sigma_kernel_knots.at(i).slice(k) *
                                                  Sigma_kernel_adjustment);
       }
+      // Probabilities under prior
       mh_ratio  = ldiwishart(Sigma_kernel_knots_proposal, Sigma_kernel_df, 
                              Sigma_kernel_scale);
       mh_ratio -= ldiwishart(Sigma_kernel_knots.at(i), Sigma_kernel_df,
                              Sigma_kernel_scale);
+      
+      // Transition probabilities
+      mh_ratio -= ldiwishart(Sigma_kernel_knots_proposal, Sigma_kernel_proposal_df,
+                             Sigma_kernel_knots.at(i) * Sigma_kernel_adjustment);
+      mh_ratio += ldiwishart(Sigma_kernel_knots.at(i), Sigma_kernel_proposal_df,
+                             Sigma_kernel_knots_proposal * Sigma_kernel_adjustment);
+      
+      // Map to all spatial locations
       mapSigma(Sigma_kernel_proposal, Sigma_kernel_knots_proposal, K.slice(0));
     } else {
+      // Propose new Sigma
       Sigma_kernel_proposal.slice(0) = rgen::riwishart(Sigma_kernel_proposal_df,
                                                        Sigma_kernel.at(i).slice(0) * 
                                                        Sigma_kernel_adjustment);
+      // Probabilities under prior
       mh_ratio  = ldiwishart(Sigma_kernel_proposal, Sigma_kernel_df, 
                              Sigma_kernel_scale);
       mh_ratio -= ldiwishart(Sigma_kernel.at(i), Sigma_kernel_df,
                              Sigma_kernel_scale);
+      
+      // Transition probabilities
+      mh_ratio -= ldiwishart(Sigma_kernel_proposal, Sigma_kernel_proposal_df,
+                             Sigma_kernel.at(i) * Sigma_kernel_adjustment);
+      mh_ratio += ldiwishart(Sigma_kernel.at(i), Sigma_kernel_proposal_df,
+                             Sigma_kernel_proposal * Sigma_kernel_adjustment);
     }
     
     // Calculate likelihood
@@ -361,11 +378,6 @@ List ide(arma::mat Y, arma::mat locs, arma::colvec m_0, arma::mat C_0,
       mh_ratio -= kernelLikelihood(G.slice(i+1), theta.slice(i), W.slice(i+1));
     }
     
-    // Calculate transition probabilities
-    mh_ratio -= ldiwishart(Sigma_kernel_proposal, Sigma_kernel_proposal_df,
-                           Sigma_kernel.at(i) * Sigma_kernel_adjustment);
-    mh_ratio += ldiwishart(Sigma_kernel.at(i), Sigma_kernel_proposal_df,
-                           Sigma_kernel_proposal * Sigma_kernel_adjustment);
     
     // Accept according to mh-ratio
     u = R::runif(0, 1);

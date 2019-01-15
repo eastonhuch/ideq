@@ -10,7 +10,6 @@ using namespace Rcpp;
 double kernelLikelihood(const arma::mat & G, const arma::mat & theta,
                         const arma::mat W) {
   const int T = theta.n_cols-1;
-  const int p = theta.n_rows;
   arma::mat tmp = arma::zeros(1, 1);
   arma::colvec d;
   
@@ -19,13 +18,12 @@ double kernelLikelihood(const arma::mat & G, const arma::mat & theta,
     tmp += d.t() * arma::solve(W, d);
   }
   
-  return -tmp(0)/2; 
+  return -tmp(0)/2.0; 
 };
 
 double kernelLikelihoodDiscount(const arma::mat & G, const arma::mat & theta, 
                         const arma::cube & C, const double lambda) {
   const int T = theta.n_cols-1;
-  const int p = theta.n_rows;
   arma::mat tmp = arma::zeros(1, 1);
   arma::colvec d;
   
@@ -34,7 +32,7 @@ double kernelLikelihoodDiscount(const arma::mat & G, const arma::mat & theta,
     tmp += d.t() * arma::solve(lambda * G * C.slice(t) * G.t(), d);
   }
   
-  return -tmp(0)/2; 
+  return -tmp(0)/2.0; 
 };
 
 // The function makeB returns the matrix B used as part of the process matrix
