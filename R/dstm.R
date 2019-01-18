@@ -378,7 +378,6 @@ dstm_ide <- function(Y, locs=NULL, knot_locs=NULL, proc_error = "IW", J=4L,
   # proposal_factor_Sigma
   proposal_factor_Sigma <- params[["proposal_factor_Sigma"]] %else%
                            ifelse(SV, 1/12, 1)
-  print(proposal_factor_Sigma)
   check.numeric.scalar(proposal_factor_Sigma)
   
   # Error checking for knot_locs
@@ -442,6 +441,7 @@ dstm_ide <- function(Y, locs=NULL, knot_locs=NULL, proc_error = "IW", J=4L,
   results[["Sigma_acceptance_rate"]] <- results[["Sigma_acceptances"]] / n_samples
   results[["mu_acceptances"]] <- NULL
   results[["Sigma_acceptances"]] <- NULL
+  if (SV) results[["knot_locs"]] <- knot_locs
   
   class(results) <- c("dstm_ide" , "dstm", "list")
   attr(results, "proc_model") <- "ide"
