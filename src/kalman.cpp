@@ -31,7 +31,15 @@ void kalman(arma::mat & m, arma::cube & C, arma::mat & a, arma::cube & R_inv,
     FR = F * R_t;
     Q = FR * F.t();
     Q.diag() += sigma2;
-    Q_inv = arma::inv_sympd(Q);
+    
+    try {
+      Q_inv = arma::inv_sympd(Q);
+    }
+    catch (std::runtime_error e) {
+      Rcout << "Failed to invert Q in kalman filter" << std::endl;
+      Rcout << "Consider making sigma2 larger" << std::endl;
+      Q_inv = forceInv(Q);
+    }
 
     // Filtering distribution of theta
     RF_t = FR.t();
@@ -39,6 +47,14 @@ void kalman(arma::mat & m, arma::cube & C, arma::mat & a, arma::cube & R_inv,
     C.slice(t) = R_t - RF_t * Q_inv * FR;
 
     // Invert R for sampling
+    try {
+      R_inv.slice(t) = arma::inv_sympd(R_t);
+    }
+    catch (std::runtime_error e) {
+      Rcout << "Failed to invert R in kalman filter" << std::endl;
+      Rcout << "Consider making W larger" << std::endl;
+      R_inv.slice(t) = forceInv(R_t);
+    }
     R_inv.slice(t) = arma::inv_sympd(R_t);
   }
   return;

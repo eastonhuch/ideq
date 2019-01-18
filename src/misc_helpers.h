@@ -6,4 +6,8 @@ using namespace Rcpp;
 
 void makeSymmetric(arma::mat & X);
 
+arma::mat forceInv(arma::mat X);
+
+arma::mat forceSqrtMat(arma::mat X);
+
 #endif

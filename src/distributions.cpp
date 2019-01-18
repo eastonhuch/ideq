@@ -1,5 +1,6 @@
 #include <math.h>
 #include <RcppArmadillo.h>
+#include "misc_helpers.h"
   // [[Rcpp::depends(RcppArmadillo)]]
 
 using namespace Rcpp;
@@ -53,11 +54,10 @@ arma::colvec rmvnorm(const arma::colvec & mean, const arma::mat & Sigma) {
     Sigma_sqrt = arma::sqrtmat_sympd(Sigma);
   }
   catch (std::runtime_error e)
-  {
+  { 
     Rcout << "Failed to calculate sqrt(Sigma) using sqrtmat_sympd" << std::endl;
-    Rcout << "Forcing symmetry using (Sigma + Sigma')/2 and trying again" << std::endl;
-    arma::mat Sigma_sym = ( Sigma + Sigma.t() ) / 2;
-    Sigma_sqrt = arma::sqrtmat_sympd(Sigma_sym);
+    Rcout << "Forcing symmetry and trying again" << std::endl;
+    Sigma_sqrt = forceSqrtMat(Sigma);
   }
 
   arma::colvec x = mean + Sigma_sqrt * z;

@@ -372,7 +372,7 @@ dstm_ide <- function(Y, locs=NULL, knot_locs=NULL, proc_error = "IW", J=4L,
   
   # Sigma_kernel_scale
   Sigma_kernel_scale <- params[["Sigma_kernel_scale"]] %else% 
-                          diag(Sigma_kernel_df/(100*L), locs_dim)
+                          diag(Sigma_kernel_df*L/10, locs_dim)
   check.cov.matrix(Sigma_kernel_scale, locs_dim, dim_name="ncol(locs)")
   
   # proposal_factor_Sigma
