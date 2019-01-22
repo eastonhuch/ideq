@@ -407,6 +407,11 @@ List ide(arma::mat Y, arma::mat locs, arma::colvec m_0, arma::mat C_0,
   results["G"] = G;
   results["mu_kernel"] = mu_kernel;
   results["Sigma_kernel"] = Sigma_kernel;
+  if (SV) {
+    results["mu_kernel_knots"] = mu_kernel_knots;
+    results["Sigma_kernel_knots"] = Sigma_kernel_knots;
+    results["K"] = K;
+  }
   
   if (Discount) {
     results["lambda"] = lambda;

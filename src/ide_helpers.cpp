@@ -12,10 +12,11 @@ double kernelLikelihood(const arma::mat & G, const arma::mat & theta,
   const int T = theta.n_cols-1;
   arma::mat tmp = arma::zeros(1, 1);
   arma::colvec d;
+  arma::mat W_inv = arma::inv_sympd(W);
   
   for (int t=1; t<=T; ++t) {
     d = theta.col(t) - G * theta.col(t-1);
-    tmp += d.t() * arma::solve(W, d);
+    tmp += d.t() * W_inv * d;
   }
   
   return -tmp(0)/2.0; 
@@ -29,7 +30,7 @@ double kernelLikelihoodDiscount(const arma::mat & G, const arma::mat & theta,
   
   for (int t=1; t<=T; ++t) {
     d = theta.col(t) - G * theta.col(t-1);
-    tmp += d.t() * arma::solve(lambda * G * C.slice(t) * G.t(), d);
+    tmp += d.t() * arma::solve(G * C.slice(t) * G.t(), d) / lambda;
   }
   
   return -tmp(0)/2.0; 

@@ -82,11 +82,10 @@ process_common_params <- function(params, proc_error, P, sample_sigma2) {
   C_W <- matrix()
   
   if (proc_error == "IW") {
-    k <- 20
-    df_W <- params[["df_W"]] %else% (P + k)
+    df_W <- params[["df_W"]] %else% (P)
     C_W <- params[["C_W"]] %else% diag(df_W, P)
     check.cov.matrix(C_W, P)
-    check.numeric.scalar(df_W, x_min=P)
+    check.numeric.scalar(df_W, x_min=P-1)
   } else if (proc_error == "Discount") {
     alpha_lambda <- params[["alpha_lambda"]] %else% 3
     beta_lambda <- params[["beta_lambda"]] %else% 4
