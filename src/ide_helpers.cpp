@@ -85,7 +85,7 @@ void makeB(arma::mat & B, const arma::mat & mu, const arma::cube & Sigma,
 // L is the range of the Fourier approximation
 // locs are the centered/scaled spatial locations
 arma::mat makeF(const arma::mat & locs, const arma::mat & w,
-                  const int J, const int L) {
+                const int J, const double L) {
   arma::mat Jmat = locs.col(0) * w.col(0).t() +
                    locs.col(1) * w.col(1).t();
   arma::mat Phi(Jmat.n_rows, 2*J*J + 1);
@@ -96,8 +96,9 @@ arma::mat makeF(const arma::mat & locs, const arma::mat & w,
   return Phi;
 };
 
-arma::mat makeW(const int J, const int L) {
-  arma::colvec freqs = 2*PI/L * arma::regspace(1, J);
+arma::mat makeW(const int J, const double L) {
+  // NOTE: function is assumed to have period of 2*L, NOT L
+  arma::colvec freqs = PI/L * arma::regspace(1, J);
   arma::mat w(J*J, 2);
   w.col(0) = arma::repmat(freqs, J, 1);
   w.col(1) = arma::repelem(freqs, J, 1);
