@@ -1,5 +1,6 @@
 #' Dynamic spatio-temporal model with EOFs
-#' 
+#' @useDynLib ideq
+#' @importFrom Rcpp sourceCpp
 #' @description 
 #' Fits a dynamic spatio-temporal model using empirical orthogonal functions
 #' (EOFs).
@@ -166,7 +167,7 @@ dstm_eof <- function(Y, proc_model = "Dense", P = 10L, proc_error = "IW",
 }
 
 #' Integrodifference equation (IDE) model
-#' 
+#' @importFrom Rcpp sourceCpp
 #' @description
 #' dstm_ide fits a type of dynamic spatio-temporal model called
 #' an integrodifference equation (IDE) model.
@@ -450,4 +451,8 @@ dstm_ide <- function(Y, locs=NULL, knot_locs=NULL, proc_error = "IW", J=4L,
   attr(results, "sample_sigma2") <- sample_sigma2
 
   return(results)
+}
+
+.onUnload <- function (libpath) {
+  library.dynam.unload("ideq", libpath)
 }
