@@ -244,9 +244,15 @@ dstm_eof <- function(Y, proc_model = "Dense", P = 10L, proc_error = "IW",
 #' df_W: (numeric scalar) The degees of freedom for the inverse-Wishart prior
 #' distribution on W, the variance-covariance matrix of the process error.
 #' 
-#' L: (numeric scalar) The range of the spatial locations after rescaling.
-#' For spatially varying kernels, the value of L controls the degree of 
-#' smoothing. As L increases, the degree of smoothing decreases.
+#' L: (numeric scalar) The period of the Fourier series approximation.
+#' The spatial locations and knot locations are rescaled
+#' to range from -L/4 to L/4 because the Fourier decomposition assumes that
+#' the spatial surface is periodic.
+#' For spatially varying kernels, the value of L controls the degree of smoothing.
+#' As L increases, the degree of smoothing decreases.
+#' The values in the process convolution matrix are proportional to
+#' exp(-d) where d is the distance between a given knot and spatial location
+#' after rescaling.
 #' 
 #' mu_kernel_mean: (numeric vector) The mean of the normal prior distribution
 #' on mu_kernel, the mean of the redistribution kernel.
@@ -275,7 +281,6 @@ dstm_eof <- function(Y, proc_model = "Dense", P = 10L, proc_error = "IW",
 #' ncol(locs) + Sigma_kernel_df / proposal_factor_Sigma.
 #' proposal_factor_Sigma must generally be set lower for spatially varying 
 #' models.
-#' 
 #'
 #' @examples
 #' # Create example data
@@ -342,14 +347,14 @@ dstm_ide <- function(Y, locs=NULL, knot_locs=NULL, proc_error = "IW", J=4L,
   if (is.null(J) || is.na(J) || J<1) stop("J must be an integer > 0")
   P <- 2*J^2 + 1
 
-  L <- params[["L"]] %else% 2
+  L <- params[["L"]] %else% 4
   check.numeric.scalar(L)
   
   SV <- is.numeric(knot_locs)
   if (!(SV || is.null(knot_locs))) stop("knot_locs must be numeric or null")
   
-  # Center spatial locations to have range of L
-  locs <- center_all(locs, L)
+  # Center spatial locations to have range of L/2
+  locs <- center_all(locs, L/2)
   
   # Process Model; creates kernel parameters
   locs_dim <- ncol(locs)
@@ -360,7 +365,7 @@ dstm_ide <- function(Y, locs=NULL, knot_locs=NULL, proc_error = "IW", J=4L,
   mu_kernel_mean <- as.matrix(mu_kernel_mean)
   
   # mu_kernel_var
-  mu_kernel_var <- params[["mu_kernel_var"]] %else% diag(L/9, locs_dim)
+  mu_kernel_var <- params[["mu_kernel_var"]] %else% diag(L/4, locs_dim)
   check.cov.matrix(mu_kernel_var, locs_dim, dim_name="ncol(locs)")
   
   # proposal_factor_mu
@@ -374,7 +379,7 @@ dstm_ide <- function(Y, locs=NULL, knot_locs=NULL, proc_error = "IW", J=4L,
   
   # Sigma_kernel_scale
   Sigma_kernel_scale <- params[["Sigma_kernel_scale"]] %else% 
-                          diag(Sigma_kernel_df*L/10, locs_dim)
+                          diag(Sigma_kernel_df*L/20, locs_dim)
   check.cov.matrix(Sigma_kernel_scale, locs_dim, dim_name="ncol(locs)")
   
   # proposal_factor_Sigma
@@ -389,8 +394,8 @@ dstm_ide <- function(Y, locs=NULL, knot_locs=NULL, proc_error = "IW", J=4L,
   
   if (SV) {
     # prepare knot_locs
-    if (length(knot_locs) > 1) knot_locs <- center_all(knot_locs, L)
-    else knot_locs <- gen_grid(as.integer(knot_locs), L)
+    if (length(knot_locs) > 1) knot_locs <- center_all(knot_locs, L/2)
+    else knot_locs <- gen_grid(as.integer(knot_locs), L/2)
     
     # Modify kernel parameters
     n_knots <- nrow(knot_locs)

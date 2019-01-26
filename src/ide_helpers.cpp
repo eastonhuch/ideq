@@ -36,10 +36,36 @@ double kernelLikelihoodDiscount(const arma::mat & G, const arma::mat & theta,
   return -tmp(0)/2.0; 
 };
 
+arma::mat makeW(const int J, const double L) {
+  // NOTE: function is assumed to have period of L
+  arma::colvec freqs = 2*PI/L * arma::regspace(1, J);
+  arma::mat w(J*J, 2);
+  w.col(0) = arma::repmat(freqs, J, 1);
+  w.col(1) = arma::repelem(freqs, J, 1);
+  return w;
+};
+
+// Observation matrix
+// The number of total basis function is J^2+1
+// L is the range of the Fourier approximation
+// locs are the centered/scaled spatial locations
+arma::mat makeF(const arma::mat & locs, const arma::mat & w,
+                const int J, const double L) {
+  arma::mat Jmat = locs.col(0) * w.col(0).t() +
+                   locs.col(1) * w.col(1).t();
+  arma::mat Phi(Jmat.n_rows, 2*J*J + 1);
+  Phi.col(0).fill(0.5);
+  Phi.cols(1, J*J) = arma::cos(Jmat);
+  Phi.cols(J*J + 1, 2*J*J) = arma::sin(Jmat);
+  Phi /= std::sqrt(L);
+  return Phi;
+};
+
 // The function makeB returns the matrix B used as part of the process matrix
 // mu and Sigma are the parameters of the IDE kernel
 void makeB(arma::mat & B, const arma::mat & mu, const arma::cube & Sigma, 
-           const arma::mat & locs, const arma::mat & w, const int J, const int L) {
+           const arma::mat & locs, const arma::mat & w, 
+           const int J, const double L) {
   
   const bool SV_mu = mu.n_cols > 1;
   const bool SV_Sigma = Sigma.n_slices > 1;
@@ -78,31 +104,6 @@ void makeB(arma::mat & B, const arma::mat & mu, const arma::cube & Sigma,
   B.cols(J*J + 1, 2*J*J) = Jmat2 % arma::sin(Jmat1);
   B /= std::sqrt(L);
   return;
-};
-
-// Observation matrix
-// The number of total basis function is J^2+1
-// L is the range of the Fourier approximation
-// locs are the centered/scaled spatial locations
-arma::mat makeF(const arma::mat & locs, const arma::mat & w,
-                const int J, const double L) {
-  arma::mat Jmat = locs.col(0) * w.col(0).t() +
-                   locs.col(1) * w.col(1).t();
-  arma::mat Phi(Jmat.n_rows, 2*J*J + 1);
-  Phi.col(0).fill(0.5);
-  Phi.cols(1, J*J) = arma::cos(Jmat);
-  Phi.cols(J*J + 1, 2*J*J) = arma::sin(Jmat);
-  Phi /= std::sqrt(L);
-  return Phi;
-};
-
-arma::mat makeW(const int J, const double L) {
-  // NOTE: function is assumed to have period of 2*L, NOT L
-  arma::colvec freqs = PI/L * arma::regspace(1, J);
-  arma::mat w(J*J, 2);
-  w.col(0) = arma::repmat(freqs, J, 1);
-  w.col(1) = arma::repelem(freqs, J, 1);
-  return w;
 };
 
 void mapSigma(arma::cube & s_many, const arma::cube & s_few,
