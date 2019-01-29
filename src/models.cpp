@@ -251,7 +251,7 @@ List ide(arma::mat Y, arma::mat locs, arma::colvec m_0, arma::mat C_0,
   } 
   else { // Sample W from inverse-Wishart
     W.set_size(P, P, n_samples+1);
-    W.slice(0) = df_W * C_W;
+    W.slice(0) = rgen::riwishart(df_W, C_W);
   }
   
   // Begin MCMC

@@ -150,8 +150,8 @@ void sampleV(arma::mat & Y, arma::mat & F, arma::mat & theta,
   return;
 };
 
-void sampleW (arma::mat & W, const arma::mat & theta, const arma::mat & G,
-              const arma::mat & C_W, const int df_W) {
+void sampleW(arma::mat & W, const arma::mat & theta, const arma::mat & G,
+             const arma::mat & C_W, const int df_W) {
   const int T = theta.n_cols - 1;
   const int p = theta.n_rows;
   arma::mat theta_diffs = theta.cols(1, T) -
