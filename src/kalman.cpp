@@ -11,11 +11,11 @@ void kalman(arma::mat & m, arma::cube & C, arma::mat & a, arma::cube & R_inv,
   // This function assumes that V is (sigma2 * I)
   const int T = Y.n_cols-1;
   const int S = Y.n_rows;
-  const int p = G.n_rows;
+  const int P = G.n_rows;
   const bool Discount = lambda > 0;
 
   // Don't need to keep these quantities
-  arma::mat Q(S, S), Q_inv(S, S), R_t(p, p), FR(S, p), RF_t(p, S);
+  arma::mat Q(S, S), Q_inv(S, S), R_t(P, P), FR(S, P), RF_t(P, S);
   arma::colvec f(S);
   // Could also save transposed copies of F, G
 
