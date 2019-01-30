@@ -350,6 +350,9 @@ dstm_ide <- function(Y, locs=NULL, knot_locs=NULL, proc_error = "IW", J=4L,
   L <- params[["L"]] %else% 4
   check.numeric.scalar(L)
   
+  smoothing <- params[["smoothing"]] %else% 1
+  check.numeric.scalar(smoothing)
+  
   SV <- is.numeric(knot_locs)
   if (!(SV || is.null(knot_locs))) stop("knot_locs must be numeric or null")
   
@@ -405,7 +408,7 @@ dstm_ide <- function(Y, locs=NULL, knot_locs=NULL, proc_error = "IW", J=4L,
     # Create K matrix
     K <- pdist::pdist(knot_locs, locs)
     K <- as.matrix(K)
-    K <- exp(-K)
+    K <- exp(-K / smoothing)
     K <- apply(K, 2, function(x) x / sum(x))
     K <- t(K) # Makes K of dimension n_locs by n_knots
     K <- array(K, dim=c(dim(K), 1))
