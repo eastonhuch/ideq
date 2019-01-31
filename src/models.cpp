@@ -30,33 +30,34 @@ List eof(arma::mat Y, arma::mat F, arma::mat G_0, arma::mat Sigma_G_inv,
   // Create matrices and cubes for FFBS
   Y.insert_cols(0, 1); // make Y true-indexed; i.e. index 1 is t_1
   arma::cube theta(P, T+1, n_samples), R_inv(P, P, T+1), C(P, P, T+1), G, C_T;
-  arma::mat a(P, T+1), m(P, T+1), tmp;
+  arma::mat a(P, T+1), m(P, T+1);
   m.col(0) = m_0;
   C.slice(0) = C_0;
   
   // Process matrix: G
   if (AR) {
-    G.set_size(P, P, n_samples+1);
-    tmp = G_0.diag();
-    G_0.set_size(P, 1);
-    G_0 = tmp;
-    G.slice(0).diag() = rmvnorm(G_0, arma::inv_sympd(Sigma_G_inv));
+    G_0 = G_0.diag();
+    G = arma::zeros(P, P, n_samples+1);
+    G.slice(0).diag() = G_0;
   } else if (DENSE) {
     G.set_size(P, P, n_samples+1);
     G_0.reshape(P*P, 1);
-    tmp = rmvnorm(G_0, arma::inv_sympd(Sigma_G_inv));
-    G.slice(0) = arma::reshape(tmp, P, P);
-    tmp.reset();
+    G.slice(0) = G_0;
   } else {
     G.set_size(P, P, 1);
     G.slice(0).eye();
   }
   
+  // Find starting values for thetas
+  theta.slice(0) = F.t() * Y;
+  
   // Observation error: sigma2
   arma::vec sigma2;
   if (sample_sigma2) {
     sigma2.set_size(n_samples+1);
-    sigma2.at(0) = rigamma(alpha_sigma2, beta_sigma2);
+    //sigma2.at(0) = rigamma(alpha_sigma2, beta_sigma2);
+    sampleSigma2(sigma2.at(0), alpha_sigma2, beta_sigma2,
+                 Y, F, theta.slice(0));
   }
   
   // Process error: W or lambda
@@ -69,7 +70,8 @@ List eof(arma::mat Y, arma::mat F, arma::mat G_0, arma::mat Sigma_G_inv,
   } 
   else { // Sample W from inverse-Wishart distribution
     W.set_size(P, P, n_samples+1);
-    W.slice(0) = rgen::riwishart(df_W, C_W);
+    //W.slice(0) = rgen::riwishart(df_W, C_W);
+    sampleW(W.slice(0), theta.slice(0), G.slice(0), C_W, df_W);
   }
   
   // Sampling loop
@@ -184,7 +186,7 @@ List ide(arma::mat Y, arma::mat locs, arma::colvec m_0, arma::mat C_0,
   Y.insert_cols(0, 1); // make Y true-indexed; i.e. index 1 is t_1
   arma::cube theta(P, T+1, n_samples), G(P, P, n_samples+1);
   arma::cube R_inv(P, P, T+1), C(P, P, T+1), C_T;
-  arma::mat a(P, T+1), m(P, T+1), tmp;
+  arma::mat a(P, T+1), m(P, T+1);
   m.col(0) = m_0;
   C.slice(0) = C_0;
   
