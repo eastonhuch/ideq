@@ -40,9 +40,9 @@ List eof(arma::mat Y, arma::mat F, arma::mat G_0, arma::mat Sigma_G_inv,
     G = arma::zeros(P, P, n_samples+1);
     G.slice(0).diag() = G_0;
   } else if (DENSE) {
-    G.set_size(P, P, n_samples+1);
-    G_0.reshape(P*P, 1);
+    G = arma::zeros(P, P, n_samples+1);
     G.slice(0) = G_0;
+    G_0.reshape(P*P, 1);
   } else {
     G.set_size(P, P, 1);
     G.slice(0).eye();
@@ -55,7 +55,6 @@ List eof(arma::mat Y, arma::mat F, arma::mat G_0, arma::mat Sigma_G_inv,
   arma::vec sigma2;
   if (sample_sigma2) {
     sigma2.set_size(n_samples+1);
-    //sigma2.at(0) = rigamma(alpha_sigma2, beta_sigma2);
     sampleSigma2(sigma2.at(0), alpha_sigma2, beta_sigma2,
                  Y, F, theta.slice(0));
   }
@@ -65,12 +64,12 @@ List eof(arma::mat Y, arma::mat F, arma::mat G_0, arma::mat Sigma_G_inv,
   arma::cube W;
   if (Discount) {
     lambda.set_size(n_samples+1);
-    lambda.at(0) = rigamma(alpha_lambda, beta_lambda);
+    sampleLambda(lambda.at(0), alpha_lambda, beta_lambda,
+                 G.slice(0), C, theta.slice(0));
     C_T.set_size(P, P, n_samples+1);
   } 
   else { // Sample W from inverse-Wishart distribution
     W.set_size(P, P, n_samples+1);
-    //W.slice(0) = rgen::riwishart(df_W, C_W);
     sampleW(W.slice(0), theta.slice(0), G.slice(0), C_W, df_W);
   }
   
@@ -236,11 +235,15 @@ List ide(arma::mat Y, arma::mat locs, arma::colvec m_0, arma::mat C_0,
   makeB(B, mu_kernel.slice(0), Sigma_kernel.at(0), locs, w_for_B, J, L);
   G.slice(0) = FtFiFt * B;
   
+  // Find starting values for thetas
+  theta.slice(0) = FtFiFt * Y;
+  
   // Observation error
   arma::vec sigma2;
   if (sample_sigma2) {
     sigma2.set_size(n_samples+1);
-    sigma2.at(0) = rigamma(alpha_sigma2, beta_sigma2);
+    sampleSigma2(sigma2.at(0), alpha_sigma2, beta_sigma2,
+                 Y, F, theta.slice(0));
   }
   
   // Process error
@@ -248,12 +251,13 @@ List ide(arma::mat Y, arma::mat locs, arma::colvec m_0, arma::mat C_0,
   arma::cube W;
   if (Discount) {
     lambda.set_size(n_samples+1);
-    lambda.at(0) = rigamma(alpha_lambda, beta_lambda);
+    sampleLambda(lambda.at(0), alpha_lambda, beta_lambda,
+                 G.slice(0), C, theta.slice(0));
     C_T.set_size(P, P, n_samples+1);
   } 
   else { // Sample W from inverse-Wishart
     W.set_size(P, P, n_samples+1);
-    W.slice(0) = rgen::riwishart(df_W, C_W);
+    sampleW(W.slice(0), theta.slice(0), G.slice(0), C_W, df_W);
   }
   
   // Begin MCMC
