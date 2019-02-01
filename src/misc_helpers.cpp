@@ -19,11 +19,12 @@ arma::mat forceInv(arma::mat X) {
     X_inv = arma::inv_sympd(X);
   } 
   catch (std::runtime_error e) {
-    Rcout << "Inversion unsuccessful" << std::endl; 
-    Rcout << "Adding 1 to diagonal and trying again" << std::endl;
-    X.diag() += 1;
+    // Uncomment this for package release
+    //Rcout << "Inversion unsuccessful" << std::endl; 
+    //Rcout << "Adding 1 to diagonal and trying again" << std::endl;
+    //X.diag() += 1;
     X_inv = arma::inv_sympd(X);
-    Rcout << "Inversion successful but sampling has not converged" << std::endl;
+    //Rcout << "Inversion successful but sampling has not converged" << std::endl;
   }
   
   return X_inv;
@@ -40,11 +41,12 @@ arma::mat forceSqrtMat(arma::mat X) {
   }
   catch (std::runtime_error e)
   {
-    Rcout << "sqrt(X) unsuccessful" << std::endl;
-    Rcout << "Adding 1 to diagonal and trying again" << std::endl;
-    X.diag() += 1;
+    // Uncomment this for package release
+    //Rcout << "sqrt(X) unsuccessful" << std::endl;
+    //Rcout << "Adding 1 to diagonal and trying again" << std::endl;
+    //X.diag() += 1;
     X_sqrt = arma::sqrtmat_sympd(X);
-    Rcout << "sqrt(X) successful but sampling has not converged" << std::endl;
+    //Rcout << "sqrt(X) successful but sampling has not converged" << std::endl;
   }
   
   return X_sqrt;
