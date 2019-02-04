@@ -19,7 +19,7 @@ double kernelLikelihood(const arma::mat & G, const arma::mat & theta,
     tmp += d.t() * W_inv * d;
   }
   
-  return -tmp(0)/2.0; 
+  return -arma::as_scalar(tmp)/2.0;
 };
 
 double kernelLikelihoodDiscount(const arma::mat & G, const arma::mat & theta, 
@@ -33,7 +33,7 @@ double kernelLikelihoodDiscount(const arma::mat & G, const arma::mat & theta,
     tmp += d.t() * arma::solve(G * C.slice(t) * G.t(), d) / lambda;
   }
   
-  return -tmp(0)/2.0; 
+  return -arma::as_scalar(tmp)/2.0;
 };
 
 arma::mat makeW(const int J, const double L) {
@@ -57,7 +57,7 @@ arma::mat makeF(const arma::mat & locs, const arma::mat & w,
   Phi.col(0).fill(0.5);
   Phi.cols(1, J*J) = arma::cos(Jmat);
   Phi.cols(J*J + 1, 2*J*J) = arma::sin(Jmat);
-  Phi /= std::sqrt(L);
+  Phi *= std::sqrt(2.0 / L);
   return Phi;
 };
 
@@ -99,10 +99,11 @@ void makeB(arma::mat & B, const arma::mat & mu, const arma::cube & Sigma,
   Jmat2 = arma::exp(-0.5 * Jmat2);
   
   // B
-  B.col(0) = Jmat2.col(0);
+  //B.col(0) = Jmat2.col(0); // Copied from Dr. Richardson's code
+  B.col(0).fill(0.5);
   B.cols(1, J*J) = Jmat2 % arma::cos(Jmat1);
   B.cols(J*J + 1, 2*J*J) = Jmat2 % arma::sin(Jmat1);
-  B /= std::sqrt(L);
+  B *= std::sqrt(2.0 / L);
   return;
 };
 
