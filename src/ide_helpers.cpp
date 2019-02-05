@@ -38,10 +38,13 @@ double kernelLikelihoodDiscount(const arma::mat & G, const arma::mat & theta,
 
 arma::mat makeW(const int J, const double L) {
   // NOTE: function is assumed to have period of L
-  arma::colvec freqs = 2*PI/L * arma::regspace(1, J);
-  arma::mat w(J*J, 2);
-  w.col(0) = arma::repmat(freqs, J, 1);
-  w.col(1) = arma::repelem(freqs, J, 1);
+  arma::colvec freqs1 = 2*PI/L * arma::regspace(1, J);
+  arma::colvec freqs2 = 2*PI/L * arma::regspace(-J,J);
+  arma::mat w(2*J*(J+1), 2);
+  w.col(0).rows(0,(2*J+1)*J-1) = arma::repmat(freqs2, J, 1);
+  w.col(1).rows(0,(2*J+1)*J-1) = arma::repelem(freqs1, 2*J+1, 1);
+  w.col(1).rows((2*J+1)*J,w.n_rows-1) = arma::zeros(J,1);
+  w.col(0).rows((2*J+1)*J,w.n_rows-1) = freqs1;
   return w;
 };
 
@@ -53,11 +56,11 @@ arma::mat makeF(const arma::mat & locs, const arma::mat & w,
                 const int J, const double L) {
   arma::mat Jmat = locs.col(0) * w.col(0).t() +
                    locs.col(1) * w.col(1).t();
-  arma::mat Phi(Jmat.n_rows, 2*J*J + 1);
+  arma::mat Phi(Jmat.n_rows, 2*J*(J+1) + 1);
   Phi.col(0).fill(0.5);
-  Phi.cols(1, J*J) = arma::cos(Jmat);
-  Phi.cols(J*J + 1, 2*J*J) = arma::sin(Jmat);
-  Phi *= std::sqrt(2.0 / L);
+  Phi.cols(1, J*(J+1)) = arma::cos(Jmat);
+  Phi.cols(J*(J+1) + 1, 2*J*(J+1)) = arma::sin(Jmat);
+  Phi *= std::sqrt(2.0)/L;
   return Phi;
 };
 
