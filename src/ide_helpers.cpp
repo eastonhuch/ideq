@@ -77,11 +77,11 @@ void makeB(arma::mat & B, const arma::mat & mu, const arma::cube & Sigma,
   arma::mat Jmat1, Jmat2;
   
   if (SV_mu) {
-    Jmat1 = (locs.col(0) + mu.col(0)) * w.col(0).t() +
-            (locs.col(1) + mu.col(1)) * w.col(1).t();
+    Jmat1 = (locs.col(0) - mu.col(0)) * w.col(0).t() +
+            (locs.col(1) - mu.col(1)) * w.col(1).t();
   } else {
-    Jmat1 = (locs.col(0) + mu(0)) * w.col(0).t() +
-            (locs.col(1) + mu(1)) * w.col(1).t();
+    Jmat1 = (locs.col(0) - mu(0)) * w.col(0).t() +
+            (locs.col(1) - mu(1)) * w.col(1).t();
   }
   
   if (SV_Sigma) {
@@ -89,12 +89,12 @@ void makeB(arma::mat & B, const arma::mat & mu, const arma::cube & Sigma,
     Jmat2 = tmp * arma::square(w.col(0).t());
     tmp = Sigma.tube(1, 1);
     Jmat2 += tmp * arma::square(w.col(1).t());
-    tmp = Sigma.tube(0, 1);
+    tmp = 2 * Sigma.tube(0, 1);
     Jmat2 += tmp * arma::prod(w.t(), 0);
   } else {
     arma::mat Jvec = Sigma.at(0, 0, 0) * arma::square(w.col(0)) +
                      Sigma.at(1, 1, 0) * arma::square(w.col(1)) +
-                     Sigma.at(0, 1, 0) * arma::prod(w, 1);
+                     2 * Sigma.at(0, 1, 0) * arma::prod(w, 1);
     Jmat2 = arma::kron( arma::ones(locs.n_rows, 1), Jvec.t() );
   }
   
@@ -105,7 +105,7 @@ void makeB(arma::mat & B, const arma::mat & mu, const arma::cube & Sigma,
   //B.col(0) = Jmat2.col(0); // Copied from Dr. Richardson's code
   B.col(0).fill(0.5);
   B.cols(1, J*J) = Jmat2 % arma::cos(Jmat1);
-  B.cols(J*J + 1, 2*J*J) = Jmat2 % arma::sin(Jmat1);
+  B.cols(J*J + 1, 2*J*J) = Jmat2 % arma::sin(-Jmat1); // If everything breaks horribly make this positive again
   B *= std::sqrt(2.0) / L;
   return;
 };
