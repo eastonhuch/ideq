@@ -106,7 +106,7 @@ void makeB(arma::mat & B, const arma::mat & mu, const arma::cube & Sigma,
   B.col(0).fill(0.5);
   B.cols(1, J*J) = Jmat2 % arma::cos(Jmat1);
   B.cols(J*J + 1, 2*J*J) = Jmat2 % arma::sin(Jmat1);
-  B *= std::sqrt(2.0 / L);
+  B *= std::sqrt(2.0) / L;
   return;
 };
 
