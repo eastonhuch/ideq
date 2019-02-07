@@ -62,10 +62,10 @@ arma::mat makeF(const arma::mat & locs, const arma::mat & w,
                    locs.col(1) * w.col(1).t();
   const int K = Jmat.n_cols;
   arma::mat Phi(Jmat.n_rows, 2*K + 1);
-  Phi.col(0).fill(0.5);
-  Phi.cols(1, K) = arma::cos(Jmat);
-  Phi.cols(K + 1, 2*K) = arma::sin(Jmat);
-  Phi *= std::sqrt(2.0)/L;
+  Phi.col(0).fill(1);
+  Phi.cols(1, K) = std::sqrt(2.0) * arma::cos(Jmat);
+  Phi.cols(K + 1, 2*K) = std::sqrt(2.0) * arma::sin(Jmat);
+  Phi /= L;
   return Phi;
 };
 
@@ -107,11 +107,11 @@ void makeB(arma::mat & B, const arma::mat & mu, const arma::cube & Sigma,
   Jmat2 = arma::exp(-0.5 * Jmat2);
   
   // B
-  B.col(0).fill(0.5);
+  B.col(0).fill(1);
   const int K = Jmat1.n_cols;
-  B.cols(1, K) = Jmat2 % arma::cos(Jmat1);
-  B.cols(K+1, 2*K) = Jmat2 % arma::sin(Jmat1);
-  B *= std::sqrt(2.0) / L;
+  B.cols(1, K) = std::sqrt(2.0) * Jmat2 % arma::cos(Jmat1);
+  B.cols(K+1, 2*K) = std::sqrt(2.0) * Jmat2 % arma::sin(Jmat1);
+  B /= L;
   return;
 };
 
