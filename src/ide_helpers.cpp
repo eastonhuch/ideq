@@ -41,10 +41,14 @@ arma::mat makeW(const int J, const double L) {
   arma::colvec freqs1 = 2*PI/L * arma::regspace(1, J);
   arma::colvec freqs2 = 2*PI/L * arma::regspace(-J,J);
   arma::mat w(2*J*(J+1), 2);
-  w.col(0).rows(0,(2*J+1)*J-1) = arma::repmat(freqs2, J, 1);
-  w.col(1).rows(0,(2*J+1)*J-1) = arma::repelem(freqs1, 2*J+1, 1);
-  w.col(1).rows((2*J+1)*J,w.n_rows-1) = arma::zeros(J,1);
-  w.col(0).rows((2*J+1)*J,w.n_rows-1) = freqs1;
+  
+  // Create w
+  w.col(0).rows(0, (2*J+1)*J-1) = arma::repmat(freqs2, J, 1);
+  w.col(0).rows((2*J+1)*J, w.n_rows-1) = freqs1;
+  
+  w.col(1).rows(0, (2*J+1)*J-1) = arma::repelem(freqs1, 2*J+1, 1);
+  w.col(1).rows((2*J+1)*J, w.n_rows-1) = arma::zeros(J, 1);
+  
   return w;
 };
 
@@ -56,10 +60,11 @@ arma::mat makeF(const arma::mat & locs, const arma::mat & w,
                 const int J, const double L) {
   arma::mat Jmat = locs.col(0) * w.col(0).t() +
                    locs.col(1) * w.col(1).t();
-  arma::mat Phi(Jmat.n_rows, 2*J*(J+1) + 1);
+  const int K = Jmat.n_cols;
+  arma::mat Phi(Jmat.n_rows, 2*K + 1);
   Phi.col(0).fill(0.5);
-  Phi.cols(1, J*(J+1)) = arma::cos(Jmat);
-  Phi.cols(J*(J+1) + 1, 2*J*(J+1)) = arma::sin(Jmat);
+  Phi.cols(1, K) = arma::cos(Jmat);
+  Phi.cols(K + 1, 2*K) = arma::sin(Jmat);
   Phi *= std::sqrt(2.0)/L;
   return Phi;
 };
@@ -102,10 +107,10 @@ void makeB(arma::mat & B, const arma::mat & mu, const arma::cube & Sigma,
   Jmat2 = arma::exp(-0.5 * Jmat2);
   
   // B
-  //B.col(0) = Jmat2.col(0); // Copied from Dr. Richardson's code
   B.col(0).fill(0.5);
-  B.cols(1, J*J) = Jmat2 % arma::cos(Jmat1);
-  B.cols(J*J + 1, 2*J*J) = Jmat2 % arma::sin(-Jmat1); // If everything breaks horribly make this positive again
+  const int K = Jmat1.n_cols;
+  B.cols(1, K) = Jmat2 % arma::cos(Jmat1);
+  B.cols(K+1, 2*K) = Jmat2 % arma::sin(Jmat1);
   B *= std::sqrt(2.0) / L;
   return;
 };

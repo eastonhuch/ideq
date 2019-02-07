@@ -336,7 +336,7 @@ dstm_eof <- function(Y, proc_model = "Dense", P = 10L, proc_error = "IW",
 dstm_ide <- function(Y, locs=NULL, knot_locs=NULL, proc_error = "IW", J=4L,
                      n_samples = 10L, sample_sigma2 = TRUE,
                      verbose = FALSE, params = NULL) {
-
+  
   # Error checking for J, L, locs, knot_locs
   if (is.null(locs)) stop("locs must be specified for IDE models")
   if (class(locs) == "data.frame") locs <- as.matrix(locs)
@@ -345,7 +345,7 @@ dstm_ide <- function(Y, locs=NULL, knot_locs=NULL, proc_error = "IW", J=4L,
 
   J <- as.integer(J)
   if (is.null(J) || is.na(J) || J<1) stop("J must be an integer > 0")
-  P <- 2*J^2 + 1
+  P <- 4*J*(J+1) + 1
 
   L <- params[["L"]] %else% 4
   check.numeric.scalar(L)
