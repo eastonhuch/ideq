@@ -80,8 +80,12 @@ predict.dstm <- function(x, K = 1, only_K = FALSE, return_ys = TRUE,
   # Create copies of objects needed for sampling
   thetas_prev <- x[["theta"]][,Tp1,idx_post_burnin]
   sigma2 <- x[["sigma2"]][idx_post_burnin]
-  if (RW) G <- array(1, dim=c(1, 1, n_samples)) %x% diag(P)
-  else  G <- x[["G"]][,,idx_post_burnin]
+  if (RW) {
+    G <- array(1, dim=c(1, 1, n_samples)) %x% diag(P)
+  } else {
+    G <- x[["G"]][,,idx_post_burnin]
+  }
+  
   if (Discount) {
     lambda <- x[["lambda"]][idx_post_burnin]
     C_T <- x[["C_T"]][,,idx_post_burnin]
@@ -123,7 +127,6 @@ predict.dstm <- function(x, K = 1, only_K = FALSE, return_ys = TRUE,
     # Get predicted y values for requested time period
     if (only_K || K < 2) {
       ys <- get_preds(K)
-      
     }
     else { # Get predicted y values for all time period <= T+K
       ys <- array(NA, dim = c(S, n_samples, K))
@@ -132,13 +135,13 @@ predict.dstm <- function(x, K = 1, only_K = FALSE, return_ys = TRUE,
 
     # Create output list depending on whether user wants thetas
     if (return_thetas) {
-      if (only_K || K < 2) thetas <- thetas[,,K]
+      if (only_K || K < 2) thetas <- thetas[,K,]
       results <- list(ys = ys, thetas = thetas)
     } else results <- ys
 
   # Create output for case when user does not want ys
   } else {
-    if (only_K || K < 2) results <- thetas[,,K]
+    if (only_K || K < 2) results <- thetas[,K,]
     else results <- thetas
   }
 
