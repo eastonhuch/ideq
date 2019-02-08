@@ -235,15 +235,11 @@ List ide(arma::mat Y, arma::mat locs, arma::colvec m_0, arma::mat C_0,
   makeB(B, mu_kernel.slice(0), Sigma_kernel.at(0), locs, w_for_B, J, L);
   G.slice(0) = FtFiFt * B;
   
-  // Find starting values for thetas
-  theta.slice(0) = FtFiFt * Y;
-  
   // Observation error
   arma::vec sigma2;
   if (sample_sigma2) {
     sigma2.set_size(n_samples+1);
-    sampleSigma2(sigma2.at(0), alpha_sigma2, beta_sigma2,
-                 Y, F, theta.slice(0));
+    sigma2.at(0) = rigamma(alpha_sigma2, beta_sigma2);
   }
   
   // Process error
@@ -257,7 +253,7 @@ List ide(arma::mat Y, arma::mat locs, arma::colvec m_0, arma::mat C_0,
   } 
   else { // Sample W from inverse-Wishart
     W.set_size(P, P, n_samples+1);
-    sampleW(W.slice(0), theta.slice(0), G.slice(0), C_W, df_W);
+    W.slice(0) = rgen::riwishart(df_W, C_W);
   }
   
   // Begin MCMC
