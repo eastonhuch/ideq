@@ -92,7 +92,7 @@ void sampleG(arma::mat & G, const arma::cube & W_inv, const arma::mat & theta,
   // This could probably be optimized
   arma::mat kron1 = kron(theta.cols(0, T - 1).t(), arma::eye(p, p));
   arma::mat V_g = kron1.t() * W_tilde_inv * kron1 + Sigma_g_inv;
-  makeSymmetric(V_g);
+  //makeSymmetric(V_g); // Probably don't need this
   V_g = arma::inv_sympd(V_g);
   arma::colvec a_g = kron1.t() * W_tilde_inv *
                      arma::reshape(theta.cols(1, T), T * p, 1) +

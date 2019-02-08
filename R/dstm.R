@@ -345,7 +345,7 @@ dstm_ide <- function(Y, locs=NULL, knot_locs=NULL, proc_error = "IW", J=4L,
 
   J <- as.integer(J)
   if (is.null(J) || is.na(J) || J<1) stop("J must be an integer > 0")
-  P <- 4*J*(J+1) + 1
+  P <- (2*J + 1)^2
 
   L <- params[["L"]] %else% 4
   check.numeric.scalar(L)

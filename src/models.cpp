@@ -173,7 +173,7 @@ List ide(arma::mat Y, arma::mat locs, arma::colvec m_0, arma::mat C_0,
   const double proposal_factor_Sigma = params["proposal_factor_Sigma"];
   const double Sigma_kernel_df = params["Sigma_kernel_df"];
   double sigma2_i = params["sigma2"], mh_ratio = 0.0;
-  const int P = 4*J*(J+1) + 1, T = Y.n_cols, S = Y.n_rows;
+  const int P = (2*J + 1) * (2*J + 1) , T = Y.n_cols, S = Y.n_rows;
   const int locs_dim = locs.n_cols, n_knots = K.n_cols;
   int K_idx = 0, mu_acceptances = 0, Sigma_acceptances = 0;
   const bool sample_sigma2 = sigma2_i < 0, Discount = df_W == NA;
