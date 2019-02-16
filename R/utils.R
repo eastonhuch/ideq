@@ -16,9 +16,15 @@ check.dim <- function(x, P, x_name=deparse(substitute(x)), dim_name="P") {
 
 # positive numeric
 check.numeric.scalar <- function(x, x_name=deparse(substitute(x)), x_min=0,
-                                 x_min_name=deparse(substitute(x_min))) {
-  if (!is.numeric(x) || x <= x_min)
-    stop(paste(x_name, "must be numeric >", x_min))
+                                 x_min_name=deparse(substitute(x_min)),
+                                 strict_inequality=TRUE) {
+  if (strict_inequality) {
+    if (!is.numeric(x) || x <= x_min)
+      stop(paste(x_name, "must be numeric >", x_min))
+  } else {
+    if (!is.numeric(x) || x < x_min)
+      stop(paste(x_name, "must be numeric >=", x_min))
+  }
 }
 
 # numeric vector

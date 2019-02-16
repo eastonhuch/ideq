@@ -364,7 +364,7 @@ dstm_ide <- function(Y, locs=NULL, knot_locs=NULL, proc_error = "IW", J=4L,
   
   # kernel_samples_per_iter
   kernel_samples_per_iter <- params[["kernel_samples_per_iter"]] %else% 1
-  check.numeric.scalar(kernel_samples_per_iter, x_min=1)
+  check.numeric.scalar(kernel_samples_per_iter, x_min=1, strict_inequality=FALSE)
   kernel_samples_per_iter <- as.integer(kernel_samples_per_iter)
   
   # mu_kernel_mean
