@@ -175,6 +175,7 @@ List ide(arma::mat Y, arma::mat locs, arma::colvec m_0, arma::mat C_0,
   double sigma2_i = params["sigma2"], mh_ratio = 0.0;
   const int P = (2*J + 1) * (2*J + 1) , T = Y.n_cols, S = Y.n_rows;
   const int locs_dim = locs.n_cols, n_knots = K.n_cols;
+  const int kernel_samples_per_iter = params["kernel_samples_per_iter"];
   int K_idx = 0, mu_acceptances = 0, Sigma_acceptances = 0;
   const bool sample_sigma2 = sigma2_i < 0, Discount = df_W == NA;
   const bool dyanamic_K = K.n_slices > 1, SV = params["SV"] > 0;
@@ -191,8 +192,20 @@ List ide(arma::mat Y, arma::mat locs, arma::colvec m_0, arma::mat C_0,
   
   // Create objects for storing sampled mu_kernel and Sigma_kernel
   float u;
+  
+  // G
+  arma::mat G_proposal, G_current;
+  
+  // mu_kernel
   arma::cube mu_kernel, mu_kernel_knots;
+  arma::mat mu_kernel_proposal, mu_kernel_knots_proposal;
+  arma::mat mu_kernel_current, mu_kernel_knots_current;
+  arma::mat mu_kernel_proposal_var = proposal_factor_mu * proposal_factor_mu
+                                                        * mu_kernel_var;
+  
+  // Sigma_kernel
   arma::cube Sigma_kernel_proposal, Sigma_kernel_knots_proposal;
+  arma::cube Sigma_kernel_current, Sigma_kernel_knots_current;
   arma::field<arma::cube> Sigma_kernel(n_samples+1);
   arma::field<arma::cube> Sigma_kernel_knots(n_samples+1);
   
@@ -222,10 +235,6 @@ List ide(arma::mat Y, arma::mat locs, arma::colvec m_0, arma::mat C_0,
     }
     Sigma_kernel.at(0) = Sigma_kernel_scale / (Sigma_kernel_df-locs_dim-1);
   }
-  
-  arma::mat mu_kernel_proposal, mu_kernel_knots_proposal, G_proposal;
-  arma::mat mu_kernel_proposal_var = proposal_factor_mu * proposal_factor_mu
-                                                        * mu_kernel_var;
   
   // Create observation matrix (F) and initial process matrix (G)
   arma::mat w_for_B = makeW(J, L);
@@ -287,112 +296,128 @@ List ide(arma::mat Y, arma::mat locs, arma::colvec m_0, arma::mat C_0,
       sampleW(W.slice(i+1), theta.slice(i), G.slice(i), C_W, df_W);
     }
     
-    // MH step for mu
-    // Propose mu and calculate probabilities under prior
+    // Begin MH step for kernel parameters
+    
+    // Set previous values for kernel parameters
+    G_current = G.slice(i);
+    mu_kernel_current = mu_kernel.slice(i);
+    Sigma_kernel_current = Sigma_kernel.at(i);
     if (SV) {
-      mu_kernel_knots_proposal = proposeMu(mu_kernel_knots.slice(i), mu_kernel_proposal_var);
-      mh_ratio  = ldmvnorm(mu_kernel_knots_proposal, mu_kernel_knots.slice(0),
-                           mu_kernel_var);
-      mh_ratio -= ldmvnorm(mu_kernel_knots.slice(i), mu_kernel_knots.slice(0),
-                           mu_kernel_var);
-      mu_kernel_proposal = K.slice(0) * mu_kernel_knots_proposal; // map to spatial locations
-    } else {
-      mu_kernel_proposal = proposeMu(mu_kernel.slice(i), mu_kernel_proposal_var);
-      mh_ratio  = ldmvnorm(mu_kernel_proposal, mu_kernel.slice(0), mu_kernel_var);
-      mh_ratio -= ldmvnorm(mu_kernel.slice(i), mu_kernel.slice(0), mu_kernel_var);
+      mu_kernel_knots_current = mu_kernel_knots.slice(i);
+      Sigma_kernel_knots_current = Sigma_kernel_knots.at(i);
     }
     
-    // Calculate implied proposal for G and likelihood
-    makeB(B, mu_kernel_proposal, Sigma_kernel.at(i), locs, w_for_B, J, L);
-    G_proposal = FtFiFt * B; 
-    
-    if (Discount) {
-      mh_ratio += kernelLikelihoodDiscount(G_proposal, theta.slice(i), C, lambda.at(i+1));
-      mh_ratio -= kernelLikelihoodDiscount(G.slice(i), theta.slice(i), C, lambda.at(i+1));
-    } else {
-      mh_ratio += kernelLikelihood(G_proposal, theta.slice(i), W.slice(i+1));
-      mh_ratio -= kernelLikelihood(G.slice(i), theta.slice(i), W.slice(i+1));
-    }
-    
-    // Accept according to mh-ratio
-    u = R::runif(0, 1);
-    if (std::log(u) < mh_ratio) {
-      ++mu_acceptances;
-      mu_kernel.slice(i+1) = mu_kernel_proposal;
-      G.slice(i+1) = G_proposal;
-      if (SV) mu_kernel_knots.slice(i+1) = mu_kernel_knots_proposal;
-    } else {
-      mu_kernel.slice(i+1) = mu_kernel.slice(i);
-      G.slice(i+1) = G.slice(i);
-      if (SV) mu_kernel_knots.slice(i+1) = mu_kernel_knots.slice(i);
-    }
-    
-    // MH step for Sigma
-    if (SV) {
-      // Propose Sigma at all knot locations
-      for (int k=0; k<n_knots; ++k) {
-        Sigma_kernel_knots_proposal.slice(k) = rgen::riwishart(
-                                                 Sigma_kernel_proposal_df,
-                                                 Sigma_kernel_knots.at(i).slice(k) *
-                                                 Sigma_kernel_adjustment);
+    // Kernel parameter sampling loop (only saves last values)
+    for (int j=0; j<kernel_samples_per_iter; ++j) {
+      
+      // MH step for mu
+      // Propose mu and calculate probabilities under prior
+      if (SV) {
+        mu_kernel_knots_proposal = proposeMu(mu_kernel_knots_current, mu_kernel_proposal_var);
+        mh_ratio  = ldmvnorm(mu_kernel_knots_proposal, mu_kernel_knots.slice(0),
+                             mu_kernel_var);
+        mh_ratio -= ldmvnorm(mu_kernel_knots_current, mu_kernel_knots.slice(0),
+                             mu_kernel_var);
+        mu_kernel_proposal = K.slice(0) * mu_kernel_knots_proposal; // map to spatial locations
+      } else {
+        mu_kernel_proposal = proposeMu(mu_kernel_current, mu_kernel_proposal_var);
+        mh_ratio  = ldmvnorm(mu_kernel_proposal, mu_kernel.slice(0), mu_kernel_var);
+        mh_ratio -= ldmvnorm(mu_kernel_current, mu_kernel.slice(0), mu_kernel_var);
       }
-      // Probabilities under prior
-      mh_ratio  = ldiwishart(Sigma_kernel_knots_proposal, Sigma_kernel_df, 
-                             Sigma_kernel_scale);
-      mh_ratio -= ldiwishart(Sigma_kernel_knots.at(i), Sigma_kernel_df,
-                             Sigma_kernel_scale);
       
-      // Transition probabilities
-      mh_ratio -= ldiwishart(Sigma_kernel_knots_proposal, Sigma_kernel_proposal_df,
-                             Sigma_kernel_knots.at(i) * Sigma_kernel_adjustment);
-      mh_ratio += ldiwishart(Sigma_kernel_knots.at(i), Sigma_kernel_proposal_df,
-                             Sigma_kernel_knots_proposal * Sigma_kernel_adjustment);
+      // Calculate implied proposal for G and likelihood
+      makeB(B, mu_kernel_proposal, Sigma_kernel_current, locs, w_for_B, J, L);
+      G_proposal = FtFiFt * B; 
       
-      // Map to all spatial locations
-      mapSigma(Sigma_kernel_proposal, Sigma_kernel_knots_proposal, K.slice(0));
-    } else {
-      // Propose new Sigma
-      Sigma_kernel_proposal.slice(0) = rgen::riwishart(Sigma_kernel_proposal_df,
-                                                       Sigma_kernel.at(i).slice(0) * 
-                                                       Sigma_kernel_adjustment);
-      // Probabilities under prior
-      mh_ratio  = ldiwishart(Sigma_kernel_proposal, Sigma_kernel_df, 
-                             Sigma_kernel_scale);
-      mh_ratio -= ldiwishart(Sigma_kernel.at(i), Sigma_kernel_df,
-                             Sigma_kernel_scale);
+      if (Discount) {
+        mh_ratio += kernelLikelihoodDiscount(G_proposal, theta.slice(i), C, lambda.at(i+1));
+        mh_ratio -= kernelLikelihoodDiscount(G_current, theta.slice(i), C, lambda.at(i+1));
+      } else {
+        mh_ratio += kernelLikelihood(G_proposal, theta.slice(i), W.slice(i+1));
+        mh_ratio -= kernelLikelihood(G_current, theta.slice(i), W.slice(i+1));
+      }
       
-      // Transition probabilities
-      mh_ratio -= ldiwishart(Sigma_kernel_proposal, Sigma_kernel_proposal_df,
-                             Sigma_kernel.at(i) * Sigma_kernel_adjustment);
-      mh_ratio += ldiwishart(Sigma_kernel.at(i), Sigma_kernel_proposal_df,
-                             Sigma_kernel_proposal * Sigma_kernel_adjustment);
+      // Accept according to mh-ratio
+      u = R::runif(0, 1);
+      if (std::log(u) < mh_ratio) {
+        ++mu_acceptances;
+        G_current = G_proposal;
+        mu_kernel_current = mu_kernel_proposal;
+        if (SV) mu_kernel_knots_current = mu_kernel_knots_proposal;
+      } // Otherwise, no need to update current values
+      
+      // MH step for Sigma
+      if (SV) {
+        // Propose Sigma at all knot locations
+        for (int k=0; k<n_knots; ++k) {
+          Sigma_kernel_knots_proposal.slice(k) = rgen::riwishart(
+                                                   Sigma_kernel_proposal_df,
+                                                   Sigma_kernel_knots_current.slice(k) *
+                                                   Sigma_kernel_adjustment);
+        }
+        // Probabilities under prior
+        mh_ratio  = ldiwishart(Sigma_kernel_knots_proposal, Sigma_kernel_df, 
+                               Sigma_kernel_scale);
+        mh_ratio -= ldiwishart(Sigma_kernel_knots_current, Sigma_kernel_df,
+                               Sigma_kernel_scale);
+        
+        // Transition probabilities
+        mh_ratio -= ldiwishart(Sigma_kernel_knots_proposal, Sigma_kernel_proposal_df,
+                               Sigma_kernel_knots_current * Sigma_kernel_adjustment);
+        mh_ratio += ldiwishart(Sigma_kernel_knots_current, Sigma_kernel_proposal_df,
+                               Sigma_kernel_knots_proposal * Sigma_kernel_adjustment);
+        
+        // Map to all spatial locations
+        mapSigma(Sigma_kernel_proposal, Sigma_kernel_knots_proposal, K.slice(0));
+      } else {
+        // Propose new Sigma
+        Sigma_kernel_proposal.slice(0) = rgen::riwishart(Sigma_kernel_proposal_df,
+                                                         Sigma_kernel_current.slice(0) * 
+                                                         Sigma_kernel_adjustment);
+        // Probabilities under prior
+        mh_ratio  = ldiwishart(Sigma_kernel_proposal, Sigma_kernel_df, 
+                               Sigma_kernel_scale);
+        mh_ratio -= ldiwishart(Sigma_kernel_current, Sigma_kernel_df,
+                               Sigma_kernel_scale);
+        
+        // Transition probabilities
+        mh_ratio -= ldiwishart(Sigma_kernel_proposal, Sigma_kernel_proposal_df,
+                               Sigma_kernel_current * Sigma_kernel_adjustment);
+        mh_ratio += ldiwishart(Sigma_kernel_current, Sigma_kernel_proposal_df,
+                               Sigma_kernel_proposal * Sigma_kernel_adjustment);
+      }
+      
+      // Calculate likelihood
+      makeB(B, mu_kernel_current, Sigma_kernel_proposal, locs, w_for_B, J, L);
+      G_proposal = FtFiFt * B; 
+      
+      if (Discount) {
+        mh_ratio += kernelLikelihoodDiscount(G_proposal, theta.slice(i), C, lambda.at(i+1));
+        mh_ratio -= kernelLikelihoodDiscount(G_current, theta.slice(i), C, lambda.at(i+1));
+      } else {
+        mh_ratio += kernelLikelihood(G_proposal, theta.slice(i), W.slice(i+1));
+        mh_ratio -= kernelLikelihood(G_current, theta.slice(i), W.slice(i+1));
+      }
+      
+      // Accept according to mh-ratio
+      u = R::runif(0, 1);
+      if (std::log(u) < mh_ratio) {
+        ++Sigma_acceptances;
+        G_current = G_proposal;
+        Sigma_kernel_current = Sigma_kernel_proposal;
+        if (SV) Sigma_kernel_knots_current = Sigma_kernel_knots_proposal;
+      } // Otherwise, no need to update current values
+      // end iteration of kernel parameter sampling loop
+    } // end kernel parameter sampling loop
+    
+    G.slice(i+1) = G_current;
+    mu_kernel.slice(i+1) = mu_kernel_current;
+    Sigma_kernel.at(i+1) = Sigma_kernel_current;
+    if (SV) {
+      mu_kernel_knots.slice(i+1) = mu_kernel_knots_current;
+      Sigma_kernel_knots.at(i+1) = Sigma_kernel_knots_current;
     }
-    
-    // Calculate likelihood
-    makeB(B, mu_kernel.slice(i+1), Sigma_kernel_proposal, locs, w_for_B, J, L);
-    G_proposal = FtFiFt * B; 
-    
-    if (Discount) {
-      mh_ratio += kernelLikelihoodDiscount(G_proposal, theta.slice(i), C, lambda.at(i+1));
-      mh_ratio -= kernelLikelihoodDiscount(G.slice(i+1), theta.slice(i), C, lambda.at(i+1));
-    } else {
-      mh_ratio += kernelLikelihood(G_proposal, theta.slice(i), W.slice(i+1));
-      mh_ratio -= kernelLikelihood(G.slice(i+1), theta.slice(i), W.slice(i+1));
-    }
-    
-    
-    // Accept according to mh-ratio
-    u = R::runif(0, 1);
-    if (std::log(u) < mh_ratio) {
-      ++Sigma_acceptances;
-      Sigma_kernel.at(i+1) = Sigma_kernel_proposal;
-      G.slice(i+1) = G_proposal;
-      if (SV) Sigma_kernel_knots.at(i+1) = Sigma_kernel_knots_proposal;
-    } else {
-      Sigma_kernel.at(i+1) = Sigma_kernel.at(i);
-      if (SV) Sigma_kernel_knots.at(i+1) = Sigma_kernel_knots.at(i);
-    }
-  }
+  } // end sampling loop
   
   // Drop starting values
   G.shed_slice(0);

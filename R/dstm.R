@@ -362,6 +362,11 @@ dstm_ide <- function(Y, locs=NULL, knot_locs=NULL, proc_error = "IW", J=4L,
   # Process Model; creates kernel parameters
   locs_dim <- ncol(locs)
   
+  # kernel_samples_per_iter
+  kernel_samples_per_iter <- params[["kernel_samples_per_iter"]] %else% 1
+  check.numeric.scalar(kernel_samples_per_iter, x_min=1)
+  kernel_samples_per_iter <- as.integer(kernel_samples_per_iter)
+  
   # mu_kernel_mean
   mu_kernel_mean <- params[["mu_kernel_mean"]] %else% rep(0, locs_dim)
   check.numeric.vector(mu_kernel_mean, locs_dim, dim_name="ncol(locs)")
@@ -427,6 +432,7 @@ dstm_ide <- function(Y, locs=NULL, knot_locs=NULL, proc_error = "IW", J=4L,
                      beta_sigma2=new_params[["beta_sigma2"]],
                      sigma2=new_params[["sigma2"]], 
                      df_W=new_params[["df_W"]], 
+                     kernel_samples_per_iter=kernel_samples_per_iter,
                      proposal_factor_mu=proposal_factor_mu,
                      proposal_factor_Sigma=proposal_factor_Sigma,
                      Sigma_kernel_df=Sigma_kernel_df,
@@ -447,8 +453,9 @@ dstm_ide <- function(Y, locs=NULL, knot_locs=NULL, proc_error = "IW", J=4L,
   if (length(results[["Sigma_kernel"]]) > 1) {
     results[["Sigma_kernel"]] <- results[["Sigma_kernel"]][-1]
   }
-  results[["mu_acceptance_rate"]] <- results[["mu_acceptances"]] / n_samples
-  results[["Sigma_acceptance_rate"]] <- results[["Sigma_acceptances"]] / n_samples
+  kernel_updates <- n_samples * kernel_samples_per_iter
+  results[["mu_acceptance_rate"]] <- results[["mu_acceptances"]] / kernel_updates
+  results[["Sigma_acceptance_rate"]] <- results[["Sigma_acceptances"]] / kernel_updates
   results[["mu_acceptances"]] <- NULL
   results[["Sigma_acceptances"]] <- NULL
   if (SV) results[["knot_locs"]] <- knot_locs
