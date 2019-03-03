@@ -106,17 +106,17 @@ void sampleG(arma::mat & G, const arma::cube & W_inv, const arma::mat & theta,
 void sampleLambda(double & lambda_new, const double & alpha_lambda, const double & beta_lambda,
                   const arma::mat & G, const arma::cube & C, const arma::mat & theta) {
   const int p = G.n_cols, T = theta.n_cols-1;
-  const double alpha_new = alpha_lambda + p*T/2;
+  const double alpha_new = alpha_lambda + static_cast<double>(p*T)/2.0;
   arma::mat P(p, p);
   arma::mat tmp(1, 1);
-  double total = 0;
+  double total = 0.0;
   for (int t = 1; t <= T; ++t) {
     P = G * C.slice(t-1) * G.t();
     arma::colvec x = theta.col(t) - G * theta.col(t-1);
     tmp = (x.t() * solve(P, x, arma::solve_opts::equilibrate));
-    total += tmp(0);
+    total += arma::as_scalar(tmp);
   }
-  const double beta_new = beta_lambda + total / 2;
+  const double beta_new = beta_lambda + total/2.0;
   lambda_new = rigamma(alpha_new, beta_new);
   return;
 };

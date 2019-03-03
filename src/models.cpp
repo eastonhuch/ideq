@@ -64,8 +64,7 @@ List eof(arma::mat Y, arma::mat F, arma::mat G_0, arma::mat Sigma_G_inv,
   arma::cube W;
   if (Discount) {
     lambda.set_size(n_samples+1);
-    sampleLambda(lambda.at(0), alpha_lambda, beta_lambda,
-                 G.slice(0), C, theta.slice(0));
+    lambda.at(0) = rigamma(alpha_lambda, beta_lambda);
     C_T.set_size(P, P, n_samples+1);
   } 
   else { // Sample W from inverse-Wishart distribution

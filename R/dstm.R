@@ -32,7 +32,7 @@
 #' (character string) Process model: one of "RW" (identity process matrix),
 #' "AR" (diagonal process matrix), or "Dense" (dense process matrix).
 #' @param P 
-#' (integer) Number of EOFs.
+#' (integer) Number of EOFs or, in other words, the state space size.
 #' @param proc_error 
 #' (character string) Process error: 
 #' "IW" (inverse-Wishart) or "Discount" (discount factor).
@@ -51,36 +51,38 @@
 #' You may specify the following as named elements of the `params` list:
 #' 
 #' m_0: (numeric vector) The prior mean of the state vector at time zero
-#'  (\eqn{\theta_0})
+#'  (\eqn{\theta_0}).
 #'
 #' C_0: (numeric matrix) The prior variance-covariance matrix of the state
-#' vector at time zero (\eqn{\theta_0})
+#' vector at time zero (\eqn{\theta_0}).
 #'
 #' alpha_sigma2, beta_sigma2: (numeric scalars) The inverse-Gamma parameters 
-#' (scale parameterization) of the prior distribution on \eqn{\sigma^2}
+#' (scale parameterization) of the prior distribution on the observation error 
+#' (\eqn{\sigma^2}).
 #' 
-#' sigma2: (numeric scalar) The value to use for \eqn{\sigma^2}
-#' if sample_sigma2 = FALSE
+#' sigma2: (numeric scalar) The value to use for the observation error 
+#' (\eqn{\sigma^2}) if sample_sigma2 = FALSE.
 #' 
 #' mu_G: (numeric matrix) The prior mean for the process matrix G.
-#' If proc_model = "AR", then mu_G must also be diagonal.
-#' If proc_model = "Dense", then mu_G has no contraints.
+#' If proc_model = "AR", then mu_G must be a diagonal matrix.
+#' If proc_model = "Dense", then mu_G has no constraints.
 #' 
 #' Sigma_G: (numeric matrix) The prior variance-covariance matrix for the
 #' process matrix. If proc_model = "AR", then Sigma_G should be P by 
 #' P and is the variance-covariance matrix for diag(G).
 #' If proc_model = "Dense", then Sigma_G should be P^2 by P^2 and is the 
-#' variance-covariance matrix for vec(G)
+#' variance-covariance matrix for vec(G).
 #' 
 #' alpha_lambda, beta_lambda: (numeric scalars) The inverse-Gamma parameters 
 #' (scale parameterization) of the prior distribution on 
-#' \eqn{\lambda = \delta / (1 - \delta)}
+#' \eqn{\lambda = \delta / (1 - \delta)},
+#' where \eqn{\delta} is the discount factor.
 #' 
 #' C_W: (numeric matrix) The scale matrix for the inverse-Wishart prior
-#' distribution on W, the variance-covariance matrix of the process error.
+#' distribution on the variance-covariance matrix of the process error (W).
 #' 
 #' df_W: (numeric scalar) The degees of freedom for the inverse-Wishart prior
-#' distribution on W, the variance-covariance matrix of the process error.
+#' distribution on the variance-covariance matrix of the process error (W).
 #' 
 #' @examples
 #' # Create example data

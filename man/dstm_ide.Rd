@@ -84,9 +84,15 @@ distribution on W, the variance-covariance matrix of the process error.
 df_W: (numeric scalar) The degees of freedom for the inverse-Wishart prior
 distribution on W, the variance-covariance matrix of the process error.
 
-L: (numeric scalar) The range of the spatial locations after rescaling.
-For spatially varying kernels, the value of L controls the degree of 
-smoothing. As L increases, the degree of smoothing decreases.
+L: (numeric scalar) The period of the Fourier series approximation.
+The spatial locations and knot locations are rescaled
+to range from -L/4 to L/4 because the Fourier decomposition assumes that
+the spatial surface is periodic.
+For spatially varying kernels, the value of L controls the degree of smoothing.
+As L increases, the degree of smoothing decreases.
+The values in the process convolution matrix are proportional to
+exp(-d) where d is the distance between a given knot and spatial location
+after rescaling.
 
 mu_kernel_mean: (numeric vector) The mean of the normal prior distribution
 on mu_kernel, the mean of the redistribution kernel.
