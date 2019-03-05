@@ -5,7 +5,7 @@
 \title{Integrodifference equation (IDE) model}
 \usage{
 dstm_ide(Y, locs = NULL, knot_locs = NULL, proc_error = "IW",
-  J = 4L, n_samples = 10L, sample_sigma2 = TRUE, verbose = FALSE,
+  J = 3L, n_samples = 10L, sample_sigma2 = TRUE, verbose = FALSE,
   params = NULL)
 }
 \arguments{
@@ -17,19 +17,20 @@ The t-th column (NOT row) corresponds to the t-th observation vector.}
 S by 2 matrix containing the spatial locations of the observed data.
 The rows of `locs` correspond with the rows of `Y`.}
 
-\item{knot_locs}{(integer or numeric matrix) Knot locations.
+\item{knot_locs}{(integer or numeric matrix) Knot locations for the spatially varying IDE model.
 The kernel parameters are estimated at these locations and then mapped to the
 spatial locations of the observed data via process convolution.
 If an integer is provided, then the knots are located on an equally spaced
 grid with dimension (`knot_locs`, `knot_locs`).
 If a matrix is provided, 
-then each row of the matrix corresponds to a knot location.}
+then each row of the matrix corresponds to a knot location.
+If NULL, then the standard (spatially constant) IDE is fit.}
 
 \item{proc_error}{(character string) Process error:
 "IW" (inverse-Wishart) or "Discount" (discount factor).}
 
 \item{J}{(integer) Extent of the Fourier approximation.
-The size of the state space is 2 * J^2 + 1.}
+The size of the state space is (2*J + 1)^2.}
 
 \item{n_samples}{(integer) Number of posterior samples to draw.}
 
@@ -44,14 +45,14 @@ e.g., iteration in sampling algorithm.}
 dstm_ide fits a type of dynamic spatio-temporal model called
 an integrodifference equation (IDE) model.
 It estimates a redistribution kernel---a
-probability distribution controlling dispersion across time and space.
+probability distribution controlling diffusion across time and space.
 Currently, only normal redistribution kernels are supported.
 
 The process model is decomposed with an orthonormal basis function expansion
 (a Fourier series).
 It can then be estimated as a special case of a dynamic linear model (DLM),
 using the forward filtering backward sampling algorithm to estimate the
-state vector (the Fourier coefficients).
+state vector.
 The kernel parameters are estimated with a random walk Metropolis-Hastings
 update.
 The other parameters are estimated with conditionally conjugate updates.
@@ -62,37 +63,36 @@ For each distribution referenced below,
 we use the scale parameterization found on the distribution's Wikipedia page.
 You may specify the following as named elements of the `params` list:
 
-m_0: (numeric vector) The prior mean of the state vector
-(Fourier basis coefficients) at time zero (\eqn{\theta_0}).
+m_0: (numeric vector) The prior mean of the state vector at time zero
+ (\eqn{\theta_0}).
 
 C_0: (numeric matrix) The prior variance-covariance matrix of the state
- vector (Fourier basis coefficients) at time zero (\eqn{\theta_0}).
+vector at time zero (\eqn{\theta_0}).
 
-alpha_sigma2, beta_sigma2: (numeric scalars) The inverse-Gamma parameters
-(scale parameterization) of the prior distribution on \eqn{\sigma^2}.
+alpha_sigma2, beta_sigma2: (numeric scalars) The inverse-Gamma parameters 
+(scale parameterization) of the prior distribution on the observation error 
+(\eqn{\sigma^2}).
 
-sigma2: (numeric scalar) The value to use for \eqn{\sigma^2} 
-if sample_sigma2 = FALSE.
+sigma2: (numeric scalar) The value to use for the observation error 
+(\eqn{\sigma^2}) if sample_sigma2 = FALSE.
 
 alpha_lambda, beta_lambda: (numeric scalars) The inverse-Gamma parameters 
 (scale parameterization) of the prior distribution on 
-\eqn{\lambda = \delta / (1 - \delta)}.
+\eqn{\lambda = (1 - \delta) / \delta},
+where \eqn{\delta} is the discount factor.
 
 C_W: (numeric matrix) The scale matrix for the inverse-Wishart prior
-distribution on W, the variance-covariance matrix of the process error.
+distribution on the variance-covariance matrix of the process error (W).
 
 df_W: (numeric scalar) The degees of freedom for the inverse-Wishart prior
-distribution on W, the variance-covariance matrix of the process error.
+distribution on the variance-covariance matrix of the process error (W).
 
 L: (numeric scalar) The period of the Fourier series approximation.
 The spatial locations and knot locations are rescaled
 to range from -L/4 to L/4 because the Fourier decomposition assumes that
 the spatial surface is periodic.
-For spatially varying kernels, the value of L controls the degree of smoothing.
-As L increases, the degree of smoothing decreases.
-The values in the process convolution matrix are proportional to
-exp(-d) where d is the distance between a given knot and spatial location
-after rescaling.
+
+smoothing: (numeric scalar) Controls the degree of smoothing in the 
 
 mu_kernel_mean: (numeric vector) The mean of the normal prior distribution
 on mu_kernel, the mean of the redistribution kernel.

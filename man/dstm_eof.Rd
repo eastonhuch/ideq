@@ -82,7 +82,7 @@ variance-covariance matrix for vec(G).
 
 alpha_lambda, beta_lambda: (numeric scalars) The inverse-Gamma parameters 
 (scale parameterization) of the prior distribution on 
-\eqn{\lambda = \delta / (1 - \delta)},
+\eqn{\lambda = (1 - \delta) / \delta},
 where \eqn{\delta} is the discount factor.
 
 C_W: (numeric matrix) The scale matrix for the inverse-Wishart prior
@@ -92,26 +92,25 @@ df_W: (numeric scalar) The degees of freedom for the inverse-Wishart prior
 distribution on the variance-covariance matrix of the process error (W).
 }
 \examples{
-# Create example data
-num_time_points <- 5
-num_spatial_locations <- 100
-z <- rnorm(num_time_points * num_spatial_locations)
-Y <- matrix(z, nrow=num_spatial_locations, ncol=num_time_points)
+# Load example data
+data("standard_ide_data")
 
 # Illustrate methods
-rw_model <- dstm_eof(Y, proc_model="RW") # Random walk model
+rw_model <- dstm_eof(standard_ide_data, proc_model="RW", verbose=TRUE)
 summary(rw_model) # print(rw_model) is equivalent
 predictions <- predict(rw_model) 
 
 # Other model types
-dstm_eof(Y, proc_model="AR") # Diagonal process matrix
-dstm_eof(Y, proc_model="Dense") # Dense process matrix
-dstm_eof(Y, proc_error="Discount") # Discount factor process error
+dstm_eof(standard_ide_data, proc_model="AR") # Diagonal process matrix
+dstm_eof(standard_ide_data, proc_model="Dense") # Dense process matrix
+dstm_eof(standard_ide_data, proc_error="Discount") # Discount factor
 
 # Specify hyperparameters
-dstm_eof(Y, sample_sigma2=FALSE, params=list(sigma2=1)) # Fix sigma2
-dstm_eof(Y, proc_error="Discount", 
-         params=list(alpha_lambda=10, beta_lambda=11)) # Prior for lambda
-dstm_eof(Y, P=10, params=list(m_0=rep(1, 10) , C_0=diag(0.01, 10))) # Prior for theta_0
-dstm_eof(Y, params=list(C_W=diag(10), df_W=100)) # Prior for W
+dstm_eof(standard_ide_data, sample_sigma2=FALSE, params=list(sigma2=0.01))
+dstm_eof(standard_ide_data, proc_error="Discount", 
+         params=list(alpha_lambda=201, beta_lambda=20))
+dstm_eof(standard_ide_data, P=10, 
+         params=list(m_0=rep(1, 10), C_0=diag(0.01, 10)))
+dstm_eof(standard_ide_data, params=list(C_W=diag(10), df_W=100))
+
 }

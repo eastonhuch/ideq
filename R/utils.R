@@ -97,6 +97,8 @@ process_common_params <- function(params, proc_error, P, sample_sigma2) {
     beta_lambda <- params[["beta_lambda"]] %else% 1
     check.numeric.scalar(alpha_lambda)
     check.numeric.scalar(beta_lambda)
+    # NOTE: default prior for lambda corresponds to lambda=1/99
+    # Or, in terms of the discount factor, delta=0.99
     
   } else {
     stop("proc_error must be \"IW\" or \"Discount\"")

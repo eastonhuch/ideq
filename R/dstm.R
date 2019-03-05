@@ -75,7 +75,7 @@
 #' 
 #' alpha_lambda, beta_lambda: (numeric scalars) The inverse-Gamma parameters 
 #' (scale parameterization) of the prior distribution on 
-#' \eqn{\lambda = \delta / (1 - \delta)},
+#' \eqn{\lambda = (1 - \delta) / \delta},
 #' where \eqn{\delta} is the discount factor.
 #' 
 #' C_W: (numeric matrix) The scale matrix for the inverse-Wishart prior
@@ -85,28 +85,27 @@
 #' distribution on the variance-covariance matrix of the process error (W).
 #' 
 #' @examples
-#' # Create example data
-#' num_time_points <- 5
-#' num_spatial_locations <- 100
-#' z <- rnorm(num_time_points * num_spatial_locations)
-#' Y <- matrix(z, nrow=num_spatial_locations, ncol=num_time_points)
+#' # Load example data
+#' data("standard_ide_data")
 #' 
 #' # Illustrate methods
-#' rw_model <- dstm_eof(Y, proc_model="RW") # Random walk model
+#' rw_model <- dstm_eof(standard_ide_data, proc_model="RW", verbose=TRUE)
 #' summary(rw_model) # print(rw_model) is equivalent
 #' predictions <- predict(rw_model) 
 #' 
 #' # Other model types
-#' dstm_eof(Y, proc_model="AR") # Diagonal process matrix
-#' dstm_eof(Y, proc_model="Dense") # Dense process matrix
-#' dstm_eof(Y, proc_error="Discount") # Discount factor process error
+#' dstm_eof(standard_ide_data, proc_model="AR") # Diagonal process matrix
+#' dstm_eof(standard_ide_data, proc_model="Dense") # Dense process matrix
+#' dstm_eof(standard_ide_data, proc_error="Discount") # Discount factor
 #' 
 #' # Specify hyperparameters
-#' dstm_eof(Y, sample_sigma2=FALSE, params=list(sigma2=1)) # Fix sigma2
-#' dstm_eof(Y, proc_error="Discount", 
-#'          params=list(alpha_lambda=10, beta_lambda=11)) # Prior for lambda
-#' dstm_eof(Y, P=10, params=list(m_0=rep(1, 10) , C_0=diag(0.01, 10))) # Prior for theta_0
-#' dstm_eof(Y, params=list(C_W=diag(10), df_W=100)) # Prior for W
+#' dstm_eof(standard_ide_data, sample_sigma2=FALSE, params=list(sigma2=0.01))
+#' dstm_eof(standard_ide_data, proc_error="Discount", 
+#'          params=list(alpha_lambda=201, beta_lambda=20))
+#' dstm_eof(standard_ide_data, P=10, 
+#'          params=list(m_0=rep(1, 10), C_0=diag(0.01, 10)))
+#' dstm_eof(standard_ide_data, params=list(C_W=diag(10), df_W=100))
+#' 
 #' @export
 dstm_eof <- function(Y, proc_model = "Dense", P = 10L, proc_error = "IW",
                      n_samples = 10L, sample_sigma2 = TRUE, verbose = FALSE,
@@ -174,14 +173,14 @@ dstm_eof <- function(Y, proc_model = "Dense", P = 10L, proc_error = "IW",
 #' dstm_ide fits a type of dynamic spatio-temporal model called
 #' an integrodifference equation (IDE) model.
 #' It estimates a redistribution kernel---a
-#' probability distribution controlling dispersion across time and space.
+#' probability distribution controlling diffusion across time and space.
 #' Currently, only normal redistribution kernels are supported.
 #' 
 #' The process model is decomposed with an orthonormal basis function expansion
 #' (a Fourier series).
 #' It can then be estimated as a special case of a dynamic linear model (DLM),
 #' using the forward filtering backward sampling algorithm to estimate the
-#' state vector (the Fourier coefficients).
+#' state vector.
 #' The kernel parameters are estimated with a random walk Metropolis-Hastings
 #' update.
 #' The other parameters are estimated with conditionally conjugate updates.
@@ -195,19 +194,20 @@ dstm_eof <- function(Y, proc_model = "Dense", P = 10L, proc_error = "IW",
 #' S by 2 matrix containing the spatial locations of the observed data.
 #' The rows of `locs` correspond with the rows of `Y`.
 #' @param knot_locs 
-#' (integer or numeric matrix) Knot locations.
+#' (integer or numeric matrix) Knot locations for the spatially varying IDE model.
 #' The kernel parameters are estimated at these locations and then mapped to the
 #' spatial locations of the observed data via process convolution.
 #' If an integer is provided, then the knots are located on an equally spaced
 #' grid with dimension (`knot_locs`, `knot_locs`).
 #' If a matrix is provided, 
 #' then each row of the matrix corresponds to a knot location.
+#' If NULL, then the standard (spatially constant) IDE is fit.
 #' @param proc_error 
 #' (character string) Process error:
 #' "IW" (inverse-Wishart) or "Discount" (discount factor).
 #' @param J 
 #' (integer) Extent of the Fourier approximation.
-#' The size of the state space is 2 * J^2 + 1.
+#' The size of the state space is (2*J + 1)^2.
 #' @param n_samples 
 #' (integer) Number of posterior samples to draw.
 #' @param sample_sigma2 
@@ -224,37 +224,36 @@ dstm_eof <- function(Y, proc_model = "Dense", P = 10L, proc_error = "IW",
 #' we use the scale parameterization found on the distribution's Wikipedia page.
 #' You may specify the following as named elements of the `params` list:
 #' 
-#' m_0: (numeric vector) The prior mean of the state vector
-#' (Fourier basis coefficients) at time zero (\eqn{\theta_0}).
+#' m_0: (numeric vector) The prior mean of the state vector at time zero
+#'  (\eqn{\theta_0}).
 #'
 #' C_0: (numeric matrix) The prior variance-covariance matrix of the state
-#'  vector (Fourier basis coefficients) at time zero (\eqn{\theta_0}).
+#' vector at time zero (\eqn{\theta_0}).
 #'
-#' alpha_sigma2, beta_sigma2: (numeric scalars) The inverse-Gamma parameters
-#' (scale parameterization) of the prior distribution on \eqn{\sigma^2}.
+#' alpha_sigma2, beta_sigma2: (numeric scalars) The inverse-Gamma parameters 
+#' (scale parameterization) of the prior distribution on the observation error 
+#' (\eqn{\sigma^2}).
 #' 
-#' sigma2: (numeric scalar) The value to use for \eqn{\sigma^2} 
-#' if sample_sigma2 = FALSE.
+#' sigma2: (numeric scalar) The value to use for the observation error 
+#' (\eqn{\sigma^2}) if sample_sigma2 = FALSE.
 #' 
 #' alpha_lambda, beta_lambda: (numeric scalars) The inverse-Gamma parameters 
 #' (scale parameterization) of the prior distribution on 
-#' \eqn{\lambda = \delta / (1 - \delta)}.
+#' \eqn{\lambda = (1 - \delta) / \delta},
+#' where \eqn{\delta} is the discount factor.
 #' 
 #' C_W: (numeric matrix) The scale matrix for the inverse-Wishart prior
-#' distribution on W, the variance-covariance matrix of the process error.
+#' distribution on the variance-covariance matrix of the process error (W).
 #' 
 #' df_W: (numeric scalar) The degees of freedom for the inverse-Wishart prior
-#' distribution on W, the variance-covariance matrix of the process error.
+#' distribution on the variance-covariance matrix of the process error (W).
 #' 
 #' L: (numeric scalar) The period of the Fourier series approximation.
 #' The spatial locations and knot locations are rescaled
 #' to range from -L/4 to L/4 because the Fourier decomposition assumes that
 #' the spatial surface is periodic.
-#' For spatially varying kernels, the value of L controls the degree of smoothing.
-#' As L increases, the degree of smoothing decreases.
-#' The values in the process convolution matrix are proportional to
-#' exp(-d) where d is the distance between a given knot and spatial location
-#' after rescaling.
+#' 
+#' smoothing: (numeric scalar) Controls the degree of smoothing in the 
 #' 
 #' mu_kernel_mean: (numeric vector) The mean of the normal prior distribution
 #' on mu_kernel, the mean of the redistribution kernel.
@@ -335,7 +334,7 @@ dstm_eof <- function(Y, proc_model = "Dense", P = 10L, proc_error = "IW",
 #'          params=list(proposal_factor_mu=2,
 #'                      proposal_factor_Sigma=3))
 #' @export
-dstm_ide <- function(Y, locs=NULL, knot_locs=NULL, proc_error = "IW", J=4L,
+dstm_ide <- function(Y, locs=NULL, knot_locs=NULL, proc_error = "IW", J=3L,
                      n_samples = 10L, sample_sigma2 = TRUE,
                      verbose = FALSE, params = NULL) {
   
