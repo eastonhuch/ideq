@@ -25,7 +25,7 @@ List eof(arma::mat Y, arma::mat F, arma::mat G_0, arma::mat Sigma_G_inv,
   const double alpha_lambda = params["alpha_lambda"];
   const double beta_lambda  = params["beta_lambda"];
   double sigma2_i = params["sigma2"];
-  const bool sample_sigma2  = sigma2_i < 0, Discount = df_W == NA;
+  const bool sample_sigma2  = sigma2_i == NA, Discount = df_W == NA;
   
   // Create matrices and cubes for FFBS
   Y.insert_cols(0, 1); // make Y true-indexed; i.e. index 1 is t_1
@@ -176,7 +176,7 @@ List ide(arma::mat Y, arma::mat locs, arma::colvec m_0, arma::mat C_0,
   const int locs_dim = locs.n_cols, n_knots = K.n_cols;
   const int kernel_samples_per_iter = params["kernel_samples_per_iter"];
   int K_idx = 0, mu_acceptances = 0, Sigma_acceptances = 0;
-  const bool sample_sigma2 = sigma2_i < 0, Discount = df_W == NA;
+  const bool sample_sigma2 = sigma2_i == NA, Discount = df_W == NA;
   const bool dyanamic_K = K.n_slices > 1, SV = params["SV"] > 0;
   const double Sigma_kernel_proposal_df = locs_dim + Sigma_kernel_df/proposal_factor_Sigma;
   const double Sigma_kernel_adjustment = Sigma_kernel_proposal_df - locs_dim - 1;

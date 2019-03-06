@@ -73,7 +73,7 @@ process_common_params <- function(params, proc_error, P, sample_sigma2) {
   check.cov.matrix(C_0, P)
   
   # Observation Error; creates alpha_sigma2, beta_sigma2, sigma2
-  alpha_sigma2 <- beta_sigma2 <- sigma2 <- -1
+  alpha_sigma2 <- beta_sigma2 <- sigma2 <- NA
   if (sample_sigma2) {
     alpha_sigma2 <- params[["alpha_sigma2"]] %else% 5
     beta_sigma2  <- params[["beta_sigma2"]]  %else% 4
@@ -113,17 +113,15 @@ process_common_params <- function(params, proc_error, P, sample_sigma2) {
 
 ################################################################################
 # Functions for dstm_ide()
-center_col <- function(x, L) {
-  x_range <- diff(range(x))
+scale_col <- function(x, L, x_range) {
+  if (is.na(x_range)) x_range <- diff(range(x))
   x <- L/x_range * x
   x <- x + (L/2 - max(x))
   x
 }
 
-center_all <- function(x, L) {
-  for ( i in seq(ncol(x)) ) {
-    x[, i] <- center_col(x[, i], L)
-  }
+scale_all <- function(x, L, ranges=rep(NA, ncol(x))) {
+  for ( i in seq(ncol(x)) ) x[, i] <- scale_col(x[, i], L, ranges[i])
   x
 }
 

@@ -157,8 +157,18 @@ dstm_eof <- function(Y, proc_model = "Dense", P = 10L, proc_error = "IW",
     results[["lambda"]] <- as.numeric(results[["lambda"]])
   if ("sigma2" %in% names(results))
     results[["sigma2"]] <- as.numeric(results[["sigma2"]])
+  
+  # Parameters
+  results[["scalar_params"]] <- as.list(
+    c(scalar_params, 
+      n_samples=n_samples, 
+      verbose=verbose)
+  )
+  results[["other_params"]] <- list(m_0=new_params[["m_0"]], 
+                                    C_0=new_params[["C_0"]],
+                                    C_W=new_params[["C_W"]])
 
-  # Process output
+  # Set class and attributes
   class(results) <- c("dstm_eof", "dstm", "list")
   attr(results, "proc_model") <- proc_model
   attr(results, "proc_error") <- proc_error
@@ -348,7 +358,7 @@ dstm_ide <- function(Y, locs=NULL, knot_locs=NULL, proc_error = "IW", J=3L,
   if (is.null(J) || is.na(J) || J<1) stop("J must be an integer > 0")
   P <- (2*J + 1)^2
 
-  L <- params[["L"]] %else% 4
+  L <- params[["L"]] %else% 2
   check.numeric.scalar(L)
   
   smoothing <- params[["smoothing"]] %else% 1
@@ -358,7 +368,9 @@ dstm_ide <- function(Y, locs=NULL, knot_locs=NULL, proc_error = "IW", J=3L,
   if (!(SV || is.null(knot_locs))) stop("knot_locs must be numeric or null")
   
   # Center spatial locations to have range of L/2
-  locs <- center_all(locs, L/2)
+  locs_ranges <- apply(locs, 2, function(x) diff(range(x)))
+  locs_offsets <- apply(locs, 2, function(x) max(x) - diff(range(x))/2)
+  locs_scaled <- scale_all(locs, L/2)
   
   # Process Model; creates kernel parameters
   locs_dim <- ncol(locs)
@@ -403,8 +415,15 @@ dstm_ide <- function(Y, locs=NULL, knot_locs=NULL, proc_error = "IW", J=3L,
   
   if (SV) {
     # prepare knot_locs
-    if (length(knot_locs) > 1) knot_locs <- center_all(knot_locs, L/2)
-    else knot_locs <- gen_grid(as.integer(knot_locs), L/2)
+    if (length(knot_locs) > 1) {
+      knot_locs_scaled <- scale_all(knot_locs, L/2, locs_ranges)
+    } else {
+      knot_locs_scaled <- gen_grid(as.integer(knot_locs), L/2)
+      knot_locs <- knot_locs_scaled
+      for (i in seq(2)) {
+        knot_locs[,i] <- knot_locs[,i] * locs_ranges[i] + locs_offsets[i]
+      }
+    }
     
     # Modify kernel parameters
     n_knots <- nrow(knot_locs)
@@ -412,13 +431,12 @@ dstm_ide <- function(Y, locs=NULL, knot_locs=NULL, proc_error = "IW", J=3L,
     mu_kernel_var <- mu_kernel_var %x% diag(n_knots)
     
     # Create K matrix
-    K <- pdist::pdist(knot_locs, locs)
+    K <- pdist::pdist(knot_locs_scaled, locs_scaled)
     K <- as.matrix(K)
     K <- exp(-K / smoothing)
     K <- apply(K, 2, function(x) x / sum(x))
     K <- t(K) # Makes K of dimension n_locs by n_knots
     K <- array(K, dim=c(dim(K), 1))
-    
   }
   
   Sigma_kernel_scale <- array(1, dim=c(1, 1, n_knots)) %x%
@@ -440,7 +458,7 @@ dstm_ide <- function(Y, locs=NULL, knot_locs=NULL, proc_error = "IW", J=3L,
                      SV=SV, J=J, L=L)
 
   # Fit the model
-  results <- ide(Y, locs, new_params[["m_0"]], new_params[["C_0"]],
+  results <- ide(Y, locs_scaled, new_params[["m_0"]], new_params[["C_0"]],
                  mu_kernel_mean, mu_kernel_var, K, Sigma_kernel_scale, 
                  new_params[["C_W"]], scalar_params, n_samples, verbose)
   
@@ -454,13 +472,71 @@ dstm_ide <- function(Y, locs=NULL, knot_locs=NULL, proc_error = "IW", J=3L,
   if (length(results[["Sigma_kernel"]]) > 1) {
     results[["Sigma_kernel"]] <- results[["Sigma_kernel"]][-1]
   }
+  
+  # Back transform based on locs_ranges
+  for (i in seq(2)) {
+    if (SV) {
+      for (item_name in c("mu_kernel", "mu_kernel_knots")) {
+        results[[item_name]][,i,] <- results[[item_name]][,i,] *
+                                     (locs_ranges[i] / L)
+      }
+    } else {
+      results[["mu_kernel"]][i,,] <- results[["mu_kernel"]][i,,] *
+                                     (locs_ranges[i] / L)
+    }
+  }
+  
+  results[["Sigma_kernel"]] <- simplify2array(results[["Sigma_kernel"]])
+  if (SV) {
+    results[["Sigma_kernel_knots"]] <- simplify2array(results[["Sigma_kernel_knots"]])
+  }
+  for (i in seq(2)) { for (j in seq(2)) {
+      results[["Sigma_kernel"]][i,j,,] <- 
+        results[["Sigma_kernel"]][i,j,,] *
+        (locs_ranges[i] * locs_ranges[j] / L^2)
+      if (SV) {
+        results[["Sigma_kernel_knots"]][i,j,,] <- 
+          results[["Sigma_kernel_knots"]][i,j,,] * 
+          (locs_ranges[i] * locs_ranges[j] / L^2)
+      }
+  }}
+  
+  # Eliminate extra index for standard models
+  if (!SV) {
+    results[["mu_kernel"]] <- t(results[["mu_kernel"]][,1,])
+    results[["Sigma_kernel"]] <- results[["Sigma_kernel"]][,,1,]
+  }
+  
+  # Information from sampling algorithm
   kernel_updates <- n_samples * kernel_samples_per_iter
   results[["mu_acceptance_rate"]] <- results[["mu_acceptances"]] / kernel_updates
   results[["Sigma_acceptance_rate"]] <- results[["Sigma_acceptances"]] / kernel_updates
   results[["mu_acceptances"]] <- NULL
   results[["Sigma_acceptances"]] <- NULL
-  if (SV) results[["knot_locs"]] <- knot_locs
   
+  # Knots locations
+  results[["locs"]] <- locs
+  results[["locs_scaled"]] <- locs_scaled
+  if (SV) {
+    results[["knot_locs"]] <- knot_locs
+    results[["knot_locs_scaled"]] <- knot_locs_scaled
+  }
+  
+  # Parameters
+  results[["scalar_params"]] <- as.list(
+    c(scalar_params, 
+      n_samples=n_samples, 
+      verbose=verbose)
+  )
+  results[["other_params"]] <- list(m_0=new_params[["m_0"]], 
+                                    C_0=new_params[["C_0"]],
+                                    mu_kernel_mean=mu_kernel_mean, 
+                                    mu_kernel_var=mu_kernel_var, 
+                                    process_convolution_matrix=K, 
+                                    Sigma_kernel_scale=Sigma_kernel_scale, 
+                                    C_W=new_params[["C_W"]])
+  
+  # Set class and attributes
   class(results) <- c("dstm_ide" , "dstm", "list")
   attr(results, "proc_model") <- "ide"
   attr(results, "proc_error") <- proc_error

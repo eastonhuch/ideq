@@ -237,8 +237,10 @@ summary.dstm <- function(x, object_name = deparse(substitute(x))) {
     counter <- 1
     for (i in list_idx) {
       list_summary[counter, 1] <- length(x[[i]])
-      dims_i <- dim(x[[i]][[1]])
-      list_summary[counter, 2:(1 + length(dims_i))] <- dims_i
+      if (!grepl("param", names(x)[i])) {
+        dims_i <- dim(x[[i]][[1]])
+        list_summary[counter, 2:(1 + length(dims_i))] <- dims_i
+      }
       counter <- counter + 1
     }
     colnames(list_summary) <- c("length", "dim 1", "dim 2", "dim 3")
