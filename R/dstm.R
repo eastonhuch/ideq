@@ -78,7 +78,7 @@
 #' \eqn{\lambda = (1 - \delta) / \delta},
 #' where \eqn{\delta} is the discount factor.
 #' 
-#' C_W: (numeric matrix) The scale matrix for the inverse-Wishart prior
+#' scale_W: (numeric matrix) The scale matrix for the inverse-Wishart prior
 #' distribution on the variance-covariance matrix of the process error (W).
 #' 
 #' df_W: (numeric scalar) The degees of freedom for the inverse-Wishart prior
@@ -104,7 +104,7 @@
 #'          params=list(alpha_lambda=201, beta_lambda=20))
 #' dstm_eof(standard_ide_data, P=10, 
 #'          params=list(m_0=rep(1, 10), C_0=diag(0.01, 10)))
-#' dstm_eof(standard_ide_data, params=list(C_W=diag(10), df_W=100))
+#' dstm_eof(standard_ide_data, params=list(scale_W=diag(10), df_W=100))
 #' 
 #' @export
 dstm_eof <- function(Y, proc_model = "Dense", P = 10L, proc_error = "IW",
@@ -149,7 +149,7 @@ dstm_eof <- function(Y, proc_model = "Dense", P = 10L, proc_error = "IW",
 
   # Fit the model
   results <- eof(Y, F_, mu_G, Sigma_G_inv, new_params[["m_0"]], 
-                 new_params[["C_0"]], new_params[["C_W"]],
+                 new_params[["C_0"]], new_params[["scale_W"]],
                  scalar_params, proc_model, n_samples, verbose)
   
   # Process results
@@ -166,7 +166,7 @@ dstm_eof <- function(Y, proc_model = "Dense", P = 10L, proc_error = "IW",
   )
   results[["other_params"]] <- list(m_0=new_params[["m_0"]], 
                                     C_0=new_params[["C_0"]],
-                                    C_W=new_params[["C_W"]])
+                                    scale_W=new_params[["scale_W"]])
 
   # Set class and attributes
   class(results) <- c("dstm_eof", "dstm", "list")
@@ -252,7 +252,7 @@ dstm_eof <- function(Y, proc_model = "Dense", P = 10L, proc_error = "IW",
 #' \eqn{\lambda = (1 - \delta) / \delta},
 #' where \eqn{\delta} is the discount factor.
 #' 
-#' C_W: (numeric matrix) The scale matrix for the inverse-Wishart prior
+#' scale_W: (numeric matrix) The scale matrix for the inverse-Wishart prior
 #' distribution on the variance-covariance matrix of the process error (W).
 #' 
 #' df_W: (numeric scalar) The degees of freedom for the inverse-Wishart prior
@@ -265,31 +265,31 @@ dstm_eof <- function(Y, proc_model = "Dense", P = 10L, proc_error = "IW",
 #' 
 #' smoothing: (numeric scalar) Controls the degree of smoothing in the 
 #' 
-#' mu_kernel_mean: (numeric vector) The mean of the normal prior distribution
+#' mean_mu_kernel: (numeric vector) The mean of the normal prior distribution
 #' on mu_kernel, the mean of the redistribution kernel.
 #' In the spatially varying case, the prior distribution for mu_kernel
 #' is assumed to be the same at every knot location.
 #' 
-#' mu_kernel_var: (numeric matrix) The variance of the normal prior distribution
+#' var_mu_kernel: (numeric matrix) The variance of the normal prior distribution
 #' on mu_kernel, the mean of the redistribution kernel.
 #' 
-#' Sigma_kernel_scale: (numeric matrix) The scale matrix for the 
+#' scale_Sigma_kernel: (numeric matrix) The scale matrix for the 
 #' inverse-Wishart prior distribution on Sigma_kernel,
 #' the variance-covariance matrix of the redistribution kernel.
 #' 
-#' Sigma_kernel_df: (numeric scalar) The degrees of freedom for the 
+#' df_Sigma_kernel: (numeric scalar) The degrees of freedom for the 
 #' inverse-Wishart prior distribution on Sigma_kernel,
 #' the variance-covariance matrix of the redistribution kernel.
 #' 
 #' proposal_factor_mu: (numeric scalar) Controls the variance of the proposal distribution for
-#' mu. The proposals have a variance of proposal_factor_mu^2 * mu_kernel_var.
+#' mu. The proposals have a variance of proposal_factor_mu^2 * var_mu_kernel.
 #' proposal_factor_mu must generally be set lower for spatially varying models.
 #' 
 #' proposal_factor_Sigma: (numeric scalar) Controls the variance of the proposal distribution
 #' for Sigma. As is the case with proposal_factor_mu, a higher value
 #' corresponds to a higher variance.
 #' The degrees of freedom for the proposal distribution for Sigma is 
-#' ncol(locs) + Sigma_kernel_df / proposal_factor_Sigma.
+#' ncol(locs) + df_Sigma_kernel / proposal_factor_Sigma.
 #' proposal_factor_Sigma must generally be set lower for spatially varying 
 #' models.
 #'
@@ -324,12 +324,12 @@ dstm_eof <- function(Y, proc_model = "Dense", P = 10L, proc_error = "IW",
 #' 
 #' # Set prior on kernel mean
 #' dstm_ide(Y, spatial_locations, 
-#'          params=list(mu_kernel_mean=c(0.2, 0.4),
-#'                      mu_kernel_var=diag(2))) 
+#'          params=list(mean_mu_kernel=c(0.2, 0.4),
+#'                      var_mu_kernel=diag(2))) 
 #' 
 #' # Set prior on kernel variance-covariance matrix
 #' dstm_ide(Y, spatial_locations, 
-#'          params=list(Sigma_kernel_scale=diag(2), Sigma_kernel_df=100))
+#'          params=list(scale_Sigma_kernel=diag(2), df_Sigma_kernel=100))
 #' 
 #' # Set prior on state vector (Fourier basis coefficients)
 #' dstm_ide(Y, spatial_locations, 
@@ -337,7 +337,7 @@ dstm_eof <- function(Y, proc_model = "Dense", P = 10L, proc_error = "IW",
 #' 
 #' # Set prior on process error
 #' dstm_ide(Y, spatial_locations, 
-#'          params=list(C_W=diag(33), df_W=100))
+#'          params=list(scale_W=diag(33), df_W=100))
 #' 
 #' # Set proposal scaling factors
 #' dstm_ide(Y, spatial_locations, 
@@ -380,28 +380,29 @@ dstm_ide <- function(Y, locs=NULL, knot_locs=NULL, proc_error = "IW", J=3L,
   check.numeric.scalar(kernel_samples_per_iter, x_min=1, strict_inequality=FALSE)
   kernel_samples_per_iter <- as.integer(kernel_samples_per_iter)
   
-  # mu_kernel_mean
-  mu_kernel_mean <- params[["mu_kernel_mean"]] %else% rep(0, locs_dim)
-  check.numeric.vector(mu_kernel_mean, locs_dim, dim_name="ncol(locs)")
-  mu_kernel_mean <- as.matrix(mu_kernel_mean)
+  # mean_mu_kernel
+  mean_mu_kernel <- params[["mean_mu_kernel"]] %else% rep(0, locs_dim)
+  check.numeric.vector(mean_mu_kernel, locs_dim, dim_name="ncol(locs)")
+  mean_mu_kernel <- as.matrix(mean_mu_kernel)
   
-  # mu_kernel_var
-  mu_kernel_var <- params[["mu_kernel_var"]] %else% diag(L/4, locs_dim)
-  check.cov.matrix(mu_kernel_var, locs_dim, dim_name="ncol(locs)")
+  # var_mu_kernel
+  var_mu_kernel <- params[["var_mu_kernel"]] %else% diag(L/4, locs_dim)
+  check.cov.matrix(var_mu_kernel, locs_dim, dim_name="ncol(locs)")
   
   # proposal_factor_mu
-  proposal_factor_mu <- params[["proposal_factor_mu"]] %else% ifelse(SV, 2/5, 1)
+  proposal_factor_mu <- params[["proposal_factor_mu"]] %else% 1
   check.numeric.scalar(proposal_factor_mu)
   
-  # Sigma_kernel_df
+  # df_Sigma_kernel
   k <- 10
-  Sigma_kernel_df <- params[["Sigma_kernel_df"]] %else% (k * locs_dim)
-  check.numeric.scalar(Sigma_kernel_df, x_min=locs_dim-1)
+  df_Sigma_kernel <- params[["df_Sigma_kernel"]] %else% (k * locs_dim)
+  check.numeric.scalar(df_Sigma_kernel, x_min=locs_dim-1)
   
-  # Sigma_kernel_scale
-  Sigma_kernel_scale <- params[["Sigma_kernel_scale"]] %else% 
-                          diag(Sigma_kernel_df*L/20, locs_dim)
-  check.cov.matrix(Sigma_kernel_scale, locs_dim, dim_name="ncol(locs)")
+  # scale_Sigma_kernel
+  Sigma_kernel_mean <- L/20
+  scale_Sigma_kernel <- params[["scale_Sigma_kernel"]] %else% 
+                          diag((df_Sigma_kernel-locs_dim-1)*Sigma_kernel_mean, locs_dim)
+  check.cov.matrix(scale_Sigma_kernel, locs_dim, dim_name="ncol(locs)")
   
   # proposal_factor_Sigma
   proposal_factor_Sigma <- params[["proposal_factor_Sigma"]] %else%
@@ -427,8 +428,8 @@ dstm_ide <- function(Y, locs=NULL, knot_locs=NULL, proc_error = "IW", J=3L,
     
     # Modify kernel parameters
     n_knots <- nrow(knot_locs)
-    mu_kernel_mean <- rep(1, n_knots) %x% matrix(mu_kernel_mean, nrow=1)
-    mu_kernel_var <- mu_kernel_var %x% diag(n_knots)
+    mean_mu_kernel <- rep(1, n_knots) %x% matrix(mean_mu_kernel, nrow=1)
+    var_mu_kernel <- var_mu_kernel %x% diag(n_knots)
     
     # Create K matrix
     K <- pdist::pdist(knot_locs_scaled, locs_scaled)
@@ -439,8 +440,8 @@ dstm_ide <- function(Y, locs=NULL, knot_locs=NULL, proc_error = "IW", J=3L,
     K <- array(K, dim=c(dim(K), 1))
   }
   
-  Sigma_kernel_scale <- array(1, dim=c(1, 1, n_knots)) %x%
-                        Sigma_kernel_scale
+  scale_Sigma_kernel <- array(1, dim=c(1, 1, n_knots)) %x%
+                        scale_Sigma_kernel
   
   
   # Process remaining params
@@ -454,13 +455,13 @@ dstm_ide <- function(Y, locs=NULL, knot_locs=NULL, proc_error = "IW", J=3L,
                      kernel_samples_per_iter=kernel_samples_per_iter,
                      proposal_factor_mu=proposal_factor_mu,
                      proposal_factor_Sigma=proposal_factor_Sigma,
-                     Sigma_kernel_df=Sigma_kernel_df,
+                     df_Sigma_kernel=df_Sigma_kernel,
                      SV=SV, J=J, L=L)
 
   # Fit the model
   results <- ide(Y, locs_scaled, new_params[["m_0"]], new_params[["C_0"]],
-                 mu_kernel_mean, mu_kernel_var, K, Sigma_kernel_scale, 
-                 new_params[["C_W"]], scalar_params, n_samples, verbose)
+                 mean_mu_kernel, var_mu_kernel, K, scale_Sigma_kernel, 
+                 new_params[["scale_W"]], scalar_params, n_samples, verbose)
   
   # Process results
   if ("lambda" %in% names(results)) {
@@ -534,10 +535,10 @@ dstm_ide <- function(Y, locs=NULL, knot_locs=NULL, proc_error = "IW", J=3L,
   )
   results[["other_params"]] <- list(m_0=new_params[["m_0"]], 
                                     C_0=new_params[["C_0"]],
-                                    mu_kernel_mean=mu_kernel_mean, 
-                                    mu_kernel_var=mu_kernel_var, 
-                                    Sigma_kernel_scale=Sigma_kernel_scale, 
-                                    C_W=new_params[["C_W"]])
+                                    mean_mu_kernel=mean_mu_kernel, 
+                                    var_mu_kernel=var_mu_kernel, 
+                                    scale_Sigma_kernel=scale_Sigma_kernel, 
+                                    scale_W=new_params[["scale_W"]])
   
   # Set class and attributes
   class(results) <- c("dstm_ide" , "dstm", "list")

@@ -85,12 +85,12 @@ process_common_params <- function(params, proc_error, P, sample_sigma2) {
   }
   
   alpha_lambda <- beta_lambda <- df_W <- NA
-  C_W <- matrix()
+  scale_W <- matrix()
   
   if (proc_error == "IW") {
     df_W <- params[["df_W"]] %else% (2*P)
-    C_W <- params[["C_W"]] %else% diag(df_W, P)
-    check.cov.matrix(C_W, P)
+    scale_W <- params[["scale_W"]] %else% diag(df_W, P)
+    check.cov.matrix(scale_W, P)
     check.numeric.scalar(df_W, x_min=P-1)
   } else if (proc_error == "Discount") {
     alpha_lambda <- params[["alpha_lambda"]] %else% 100
@@ -107,7 +107,7 @@ process_common_params <- function(params, proc_error, P, sample_sigma2) {
   list(
     m_0=m_0, C_0=C_0,
     alpha_sigma2=alpha_sigma2, beta_sigma2=beta_sigma2, sigma2=sigma2,
-    C_W=C_W, df_W=df_W, alpha_lambda=alpha_lambda, beta_lambda=beta_lambda
+    scale_W=scale_W, df_W=df_W, alpha_lambda=alpha_lambda, beta_lambda=beta_lambda
   )
 }
 

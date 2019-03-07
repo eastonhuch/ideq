@@ -13,7 +13,7 @@ using namespace Rcpp;
 
 // [[Rcpp::export]]
 List eof(arma::mat Y, arma::mat F, arma::mat G_0, arma::mat Sigma_G_inv,
-         arma::colvec m_0, arma::mat C_0, arma::mat C_W,
+         arma::colvec m_0, arma::mat C_0, arma::mat scale_W,
          NumericVector params, CharacterVector proc_model,
          const int n_samples, const bool verbose) {
   
@@ -69,7 +69,7 @@ List eof(arma::mat Y, arma::mat F, arma::mat G_0, arma::mat Sigma_G_inv,
   } 
   else { // Sample W from inverse-Wishart distribution
     W.set_size(P, P, n_samples+1);
-    sampleW(W.slice(0), theta.slice(0), G.slice(0), C_W, df_W);
+    sampleW(W.slice(0), theta.slice(0), G.slice(0), scale_W, df_W);
   }
   
   // Sampling loop
@@ -103,7 +103,7 @@ List eof(arma::mat Y, arma::mat F, arma::mat G_0, arma::mat Sigma_G_inv,
       sampleLambda(lambda.at(i+1), alpha_lambda, beta_lambda,
                    G.slice(G_idx), C, theta.slice(i));
     } else {
-      sampleW(W.slice(i+1), theta.slice(i), G.slice(G_idx), C_W, df_W);
+      sampleW(W.slice(i+1), theta.slice(i), G.slice(G_idx), scale_W, df_W);
     }
     
     // Sample G
@@ -157,8 +157,8 @@ List eof(arma::mat Y, arma::mat F, arma::mat G_0, arma::mat Sigma_G_inv,
 
 // [[Rcpp::export]]
 List ide(arma::mat Y, arma::mat locs, arma::colvec m_0, arma::mat C_0,
-         arma::mat mu_kernel_mean, arma::mat mu_kernel_var, arma::cube K,
-         arma::cube Sigma_kernel_scale, arma::mat C_W, NumericVector params, 
+         arma::mat mean_mu_kernel, arma::mat var_mu_kernel, arma::cube K,
+         arma::cube scale_Sigma_kernel, arma::mat scale_W, NumericVector params, 
          const int n_samples, const bool verbose) {
   
   // Extract/set scalar parameters
@@ -169,7 +169,7 @@ List ide(arma::mat Y, arma::mat locs, arma::colvec m_0, arma::mat C_0,
   const double beta_lambda = params["beta_lambda"];
   const double proposal_factor_mu = params["proposal_factor_mu"];
   const double proposal_factor_Sigma = params["proposal_factor_Sigma"];
-  const double Sigma_kernel_df = params["Sigma_kernel_df"];
+  const double df_Sigma_kernel = params["df_Sigma_kernel"];
   double sigma2_i = params["sigma2"], mh_ratio = 0.0;
   const int P = (2*J + 1) * (2*J + 1) , T = Y.n_cols, S = Y.n_rows;
   const int locs_dim = locs.n_cols, n_knots = K.n_cols;
@@ -177,7 +177,7 @@ List ide(arma::mat Y, arma::mat locs, arma::colvec m_0, arma::mat C_0,
   int K_idx = 0, mu_acceptances = 0, Sigma_acceptances = 0;
   const bool sample_sigma2 = sigma2_i == NA, Discount = df_W == NA;
   const bool dyanamic_K = K.n_slices > 1, SV = params["SV"] > 0;
-  const double Sigma_kernel_proposal_df = locs_dim + Sigma_kernel_df/proposal_factor_Sigma;
+  const double Sigma_kernel_proposal_df = locs_dim + df_Sigma_kernel/proposal_factor_Sigma;
   const double Sigma_kernel_adjustment = Sigma_kernel_proposal_df - locs_dim - 1;
   
   // Create matrices and cubes for FFBS
@@ -199,7 +199,7 @@ List ide(arma::mat Y, arma::mat locs, arma::colvec m_0, arma::mat C_0,
   arma::mat mu_kernel_proposal, mu_kernel_knots_proposal;
   arma::mat mu_kernel_current, mu_kernel_knots_current;
   arma::mat mu_kernel_proposal_var = proposal_factor_mu * proposal_factor_mu
-                                                        * mu_kernel_var;
+                                                        * var_mu_kernel;
   
   // Sigma_kernel
   arma::cube Sigma_kernel_proposal, Sigma_kernel_knots_proposal;
@@ -219,19 +219,19 @@ List ide(arma::mat Y, arma::mat locs, arma::colvec m_0, arma::mat C_0,
     }
     
     // Set initial values
-    mu_kernel_knots.slice(0) = mu_kernel_mean;
+    mu_kernel_knots.slice(0) = mean_mu_kernel;
     mu_kernel.slice(0) = K.slice(0) * mu_kernel_knots.slice(0);
-    Sigma_kernel_knots.at(0) = Sigma_kernel_scale / (Sigma_kernel_df-locs_dim-1);
+    Sigma_kernel_knots.at(0) = scale_Sigma_kernel / (df_Sigma_kernel-locs_dim-1);
     mapSigma(Sigma_kernel.at(0), Sigma_kernel_knots.at(0), K);
   }
   else {
     mu_kernel.set_size(locs_dim, 1, n_samples+1);
-    mu_kernel.slice(0) = mu_kernel_mean;
+    mu_kernel.slice(0) = mean_mu_kernel;
     Sigma_kernel_proposal.set_size(locs_dim, locs_dim, 1);
     for (int i=0; i<=n_samples; ++i) {
       Sigma_kernel.at(i).set_size(locs_dim, locs_dim, 1);
     }
-    Sigma_kernel.at(0) = Sigma_kernel_scale / (Sigma_kernel_df-locs_dim-1);
+    Sigma_kernel.at(0) = scale_Sigma_kernel / (df_Sigma_kernel-locs_dim-1);
   }
   
   // Create observation matrix (F) and initial process matrix (G)
@@ -259,7 +259,7 @@ List ide(arma::mat Y, arma::mat locs, arma::colvec m_0, arma::mat C_0,
   } 
   else { // Sample W from inverse-Wishart
     W.set_size(P, P, n_samples+1);
-    W.slice(0) = rgen::riwishart(df_W, C_W);
+    W.slice(0) = rgen::riwishart(df_W, scale_W);
   }
   
   // Begin MCMC
@@ -290,7 +290,7 @@ List ide(arma::mat Y, arma::mat locs, arma::colvec m_0, arma::mat C_0,
       sampleLambda(lambda.at(i+1), alpha_lambda, beta_lambda,
                    G.slice(i), C, theta.slice(i));
     } else {
-      sampleW(W.slice(i+1), theta.slice(i), G.slice(i), C_W, df_W);
+      sampleW(W.slice(i+1), theta.slice(i), G.slice(i), scale_W, df_W);
     }
     
     // Begin MH step for kernel parameters
@@ -312,14 +312,14 @@ List ide(arma::mat Y, arma::mat locs, arma::colvec m_0, arma::mat C_0,
       if (SV) {
         mu_kernel_knots_proposal = proposeMu(mu_kernel_knots_current, mu_kernel_proposal_var);
         mh_ratio  = ldmvnorm(mu_kernel_knots_proposal, mu_kernel_knots.slice(0),
-                             mu_kernel_var);
+                             var_mu_kernel);
         mh_ratio -= ldmvnorm(mu_kernel_knots_current, mu_kernel_knots.slice(0),
-                             mu_kernel_var);
+                             var_mu_kernel);
         mu_kernel_proposal = K.slice(0) * mu_kernel_knots_proposal; // map to spatial locations
       } else {
         mu_kernel_proposal = proposeMu(mu_kernel_current, mu_kernel_proposal_var);
-        mh_ratio  = ldmvnorm(mu_kernel_proposal, mu_kernel.slice(0), mu_kernel_var);
-        mh_ratio -= ldmvnorm(mu_kernel_current, mu_kernel.slice(0), mu_kernel_var);
+        mh_ratio  = ldmvnorm(mu_kernel_proposal, mu_kernel.slice(0), var_mu_kernel);
+        mh_ratio -= ldmvnorm(mu_kernel_current, mu_kernel.slice(0), var_mu_kernel);
       }
       
       // Calculate implied proposal for G and likelihood
@@ -353,10 +353,10 @@ List ide(arma::mat Y, arma::mat locs, arma::colvec m_0, arma::mat C_0,
                                                    Sigma_kernel_adjustment);
         }
         // Probabilities under prior
-        mh_ratio  = ldiwishart(Sigma_kernel_knots_proposal, Sigma_kernel_df, 
-                               Sigma_kernel_scale);
-        mh_ratio -= ldiwishart(Sigma_kernel_knots_current, Sigma_kernel_df,
-                               Sigma_kernel_scale);
+        mh_ratio  = ldiwishart(Sigma_kernel_knots_proposal, df_Sigma_kernel, 
+                               scale_Sigma_kernel);
+        mh_ratio -= ldiwishart(Sigma_kernel_knots_current, df_Sigma_kernel,
+                               scale_Sigma_kernel);
         
         // Transition probabilities
         mh_ratio -= ldiwishart(Sigma_kernel_knots_proposal, Sigma_kernel_proposal_df,
@@ -372,10 +372,10 @@ List ide(arma::mat Y, arma::mat locs, arma::colvec m_0, arma::mat C_0,
                                                          Sigma_kernel_current.slice(0) * 
                                                          Sigma_kernel_adjustment);
         // Probabilities under prior
-        mh_ratio  = ldiwishart(Sigma_kernel_proposal, Sigma_kernel_df, 
-                               Sigma_kernel_scale);
-        mh_ratio -= ldiwishart(Sigma_kernel_current, Sigma_kernel_df,
-                               Sigma_kernel_scale);
+        mh_ratio  = ldiwishart(Sigma_kernel_proposal, df_Sigma_kernel, 
+                               scale_Sigma_kernel);
+        mh_ratio -= ldiwishart(Sigma_kernel_current, df_Sigma_kernel,
+                               scale_Sigma_kernel);
         
         // Transition probabilities
         mh_ratio -= ldiwishart(Sigma_kernel_proposal, Sigma_kernel_proposal_df,

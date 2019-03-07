@@ -151,11 +151,11 @@ void sampleV(arma::mat & Y, arma::mat & F, arma::mat & theta,
 };
 
 void sampleW(arma::mat & W, const arma::mat & theta, const arma::mat & G,
-             const arma::mat & C_W, const int df_W) {
+             const arma::mat & scale_W, const int df_W) {
   const int T = theta.n_cols - 1;
   arma::mat theta_diffs = theta.cols(1, T) -
                           G * theta.cols(0, T-1);
-  arma::mat C_new = C_W + theta_diffs * theta_diffs.t();
+  arma::mat C_new = scale_W + theta_diffs * theta_diffs.t();
   const int df_new = df_W + T;
   W = rgen::riwishart(df_new, C_new);
   return;

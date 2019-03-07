@@ -26,6 +26,6 @@ void sampleV(arma::mat & Y, arma::mat & F, arma::cube & theta,
              arma::mat & V, arma::mat & C_V, const int df_V);
 
 void sampleW (arma::mat & W, const arma::mat & theta, const arma::mat & G,
-              const arma::mat & C_W, const int df_W);
+              const arma::mat & scale_W, const int df_W);
 
 #endif

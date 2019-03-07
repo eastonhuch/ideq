@@ -85,7 +85,7 @@ alpha_lambda, beta_lambda: (numeric scalars) The inverse-Gamma parameters
 \eqn{\lambda = (1 - \delta) / \delta},
 where \eqn{\delta} is the discount factor.
 
-C_W: (numeric matrix) The scale matrix for the inverse-Wishart prior
+scale_W: (numeric matrix) The scale matrix for the inverse-Wishart prior
 distribution on the variance-covariance matrix of the process error (W).
 
 df_W: (numeric scalar) The degees of freedom for the inverse-Wishart prior
@@ -111,6 +111,6 @@ dstm_eof(standard_ide_data, proc_error="Discount",
          params=list(alpha_lambda=201, beta_lambda=20))
 dstm_eof(standard_ide_data, P=10, 
          params=list(m_0=rep(1, 10), C_0=diag(0.01, 10)))
-dstm_eof(standard_ide_data, params=list(C_W=diag(10), df_W=100))
+dstm_eof(standard_ide_data, params=list(scale_W=diag(10), df_W=100))
 
 }

@@ -81,7 +81,7 @@ alpha_lambda, beta_lambda: (numeric scalars) The inverse-Gamma parameters
 \eqn{\lambda = (1 - \delta) / \delta},
 where \eqn{\delta} is the discount factor.
 
-C_W: (numeric matrix) The scale matrix for the inverse-Wishart prior
+scale_W: (numeric matrix) The scale matrix for the inverse-Wishart prior
 distribution on the variance-covariance matrix of the process error (W).
 
 df_W: (numeric scalar) The degees of freedom for the inverse-Wishart prior
@@ -94,31 +94,31 @@ the spatial surface is periodic.
 
 smoothing: (numeric scalar) Controls the degree of smoothing in the 
 
-mu_kernel_mean: (numeric vector) The mean of the normal prior distribution
+mean_mu_kernel: (numeric vector) The mean of the normal prior distribution
 on mu_kernel, the mean of the redistribution kernel.
 In the spatially varying case, the prior distribution for mu_kernel
 is assumed to be the same at every knot location.
 
-mu_kernel_var: (numeric matrix) The variance of the normal prior distribution
+var_mu_kernel: (numeric matrix) The variance of the normal prior distribution
 on mu_kernel, the mean of the redistribution kernel.
 
-Sigma_kernel_scale: (numeric matrix) The scale matrix for the 
+scale_Sigma_kernel: (numeric matrix) The scale matrix for the 
 inverse-Wishart prior distribution on Sigma_kernel,
 the variance-covariance matrix of the redistribution kernel.
 
-Sigma_kernel_df: (numeric scalar) The degrees of freedom for the 
+df_Sigma_kernel: (numeric scalar) The degrees of freedom for the 
 inverse-Wishart prior distribution on Sigma_kernel,
 the variance-covariance matrix of the redistribution kernel.
 
 proposal_factor_mu: (numeric scalar) Controls the variance of the proposal distribution for
-mu. The proposals have a variance of proposal_factor_mu^2 * mu_kernel_var.
+mu. The proposals have a variance of proposal_factor_mu^2 * var_mu_kernel.
 proposal_factor_mu must generally be set lower for spatially varying models.
 
 proposal_factor_Sigma: (numeric scalar) Controls the variance of the proposal distribution
 for Sigma. As is the case with proposal_factor_mu, a higher value
 corresponds to a higher variance.
 The degrees of freedom for the proposal distribution for Sigma is 
-ncol(locs) + Sigma_kernel_df / proposal_factor_Sigma.
+ncol(locs) + df_Sigma_kernel / proposal_factor_Sigma.
 proposal_factor_Sigma must generally be set lower for spatially varying 
 models.
 }
@@ -153,12 +153,12 @@ dstm_ide(Y, spatial_locations, params=list(L=10))
 
 # Set prior on kernel mean
 dstm_ide(Y, spatial_locations, 
-         params=list(mu_kernel_mean=c(0.2, 0.4),
-                     mu_kernel_var=diag(2))) 
+         params=list(mean_mu_kernel=c(0.2, 0.4),
+                     var_mu_kernel=diag(2))) 
 
 # Set prior on kernel variance-covariance matrix
 dstm_ide(Y, spatial_locations, 
-         params=list(Sigma_kernel_scale=diag(2), Sigma_kernel_df=100))
+         params=list(scale_Sigma_kernel=diag(2), df_Sigma_kernel=100))
 
 # Set prior on state vector (Fourier basis coefficients)
 dstm_ide(Y, spatial_locations, 
@@ -166,7 +166,7 @@ dstm_ide(Y, spatial_locations,
 
 # Set prior on process error
 dstm_ide(Y, spatial_locations, 
-         params=list(C_W=diag(33), df_W=100))
+         params=list(scale_W=diag(33), df_W=100))
 
 # Set proposal scaling factors
 dstm_ide(Y, spatial_locations, 
