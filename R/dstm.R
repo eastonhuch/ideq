@@ -215,6 +215,7 @@ dstm_eof <- function(Y, proc_model = "Dense", P = 10L, proc_error = "IW",
 #' @param proc_error 
 #' (character string) Process error:
 #' "IW" (inverse-Wishart) or "Discount" (discount factor).
+#' "IW" is recommended because it is more computationally stable.
 #' @param J 
 #' (integer) Extent of the Fourier approximation.
 #' The size of the state space is (2*J + 1)^2.
@@ -294,53 +295,46 @@ dstm_eof <- function(Y, proc_model = "Dense", P = 10L, proc_error = "IW",
 #' models.
 #'
 #' @examples
-#' # Create example data
-#' num_time_points <- 5
-#' spatial_locations <- expand.grid(seq(10), seq(10))
-#' num_spatial_locations <- nrow(spatial_locations)
-#' z <- rnorm(num_time_points * num_spatial_locations)
-#' Y <- matrix(z, nrow=num_spatial_locations, ncol=num_time_points)
+#' # Load example data
+#' data("standard_ide_data", "spatially_varying_ide_data", "spatial_locations")
 #' 
 #' # Basic IDE model with one kernel
-#' mod <- dstm_ide(Y, spatial_locations)
+#' mod <- dstm_ide(standard_ide_data, spatial_locations)
 #' predict(mod)
 #' summary(mod)
 #' 
 #' # IDE model with spatially varying kernel
-#' dstm_ide(Y, spatial_locations, knot_locs=4)
-#' 
-#' # Discount factor method for estimating process error variance
-#' dstm_ide(Y, spatial_locations, proc_error="Discount")
+#' dstm_ide(spatially_varying_ide_data, spatial_locations, knot_locs=4)
 #' 
 #' # Fix sigma2
-#' dstm_ide(Y, spatial_locations, sample_sigma2=FALSE, params=list(sigma2=1))
+#' dstm_ide(standard_ide_data, spatial_locations, 
+#'          sample_sigma2=FALSE, params=list(sigma2=1))
 #' 
 #' # Set prior on sigma2
-#' dstm_ide(Y, spatial_locations, 
+#' dstm_ide(standard_ide_data, spatial_locations, 
 #'          params=list(alpha_sigma2=10, beta_sigma2=11))
 #' 
-#' # Rescale spatial locations to have range of 10
-#' dstm_ide(Y, spatial_locations, params=list(L=10)) 
-#' 
 #' # Set prior on kernel mean
-#' dstm_ide(Y, spatial_locations, 
+#' dstm_ide(standard_ide_data, spatial_locations, 
 #'          params=list(mean_mu_kernel=c(0.2, 0.4),
 #'                      var_mu_kernel=diag(2))) 
 #' 
 #' # Set prior on kernel variance-covariance matrix
-#' dstm_ide(Y, spatial_locations, 
+#' dstm_ide(standard_ide_data, spatial_locations, 
 #'          params=list(scale_Sigma_kernel=diag(2), df_Sigma_kernel=100))
 #' 
-#' # Set prior on state vector (Fourier basis coefficients)
-#' dstm_ide(Y, spatial_locations, 
-#'          params=list(m_0=rep(0.1, 33), C_0=diag(0.01, 33))) 
+#' # Set prior on state vector
+#' J <- 3
+#' P <- (2*J + 1)^2
+#' dstm_ide(standard_ide_data, spatial_locations, J=J,
+#'          params=list(m_0=rep(0.1, P), C_0=diag(0.01, P))) 
 #' 
 #' # Set prior on process error
-#' dstm_ide(Y, spatial_locations, 
-#'          params=list(scale_W=diag(33), df_W=100))
+#' dstm_ide(standard_ide_data, spatial_locations, J=J,
+#'          params=list(scale_W=diag(P), df_W=100))
 #' 
 #' # Set proposal scaling factors
-#' dstm_ide(Y, spatial_locations, 
+#' dstm_ide(standard_ide_data, spatial_locations, 
 #'          params=list(proposal_factor_mu=2,
 #'                      proposal_factor_Sigma=3))
 #' @export

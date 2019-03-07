@@ -256,8 +256,7 @@ List ide(arma::mat Y, arma::mat locs, arma::colvec m_0, arma::mat C_0,
     lambda.set_size(n_samples+1);
     lambda.at(0) = rigamma(alpha_lambda, beta_lambda);
     C_T.set_size(P, P, n_samples);
-  } 
-  else { // Sample W from inverse-Wishart
+  } else { // Sample W from inverse-Wishart
     W.set_size(P, P, n_samples+1);
     W.slice(0) = rgen::riwishart(df_W, scale_W);
   }
@@ -270,15 +269,15 @@ List ide(arma::mat Y, arma::mat locs, arma::colvec m_0, arma::mat C_0,
     if (verbose) Rcout << "Filtering sample number " << i+1 << std::endl;
     if (sample_sigma2) sigma2_i = sigma2.at(i);
     
-    if (Discount)
+    if (Discount) {
       kalman(m, C, a, R_inv, Y, F, G.slice(i), sigma2_i, lambda.at(i));
-    else
+      C_T.slice(i) = C.slice(T); // Save for predictions
+    } else {
       kalman(m, C, a, R_inv, Y, F, G.slice(i), sigma2_i, -1, W.slice(i));
-    
+    }
     
     if (verbose) Rcout << "Drawing sample number " << i+1 << std::endl;
     backwardSample(theta.slice(i), m, a, C, G.slice(i), R_inv);
-    if (Discount) C_T.slice(i) = C.slice(T); // Save for predictions
     
     // Sigma2
     if (sample_sigma2) {

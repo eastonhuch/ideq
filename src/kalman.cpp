@@ -22,7 +22,6 @@ void kalman(arma::mat & m, arma::cube & C, arma::mat & a, arma::cube & R_inv,
   for (int t = 1; t <= T; ++t) {
     checkUserInterrupt();
     // One step ahead predictive distribution of theta
-    Rcout << "t: " << t << std::endl;
     a.col(t) = G * m.col(t-1);
     if (Discount) R_t = (1 + lambda) * G * C.slice(t-1) * G.t();
     else R_t = G * C.slice(t-1) * G.t() + W;
