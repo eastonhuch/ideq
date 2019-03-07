@@ -65,7 +65,7 @@ List eof(arma::mat Y, arma::mat F, arma::mat G_0, arma::mat Sigma_G_inv,
   if (Discount) {
     lambda.set_size(n_samples+1);
     lambda.at(0) = rigamma(alpha_lambda, beta_lambda);
-    C_T.set_size(P, P, n_samples+1);
+    C_T.set_size(P, P, n_samples);
   } 
   else { // Sample W from inverse-Wishart distribution
     W.set_size(P, P, n_samples+1);
@@ -84,7 +84,7 @@ List eof(arma::mat Y, arma::mat F, arma::mat G_0, arma::mat Sigma_G_inv,
     if (verbose) Rcout << "Filtering sample number " << i+1 << std::endl;
     if (Discount) {
       kalman(m, C, a, R_inv, Y, F, G.slice(G_idx), sigma2_i, lambda.at(i));
-      C_T.slice(i+1) = C.slice(T); // Save for predictions
+      C_T.slice(i) = C.slice(T); // Save for predictions
     } else {
       kalman(m, C, a, R_inv, Y, F, G.slice(G_idx), sigma2_i, -1, W.slice(i));
     }
@@ -145,7 +145,6 @@ List eof(arma::mat Y, arma::mat F, arma::mat G_0, arma::mat Sigma_G_inv,
   
   // Process error
   if (Discount) {
-    C_T.shed_slice(0);
     results["C_T"] = C_T;
     results["lambda"] = lambda; 
   } else {
@@ -255,9 +254,8 @@ List ide(arma::mat Y, arma::mat locs, arma::colvec m_0, arma::mat C_0,
   arma::cube W;
   if (Discount) {
     lambda.set_size(n_samples+1);
-    sampleLambda(lambda.at(0), alpha_lambda, beta_lambda,
-                 G.slice(0), C, theta.slice(0));
-    C_T.set_size(P, P, n_samples+1);
+    lambda.at(0) = rigamma(alpha_lambda, beta_lambda);
+    C_T.set_size(P, P, n_samples);
   } 
   else { // Sample W from inverse-Wishart
     W.set_size(P, P, n_samples+1);
@@ -280,7 +278,7 @@ List ide(arma::mat Y, arma::mat locs, arma::colvec m_0, arma::mat C_0,
     
     if (verbose) Rcout << "Drawing sample number " << i+1 << std::endl;
     backwardSample(theta.slice(i), m, a, C, G.slice(i), R_inv);
-    if (Discount) C_T.slice(i+1) = C.slice(T); // Save for predictions
+    if (Discount) C_T.slice(i) = C.slice(T); // Save for predictions
     
     // Sigma2
     if (sample_sigma2) {
@@ -436,12 +434,11 @@ List ide(arma::mat Y, arma::mat locs, arma::colvec m_0, arma::mat C_0,
   if (SV) {
     results["mu_kernel_knots"] = mu_kernel_knots;
     results["Sigma_kernel_knots"] = Sigma_kernel_knots;
-    results["K"] = K;
+    results["process_convolution_map"] = K;
   }
   
   if (Discount) {
     results["lambda"] = lambda;
-    C_T.shed_slice(0);
     results["C_T"] = C_T;
   }
   else {

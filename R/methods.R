@@ -215,7 +215,7 @@ summary.dstm <- function(x, object_name = deparse(substitute(x))) {
   mat_arr_idx <- which(sapply(x, function(y) is.matrix(y) || is.array(y)))
   if ( length(mat_arr_idx) > 0 ) {
     cat("\n\nMatrices/Arrays:\n")
-    mat_arr_summary <- matrix(NA, nrow = length(mat_arr_idx), ncol = 4)
+    mat_arr_summary <- matrix(NA, nrow = length(mat_arr_idx), ncol = 5)
     counter <- 1
     for (i in mat_arr_idx) {
       mat_arr_summary[counter, 1] <- class(x[[i]])
@@ -223,9 +223,14 @@ summary.dstm <- function(x, object_name = deparse(substitute(x))) {
       mat_arr_summary[counter, 2:(1 + length(dims_i))] <- dims_i
       counter <- counter + 1
     }
-    colnames(mat_arr_summary) <- c("class", "dim 1", "dim 2", "dim 3")
+    colnames(mat_arr_summary) <- c("class", "dim 1", "dim 2", "dim 3", "dim 4")
     rownames(mat_arr_summary) <- names(x)[mat_arr_idx]
     mat_arr_summary <- as.data.frame(mat_arr_summary)
+    
+    # Remove dim 4 if not needed
+    if (all(is.na(mat_arr_summary[,5]))) {
+      mat_arr_summary <- mat_arr_summary[,-5]
+    }
     print(mat_arr_summary)
   }
   
@@ -233,17 +238,8 @@ summary.dstm <- function(x, object_name = deparse(substitute(x))) {
   list_idx <- which(sapply(x, function(y) is.list(y)))
   if ( length(list_idx) > 0 ) {
     cat("\n\nLists:\n")
-    list_summary <- matrix(NA, nrow = length(list_idx), ncol = 4)
-    counter <- 1
-    for (i in list_idx) {
-      list_summary[counter, 1] <- length(x[[i]])
-      if (!grepl("param", names(x)[i])) {
-        dims_i <- dim(x[[i]][[1]])
-        list_summary[counter, 2:(1 + length(dims_i))] <- dims_i
-      }
-      counter <- counter + 1
-    }
-    colnames(list_summary) <- c("length", "dim 1", "dim 2", "dim 3")
+    list_summary <- matrix(sapply(x[list_idx], length))
+    colnames(list_summary) <- c("length")
     rownames(list_summary) <- names(x)[list_idx]
     print(list_summary)
   }

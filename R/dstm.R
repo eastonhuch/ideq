@@ -501,8 +501,12 @@ dstm_ide <- function(Y, locs=NULL, knot_locs=NULL, proc_error = "IW", J=3L,
       }
   }}
   
-  # Eliminate extra index for standard models
-  if (!SV) {
+  # Eliminate extra index when possible
+  if (SV) {
+    if (dim(results[["process_convolution_map"]])[3] == 1) {
+      results[["process_convolution_map"]] <- results[["process_convolution_map"]][,,1]
+    }
+  } else {
     results[["mu_kernel"]] <- t(results[["mu_kernel"]][,1,])
     results[["Sigma_kernel"]] <- results[["Sigma_kernel"]][,,1,]
   }
@@ -532,7 +536,6 @@ dstm_ide <- function(Y, locs=NULL, knot_locs=NULL, proc_error = "IW", J=3L,
                                     C_0=new_params[["C_0"]],
                                     mu_kernel_mean=mu_kernel_mean, 
                                     mu_kernel_var=mu_kernel_var, 
-                                    process_convolution_matrix=K, 
                                     Sigma_kernel_scale=Sigma_kernel_scale, 
                                     C_W=new_params[["C_W"]])
   
