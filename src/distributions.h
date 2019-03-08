@@ -2,6 +2,8 @@
 #define DISTRIBUTIONS_H
 
 #include <RcppArmadillo.h>
+// [[Rcpp::depends(RcppArmadillo)]]
+
 using namespace Rcpp;
 
 double ldiwishart(const arma::cube & x, const double df,

@@ -1,9 +1,7 @@
 #include <RcppArmadillo.h>
 // [[Rcpp::depends(RcppArmadillo)]]
-
 #include <rgen.h>
 // [[Rcpp::depends(rgen)]]
-
 #include "distributions.h"
 #include "misc_helpers.h"
 #include "ide_helpers.h"
@@ -132,20 +130,6 @@ void sampleSigma2(double & sigma2_new, const double & alpha_sigma2, const double
   }
   const double beta_new = beta_sigma2 + total / 2;
   sigma2_new = rigamma(alpha_new, beta_new);
-  return;
-}
-
-// Not currently being used
-void sampleV(arma::mat & Y, arma::mat & F, arma::mat & theta,
-             arma::mat & V, arma::mat & C_V, const int df_V) {
-  const int T = theta.n_cols - 1;
-  arma::mat Y_diffs = Y.cols(1, T) - F * theta.cols(1, T);
-  arma::mat C_new = df_V * C_V;
-  for (int i=0; i<T; ++i) {
-    C_new += Y_diffs.col(i) * Y_diffs.col(i).t();
-  }
-  int df_new = df_V + T;
-  V = rgen::riwishart(df_new, C_new);
   return;
 }
 

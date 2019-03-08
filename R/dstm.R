@@ -180,7 +180,6 @@ dstm_eof <- function(Y, proc_model = "Dense", P = 10L, proc_error = "IW",
 #' Integrodifference equation (IDE) model
 #' @useDynLib ideq
 #' @importFrom Rcpp sourceCpp
-#' @importFrom pdist pdist
 #' @description
 #' dstm_ide fits a type of dynamic spatio-temporal model called
 #' an integrodifference equation (IDE) model.

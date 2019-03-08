@@ -1,8 +1,6 @@
 #include <RcppArmadillo.h>
-#include <math.h>
-
 // [[Rcpp::depends(RcppArmadillo)]]
-
+#include <math.h>
 #include "distributions.h"
 
 using namespace Rcpp;

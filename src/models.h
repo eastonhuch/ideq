@@ -2,6 +2,8 @@
 #define MODELS_H
 
 #include <RcppArmadillo.h>
+// [[Rcpp::depends(RcppArmadillo)]]
+
 using namespace Rcpp;
 
 List eof(arma::mat Y, arma::mat F, arma::mat G_0, arma::mat Sigma_G_inv,

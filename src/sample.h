@@ -1,7 +1,9 @@
-#ifndef BACKWARDSAMPLE_H
-#define BACKWARDSAMPLE_H
+#ifndef SAMPLE_H
+#define SAMPLE_H
 
 #include <RcppArmadillo.h>
+// [[Rcpp::depends(RcppArmadillo)]]
+
 using namespace Rcpp;
 
 void backwardSample(arma::mat & theta, const arma::mat & m, const arma::mat & a,
@@ -21,11 +23,7 @@ void sampleLambda(double & lambda_new, const double & alpha_lambda, const double
 void sampleSigma2(double & sigma2_new, const double & alpha_sigma2, const double & beta_sigma2,
                   const arma::mat & Y, const arma::mat & F, const arma::mat & theta);
 
-
-void sampleV(arma::mat & Y, arma::mat & F, arma::cube & theta,
-             arma::mat & V, arma::mat & C_V, const int df_V);
-
-void sampleW (arma::mat & W, const arma::mat & theta, const arma::mat & G,
-              const arma::mat & scale_W, const int df_W);
+void sampleW(arma::mat & W, const arma::mat & theta, const arma::mat & G,
+             const arma::mat & scale_W, const int df_W);
 
 #endif

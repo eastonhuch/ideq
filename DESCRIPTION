@@ -11,9 +11,9 @@ RoxygenNote: 6.1.1
 LinkingTo: 
   Rcpp,
   RcppArmadillo,
-  pdist,
   rgen
 Imports: 
   Rcpp,
   matrixcalc,
+  pdist,
   mvtnorm
