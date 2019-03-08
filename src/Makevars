@@ -1,1 +1,2 @@
-PKG_LIBS= -L../
+PKG_CPPFLAGS = -fopenmp -fpic
+PKG_LIBS = -fopenmp -lRlapack -lRblas -lgfortran -lm -lquadmath
