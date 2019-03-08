@@ -178,7 +178,9 @@ dstm_eof <- function(Y, proc_model = "Dense", P = 10L, proc_error = "IW",
 }
 
 #' Integrodifference equation (IDE) model
+#' @useDynLib ideq
 #' @importFrom Rcpp sourceCpp
+#' @importFrom pdist pdist
 #' @description
 #' dstm_ide fits a type of dynamic spatio-temporal model called
 #' an integrodifference equation (IDE) model.
@@ -293,6 +295,9 @@ dstm_eof <- function(Y, proc_model = "Dense", P = 10L, proc_error = "IW",
 #' ncol(locs) + df_Sigma_kernel / proposal_factor_Sigma.
 #' proposal_factor_Sigma must generally be set lower for spatially varying 
 #' models.
+#' 
+#' kernel_samples_per_iter: (numeric scalar) Number of times to update the kernel
+#' parameters per iteration of the sampling loop.
 #'
 #' @examples
 #' # Load example data

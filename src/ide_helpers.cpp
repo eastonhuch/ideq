@@ -20,7 +20,7 @@ double kernelLikelihood(const arma::mat & G, const arma::mat & theta,
   }
   
   return -arma::as_scalar(tmp)/2.0;
-};
+}
 
 double kernelLikelihoodDiscount(const arma::mat & G, const arma::mat & theta, 
                         const arma::cube & C, const double lambda) {
@@ -34,7 +34,7 @@ double kernelLikelihoodDiscount(const arma::mat & G, const arma::mat & theta,
   }
   
   return -arma::as_scalar(tmp)/2.0;
-};
+}
 
 arma::mat makeW(const int J, const double L) {
   // NOTE: function is assumed to have period of L
@@ -50,14 +50,13 @@ arma::mat makeW(const int J, const double L) {
   w.col(1).rows((2*J+1)*J, w.n_rows-1) = arma::zeros(J, 1);
   
   return w;
-};
+}
 
 // Observation matrix
 // The number of total basis function is J^2+1
 // L is the range of the Fourier approximation
 // locs are the centered/scaled spatial locations
-arma::mat makeF(const arma::mat & locs, const arma::mat & w,
-                const int J, const double L) {
+arma::mat makeF(const arma::mat & locs, const arma::mat & w, const double L) {
   arma::mat Jmat = locs.col(0) * w.col(0).t() +
                    locs.col(1) * w.col(1).t();
   const int k = Jmat.n_cols;
@@ -67,13 +66,12 @@ arma::mat makeF(const arma::mat & locs, const arma::mat & w,
   Phi.cols(k + 1, 2*k) = std::sqrt(2.0) * arma::sin(Jmat);
   Phi /= L;
   return Phi;
-};
+}
 
 // The function makeB returns the matrix B used as part of the process matrix
 // mu and Sigma are the parameters of the IDE kernel
 void makeB(arma::mat & B, const arma::mat & mu, const arma::cube & Sigma, 
-           const arma::mat & locs, const arma::mat & w, 
-           const int J, const double L) {
+           const arma::mat & locs, const arma::mat & w, const double L) {
   
   const bool SV_mu = mu.n_cols > 1;
   const bool SV_Sigma = Sigma.n_slices > 1;
@@ -113,7 +111,7 @@ void makeB(arma::mat & B, const arma::mat & mu, const arma::cube & Sigma,
   B.cols(k+1, 2*k) = std::sqrt(2.0) * Jmat2 % arma::sin(Jmat1);
   B /= L;
   return;
-};
+}
 
 void mapSigma(arma::cube & s_many, const arma::cube & s_few,
               const arma::mat K) {
@@ -122,15 +120,15 @@ void mapSigma(arma::cube & s_many, const arma::cube & s_few,
   }
   arma::colvec tmp;
   
-  for (int r=0; r<s_few.n_rows; ++r) {
-    for (int c=0; c<s_few.n_cols; ++c) {
+  for (unsigned int r=0; r<s_few.n_rows; ++r) {
+    for (unsigned int c=0; c<s_few.n_cols; ++c) {
       tmp = s_few.tube(r, c);
       s_many.tube(r, c) = K * tmp;
     }
   }
   
   return;
-};
+}
 
 arma::mat proposeMu(arma::mat mu, arma::mat Sigma) {
   arma::colvec mu_vec = arma::vectorise(mu);
@@ -144,4 +142,4 @@ arma::mat proposeMu(arma::mat mu, arma::mat Sigma) {
   arma::colvec tmp = rmvnorm(mu_vec, Sigma);
   arma::mat mu_proposal = arma::reshape(tmp, mu.n_rows, mu.n_cols);
   return mu_proposal;
-};
+}

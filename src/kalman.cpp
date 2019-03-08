@@ -35,7 +35,7 @@ void kalman(arma::mat & m, arma::cube & C, arma::mat & a, arma::cube & R_inv,
     try {
       Q_inv = arma::inv_sympd(Q);
     }
-    catch (std::runtime_error e) {
+    catch (std::runtime_error & e) {
       Rcout << "Failed to invert Q in kalman filter" << std::endl;
       Rcout << "Consider making sigma2 larger" << std::endl;
       Q_inv = forceInv(Q);
@@ -50,7 +50,7 @@ void kalman(arma::mat & m, arma::cube & C, arma::mat & a, arma::cube & R_inv,
     try {
       R_inv.slice(t) = arma::inv_sympd(R_t);
     }
-    catch (std::runtime_error e) {
+    catch (std::runtime_error & e) {
       Rcout << "Failed to invert R in kalman filter" << std::endl;
       Rcout << "Consider using a stronger prior for W" << std::endl;
       R_inv.slice(t) = forceInv(R_t);
@@ -58,4 +58,4 @@ void kalman(arma::mat & m, arma::cube & C, arma::mat & a, arma::cube & R_inv,
     R_inv.slice(t) = arma::inv_sympd(R_t);
   }
   return;
-};
+}

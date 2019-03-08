@@ -122,6 +122,9 @@ The degrees of freedom for the proposal distribution for Sigma is
 ncol(locs) + df_Sigma_kernel / proposal_factor_Sigma.
 proposal_factor_Sigma must generally be set lower for spatially varying 
 models.
+
+kernel_samples_per_iter: (numeric scalar) Number of times to update the kernel
+parameters per iteration of the sampling loop.
 }
 \examples{
 # Load example data

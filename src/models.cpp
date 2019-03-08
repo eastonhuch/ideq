@@ -19,7 +19,7 @@ List eof(arma::mat Y, arma::mat F, arma::mat G_0, arma::mat Sigma_G_inv,
   
   // Extract scalar parameters
   const bool AR = proc_model(0) == "AR", DENSE = proc_model(0) == "Dense";
-  const int P = G_0.n_rows, T = Y.n_cols, S = Y.n_rows, df_W = params["df_W"];
+  const int P = G_0.n_rows, T = Y.n_cols, df_W = params["df_W"];
   const double alpha_sigma2 = params["alpha_sigma2"];
   const double beta_sigma2  = params["beta_sigma2"];
   const double alpha_lambda = params["alpha_lambda"];
@@ -153,7 +153,7 @@ List eof(arma::mat Y, arma::mat F, arma::mat G_0, arma::mat Sigma_G_inv,
   }
   
   return results;
-};
+}
 
 // [[Rcpp::export]]
 List ide(arma::mat Y, arma::mat locs, arma::colvec m_0, arma::mat C_0,
@@ -174,9 +174,9 @@ List ide(arma::mat Y, arma::mat locs, arma::colvec m_0, arma::mat C_0,
   const int P = (2*J + 1) * (2*J + 1) , T = Y.n_cols, S = Y.n_rows;
   const int locs_dim = locs.n_cols, n_knots = K.n_cols;
   const int kernel_samples_per_iter = params["kernel_samples_per_iter"];
-  int K_idx = 0, mu_acceptances = 0, Sigma_acceptances = 0;
+  int mu_acceptances = 0, Sigma_acceptances = 0;
   const bool sample_sigma2 = sigma2_i == NA, Discount = df_W == NA;
-  const bool dyanamic_K = K.n_slices > 1, SV = params["SV"] > 0;
+  const bool SV = params["SV"] > 0;
   const double Sigma_kernel_proposal_df = locs_dim + df_Sigma_kernel/proposal_factor_Sigma;
   const double Sigma_kernel_adjustment = Sigma_kernel_proposal_df - locs_dim - 1;
   
@@ -236,10 +236,10 @@ List ide(arma::mat Y, arma::mat locs, arma::colvec m_0, arma::mat C_0,
   
   // Create observation matrix (F) and initial process matrix (G)
   arma::mat w_for_B = makeW(J, L);
-  arma::mat F = makeF(locs, w_for_B, J, L);
+  arma::mat F = makeF(locs, w_for_B, L);
   const arma::mat FtFiFt = arma::solve(F.t() * F, F.t());
   arma::mat B(S, P);
-  makeB(B, mu_kernel.slice(0), Sigma_kernel.at(0), locs, w_for_B, J, L);
+  makeB(B, mu_kernel.slice(0), Sigma_kernel.at(0), locs, w_for_B, L);
   G.slice(0) = FtFiFt * B;
   
   // Observation error
@@ -322,7 +322,7 @@ List ide(arma::mat Y, arma::mat locs, arma::colvec m_0, arma::mat C_0,
       }
       
       // Calculate implied proposal for G and likelihood
-      makeB(B, mu_kernel_proposal, Sigma_kernel_current, locs, w_for_B, J, L);
+      makeB(B, mu_kernel_proposal, Sigma_kernel_current, locs, w_for_B, L);
       G_proposal = FtFiFt * B; 
       
       if (Discount) {
@@ -384,7 +384,7 @@ List ide(arma::mat Y, arma::mat locs, arma::colvec m_0, arma::mat C_0,
       }
       
       // Calculate likelihood
-      makeB(B, mu_kernel_current, Sigma_kernel_proposal, locs, w_for_B, J, L);
+      makeB(B, mu_kernel_current, Sigma_kernel_proposal, locs, w_for_B, L);
       G_proposal = FtFiFt * B; 
       
       if (Discount) {
@@ -452,4 +452,4 @@ List ide(arma::mat Y, arma::mat locs, arma::colvec m_0, arma::mat C_0,
   results["Sigma_acceptances"] = Sigma_acceptances;
   
   return results;
-};
+}

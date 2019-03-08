@@ -32,7 +32,7 @@ void backwardSample(arma::mat & theta, const arma::mat & m, const arma::mat & a,
     theta.col(t) = rmvnorm(h_t, H_t);
   }
   return;
-};
+}
 
 void sampleAR(arma::mat & G, const arma::cube & W_inv, const arma::mat & theta,
               const arma::mat & Sigma_G_inv, const arma::mat & mu_G,
@@ -62,7 +62,7 @@ void sampleAR(arma::mat & G, const arma::cube & W_inv, const arma::mat & theta,
   arma::mat Sigma_G_new = arma::inv_sympd(sum + Sigma_G_inv);
   G.diag() = rmvnorm(Sigma_G_new * (Sigma_G_inv * mu_G + sum2), Sigma_G_new);
   return;
-};
+}
 
 // NOTE: This update formula comes from Cressie and Wikle p. 457
 // Equation (8.54)
@@ -101,7 +101,7 @@ void sampleG(arma::mat & G, const arma::cube & W_inv, const arma::mat & theta,
   arma::mat g = rmvnorm(V_g * a_g, V_g);
   G = reshape(g, p, p);
   return;
-};
+}
 
 void sampleLambda(double & lambda_new, const double & alpha_lambda, const double & beta_lambda,
                   const arma::mat & G, const arma::cube & C, const arma::mat & theta) {
@@ -119,7 +119,7 @@ void sampleLambda(double & lambda_new, const double & alpha_lambda, const double
   const double beta_new = beta_lambda + total/2.0;
   lambda_new = rigamma(alpha_new, beta_new);
   return;
-};
+}
 
 void sampleSigma2(double & sigma2_new, const double & alpha_sigma2, const double & beta_sigma2,
                   const arma::mat & Y, const arma::mat & F, const arma::mat & theta) {
@@ -133,13 +133,12 @@ void sampleSigma2(double & sigma2_new, const double & alpha_sigma2, const double
   const double beta_new = beta_sigma2 + total / 2;
   sigma2_new = rigamma(alpha_new, beta_new);
   return;
-};
+}
 
 // Not currently being used
 void sampleV(arma::mat & Y, arma::mat & F, arma::mat & theta,
              arma::mat & V, arma::mat & C_V, const int df_V) {
   const int T = theta.n_cols - 1;
-  const int p = theta.n_rows;
   arma::mat Y_diffs = Y.cols(1, T) - F * theta.cols(1, T);
   arma::mat C_new = df_V * C_V;
   for (int i=0; i<T; ++i) {
@@ -148,7 +147,7 @@ void sampleV(arma::mat & Y, arma::mat & F, arma::mat & theta,
   int df_new = df_V + T;
   V = rgen::riwishart(df_new, C_new);
   return;
-};
+}
 
 void sampleW(arma::mat & W, const arma::mat & theta, const arma::mat & G,
              const arma::mat & scale_W, const int df_W) {
@@ -159,4 +158,4 @@ void sampleW(arma::mat & W, const arma::mat & theta, const arma::mat & G,
   const int df_new = df_W + T;
   W = rgen::riwishart(df_new, C_new);
   return;
-};
+}

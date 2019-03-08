@@ -15,11 +15,10 @@ void mapSigma(arma::cube & s_many, const arma::cube & s_few,
 
 arma::mat makeW(const int J, const double L);
 
-arma::mat makeF(const arma::mat & locs, const arma::mat & w,
-                const int J, const double L);
+arma::mat makeF(const arma::mat & locs, const arma::mat & w, const double L);
 
 void makeB(arma::mat & B, const arma::mat & mu, const arma::cube & Sigma, 
-           const arma::mat & locs, const arma::mat & w, const int J, const double L);
+           const arma::mat & locs, const arma::mat & w, const double L);
 
 arma::mat proposeMu(arma::mat mu, arma::mat Sigma);
 

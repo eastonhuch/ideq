@@ -13,7 +13,7 @@ double ldiwishart(const arma::cube & x, const double df,
   if (x.n_slices != scale.n_slices)
     throw std::invalid_argument("x and scale must have same number of slices");
   
-  for (int i=0; i<x.n_slices; ++i) {
+  for (unsigned int i=0; i<x.n_slices; ++i) {
     d += log(arma::det(scale.slice(i))) * df/2.0;
     d -= log(arma::det(x.slice(i))) * (df+p+1.0)/2.0;
     d -= arma::trace(arma::solve(x.slice(i), scale.slice(i))) / 2.0;
@@ -35,11 +35,11 @@ double ldmvnorm(const arma::mat & x, const arma::mat & mu, const arma::mat & Sig
   arma::colvec d = arma::vectorise(x - mu);
   arma::mat tmp = d.t() * arma::solve(Sigma, d);
   return -arma::as_scalar(tmp)/2;
-};
+}
 
 double rigamma(const double a, const double scl) {
   return (1 / R::rgamma(a, 1/scl));
-};
+}
 
 arma::colvec rmvnorm(const arma::colvec & mean, const arma::mat & Sigma) {
   int n = mean.n_elem;
@@ -53,7 +53,7 @@ arma::colvec rmvnorm(const arma::colvec & mean, const arma::mat & Sigma) {
   try {
     Sigma_sqrt = arma::sqrtmat_sympd(Sigma);
   }
-  catch (std::runtime_error e)
+  catch (std::runtime_error & e)
   { 
     Rcout << "Failed to calculate sqrt(Sigma) using sqrtmat_sympd" << std::endl;
     Rcout << "Forcing symmetry and trying again" << std::endl;
@@ -62,4 +62,4 @@ arma::colvec rmvnorm(const arma::colvec & mean, const arma::mat & Sigma) {
 
   arma::colvec x = mean + Sigma_sqrt * z;
   return x;
-};
+}
