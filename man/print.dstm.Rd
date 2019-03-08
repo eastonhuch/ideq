@@ -4,10 +4,15 @@
 \alias{print.dstm}
 \title{Print Method for DSTM Fits}
 \usage{
-\method{print}{dstm}(x, display = deparse(substitute(x)))
+\method{print}{dstm}(x, x_name = deparse(substitute(x)), ...)
 }
 \arguments{
 \item{x}{A `dstm` object}
+
+\item{x_name}{(optional) Object name to display}
+
+\item{...}{Arguments passed to other methods (necessary for 
+S3 generic compatibility)}
 }
 \description{
 Prints a summary for a `dstm` object by calling summary.dstm().

@@ -128,45 +128,45 @@ parameters per iteration of the sampling loop.
 }
 \examples{
 # Load example data
-data("standard_ide_data", "spatially_varying_ide_data", "spatial_locations")
+data("ide_standard", "ide_spatially_varying", "ide_locations")
 
 # Basic IDE model with one kernel
-mod <- dstm_ide(standard_ide_data, spatial_locations)
+mod <- dstm_ide(ide_standard, ide_locations)
 predict(mod)
 summary(mod)
 
 # IDE model with spatially varying kernel
-dstm_ide(spatially_varying_ide_data, spatial_locations, knot_locs=4)
+dstm_ide(ide_spatially_varying, ide_locations, knot_locs=4)
 
 # Fix sigma2
-dstm_ide(standard_ide_data, spatial_locations, 
+dstm_ide(ide_standard, ide_locations, 
          sample_sigma2=FALSE, params=list(sigma2=1))
 
 # Set prior on sigma2
-dstm_ide(standard_ide_data, spatial_locations, 
+dstm_ide(ide_standard, ide_locations, 
          params=list(alpha_sigma2=10, beta_sigma2=11))
 
 # Set prior on kernel mean
-dstm_ide(standard_ide_data, spatial_locations, 
+dstm_ide(ide_standard, ide_locations, 
          params=list(mean_mu_kernel=c(0.2, 0.4),
                      var_mu_kernel=diag(2))) 
 
 # Set prior on kernel variance-covariance matrix
-dstm_ide(standard_ide_data, spatial_locations, 
+dstm_ide(ide_standard, ide_locations, 
          params=list(scale_Sigma_kernel=diag(2), df_Sigma_kernel=100))
 
 # Set prior on state vector
 J <- 3
 P <- (2*J + 1)^2
-dstm_ide(standard_ide_data, spatial_locations, J=J,
+dstm_ide(ide_standard, ide_locations, J=J,
          params=list(m_0=rep(0.1, P), C_0=diag(0.01, P))) 
 
 # Set prior on process error
-dstm_ide(standard_ide_data, spatial_locations, J=J,
+dstm_ide(ide_standard, ide_locations, J=J,
          params=list(scale_W=diag(P), df_W=100))
 
 # Set proposal scaling factors
-dstm_ide(standard_ide_data, spatial_locations, 
+dstm_ide(ide_standard, ide_locations, 
          params=list(proposal_factor_mu=2,
                      proposal_factor_Sigma=3))
 }

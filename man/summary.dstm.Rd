@@ -4,12 +4,16 @@
 \alias{summary.dstm}
 \title{Summary Method for DSTM Fits}
 \usage{
-\method{summary}{dstm}(x, object_name = deparse(substitute(x)))
+\method{summary}{dstm}(object, object_name = deparse(substitute(object)),
+  ...)
 }
 \arguments{
-\item{x}{A `dstm` object}
+\item{object}{A `dstm` object}
 
 \item{object_name}{The name to be printed in the summary (if desired)}
+
+\item{...}{Arguments passed to other methods (necessary for 
+S3 generic compatibility)}
 }
 \description{
 Prints summary information for `dstm` objects

@@ -21,7 +21,9 @@ The t-th column (NOT row) corresponds to the t-th observation vector.}
 \item{proc_error}{(character string) Process error: 
 "IW" (inverse-Wishart) or "Discount" (discount factor).}
 
-\item{sample_sigma2}{(logical) whether to sample the variance of the iid observation error.}
+\item{n_samples}{(numeric scalar) Number of samples to draw}
+
+\item{sample_sigma2}{(logical) Whether to sample the variance of the iid observation error.}
 
 \item{verbose}{(logical) Whether to print additional information;
 e.g., iteration in sampling algorithm.}
@@ -93,24 +95,24 @@ distribution on the variance-covariance matrix of the process error (W).
 }
 \examples{
 # Load example data
-data("standard_ide_data")
+data("ide_standard")
 
 # Illustrate methods
-rw_model <- dstm_eof(standard_ide_data, proc_model="RW", verbose=TRUE)
+rw_model <- dstm_eof(ide_standard, proc_model="RW", verbose=TRUE)
 summary(rw_model) # print(rw_model) is equivalent
 predictions <- predict(rw_model) 
 
 # Other model types
-dstm_eof(standard_ide_data, proc_model="AR") # Diagonal process matrix
-dstm_eof(standard_ide_data, proc_model="Dense") # Dense process matrix
-dstm_eof(standard_ide_data, proc_error="Discount") # Discount factor
+dstm_eof(ide_standard, proc_model="AR") # Diagonal process matrix
+dstm_eof(ide_standard, proc_model="Dense") # Dense process matrix
+dstm_eof(ide_standard, proc_error="Discount") # Discount factor
 
 # Specify hyperparameters
-dstm_eof(standard_ide_data, sample_sigma2=FALSE, params=list(sigma2=0.01))
-dstm_eof(standard_ide_data, proc_error="Discount", 
+dstm_eof(ide_standard, sample_sigma2=FALSE, params=list(sigma2=0.01))
+dstm_eof(ide_standard, proc_error="Discount", 
          params=list(alpha_lambda=201, beta_lambda=20))
-dstm_eof(standard_ide_data, P=10, 
+dstm_eof(ide_standard, P=10, 
          params=list(m_0=rep(1, 10), C_0=diag(0.01, 10)))
-dstm_eof(standard_ide_data, params=list(scale_W=diag(10), df_W=100))
+dstm_eof(ide_standard, params=list(scale_W=diag(10), df_W=100))
 
 }

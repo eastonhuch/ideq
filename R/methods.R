@@ -1,11 +1,12 @@
 # Methods for dstm objects
 
 #' Predict Method for DSTM Fits
+#' @importFrom stats rnorm
 #' @description 
 #' Generates samples from the posterior predictive distribution 
 #' at future time points for 
 #' (1) the observation vector and (2) the state vector
-#' @param x
+#' @param object
 #' A `dstm` object
 #' 
 #' @param K 
@@ -26,7 +27,10 @@
 #' 
 #' @param burnin
 #' (integer scalar) The number of samples to discard as burn-in.
-#' If x$burnin exists, this argument will override it.
+#' If object$burnin exists, this argument will override it.
+#' 
+#' @param ... Arguments passed to other methods (necessary for 
+#' S3 generic compatibility)
 #' 
 #' @details
 #' The posterior predictive samples are returned in a matrix or 3-D array,
@@ -54,43 +58,43 @@
 #' # eof example
 #' mod_eof <- dstm_eof(Y)
 #' predict(mod_eof, K=2, only_K=TRUE, burnin=5)
-predict.dstm <- function(x, K = 1, only_K = FALSE, return_ys = TRUE,
-                         return_thetas = FALSE, burnin = NULL) {
+predict.dstm <- function(object, K = 1, only_K = FALSE, return_ys = TRUE,
+                         return_thetas = FALSE, burnin = NULL, ...) {
   # Argument burnin is used if provided
-  # If not, we use x$burnin if available
+  # If not, we use object$burnin if available
   # Otherwise, we use no burnin
   if (is.null(burnin)) {
-    burnin <- if ( is.null(x$burnin) ) 0 else x$burnin
+    burnin <- if ( is.null(object$burnin) ) 0 else object$burnin
   }
   if (burnin < 0) stop("burnin must be non-negative")
   if (!return_ys && !return_thetas)
     stop("return_ys and/or return_thetas must be true")
   
   # Model meta information
-  Discount <- attr(x, "proc_error") == "Discount"
-  RW <- attr(x, "proc_model") == "RW"
+  Discount <- attr(object, "proc_error") == "Discount"
+  RW <- attr(object, "proc_model") == "RW"
   
   # Dimensions
-  S  <- nrow(x[["F"]])
-  P  <- dim(x[["theta"]])[1]
-  Tp1 <- dim(x[["theta"]])[2] # T plus 1
-  n_samples <- dim(x[["theta"]])[3] - burnin
+  S  <- nrow(object[["F"]])
+  P  <- dim(object[["theta"]])[1]
+  Tp1 <- dim(object[["theta"]])[2] # T plus 1
+  n_samples <- dim(object[["theta"]])[3] - burnin
   idx_post_burnin <- seq(n_samples) + burnin
   
   # Create copies of objects needed for sampling
-  thetas_prev <- x[["theta"]][,Tp1,idx_post_burnin]
-  sigma2 <- x[["sigma2"]][idx_post_burnin]
+  thetas_prev <- object[["theta"]][,Tp1,idx_post_burnin]
+  sigma2 <- object[["sigma2"]][idx_post_burnin]
   if (RW) {
     G <- array(1, dim=c(1, 1, n_samples)) %x% diag(P)
   } else {
-    G <- x[["G"]][,,idx_post_burnin]
+    G <- object[["G"]][,,idx_post_burnin]
   }
   
   if (Discount) {
-    lambda <- x[["lambda"]][idx_post_burnin]
-    C_T <- x[["C_T"]][,,idx_post_burnin]
+    lambda <- object[["lambda"]][idx_post_burnin]
+    C_T <- object[["C_T"]][,,idx_post_burnin]
   } else {
-    W <- x[["W"]][,,idx_post_burnin]
+    W <- object[["W"]][,,idx_post_burnin]
   }
   
   # Step 1: Sample thetas from posterior predictive distribution
@@ -116,13 +120,13 @@ predict.dstm <- function(x, K = 1, only_K = FALSE, return_ys = TRUE,
   # Calculate ys
   if (return_ys) {
     # Calculate standard deviation for observation model
-    sample_sigma2 <- is.logical(attr(x, "sample_sigma2")) &&
-                     attr(x, "sample_sigma2")
+    sample_sigma2 <- is.logical(attr(object, "sample_sigma2")) &&
+                     attr(object, "sample_sigma2")
     if (sample_sigma2) my_sd <- rep(sqrt(sigma2), each=P)
-    else my_sd <- sqrt(x[["sigma2"]])
+    else my_sd <- sqrt(object[["sigma2"]])
 
     # Function to get predicted y values for a given time period
-    get_preds <- function(k) x[["F"]] %*% thetas[,k,] + rnorm(n_samples*S, sd=my_sd)
+    get_preds <- function(k) object[["F"]] %*% thetas[,k,] + rnorm(n_samples*S, sd=my_sd)
 
     # Get predicted y values for requested time period
     if (only_K || K < 2) {
@@ -149,10 +153,13 @@ predict.dstm <- function(x, K = 1, only_K = FALSE, return_ys = TRUE,
 }
 
 #' Summary Method for DSTM Fits
+#' @importFrom stats var quantile
 #' @description 
 #' Prints summary information for `dstm` objects
-#' @param x A `dstm` object
+#' @param object A `dstm` object
 #' @param object_name The name to be printed in the summary (if desired)
+#' @param ... Arguments passed to other methods (necessary for 
+#' S3 generic compatibility)
 #' @examples
 #' num_time_points <- 5
 #' num_spatial_locations <- 100
@@ -165,30 +172,30 @@ predict.dstm <- function(x, K = 1, only_K = FALSE, return_ys = TRUE,
 #' print(rw_model)
 #' rw_model
 #' @export
-summary.dstm <- function(x, object_name = deparse(substitute(x))) {
+summary.dstm <- function(object, object_name = deparse(substitute(object)), ...) {
   cat("Summary for dstm object \`", object_name, "\`\n", sep = "")
-  cat("Process model: `", attr(x, "proc_model"), "`\n", sep="")
-  cat("Process error: `", attr(x, "proc_error"), "`\n", sep="")
-  if (attr(x, "sample_sigma2")) {
+  cat("Process model: `", attr(object, "proc_model"), "`\n", sep="")
+  cat("Process error: `", attr(object, "proc_error"), "`\n", sep="")
+  if (attr(object, "sample_sigma2")) {
     cat("sigma2 was sampled\n\n")
   } else {
     cat("sigma2 was fixed\n\n")
   }
 
   cat("List elements (in order) are as follows:\n")
-  cat(names(x), "\n")
+  cat(names(object), "\n")
   
   # Numeric Scalars
-  numeric_bool <- sapply(x, function(y) is.vector(y) && is.numeric(y))
-  scalar_bool <- sapply(x, function(y) length(y) == 1)
+  numeric_bool <- sapply(object, function(y) is.vector(y) && is.numeric(y))
+  scalar_bool <- sapply(object, function(y) length(y) == 1)
   scalar_idx <- which(numeric_bool &  scalar_bool)
   vector_idx <- which(numeric_bool & !scalar_bool)
   
   if ( length(scalar_idx) > 0 ) {
     cat("\nScalar Objects:\n")
     scalars <- numeric()
-    for (i in scalar_idx) scalars <- c(scalars, x[[i]])
-    names(scalars) <- names(x)[scalar_idx]
+    for (i in scalar_idx) scalars <- c(scalars, object[[i]])
+    names(scalars) <- names(object)[scalar_idx]
     print(scalars)
   }
 
@@ -199,32 +206,32 @@ summary.dstm <- function(x, object_name = deparse(substitute(x))) {
     my_probs = c(0.0, 0.25, 0.5, 0.75, 1.0)
     counter <- 1
     for (i in vector_idx) {
-      vector_summary[counter, 1]   <- length(x[[i]])
-      vector_summary[counter, 2]   <- mean(x[[i]])
-      vector_summary[counter, 3]   <- var(x[[i]])
-      vector_summary[counter, 4:8] <- quantile(x[[i]], probs = my_probs)
+      vector_summary[counter, 1]   <- length(object[[i]])
+      vector_summary[counter, 2]   <- mean(object[[i]])
+      vector_summary[counter, 3]   <- var(object[[i]])
+      vector_summary[counter, 4:8] <- quantile(object[[i]], probs = my_probs)
       counter <- counter + 1
     }
     colnames(vector_summary) <- c("Length", "Mean", "Var",
                                  paste0(as.character(my_probs * 100), "%"))
-    rownames(vector_summary) <- names(x)[vector_idx]
+    rownames(vector_summary) <- names(object)[vector_idx]
     print(vector_summary)
   }
 
   # Matrices/Arrays
-  mat_arr_idx <- which(sapply(x, function(y) is.matrix(y) || is.array(y)))
+  mat_arr_idx <- which(sapply(object, function(y) is.matrix(y) || is.array(y)))
   if ( length(mat_arr_idx) > 0 ) {
     cat("\n\nMatrices/Arrays:\n")
     mat_arr_summary <- matrix(NA, nrow = length(mat_arr_idx), ncol = 5)
     counter <- 1
     for (i in mat_arr_idx) {
-      mat_arr_summary[counter, 1] <- class(x[[i]])
-      dims_i <- dim(x[[i]])
+      mat_arr_summary[counter, 1] <- class(object[[i]])
+      dims_i <- dim(object[[i]])
       mat_arr_summary[counter, 2:(1 + length(dims_i))] <- dims_i
       counter <- counter + 1
     }
     colnames(mat_arr_summary) <- c("class", "dim 1", "dim 2", "dim 3", "dim 4")
-    rownames(mat_arr_summary) <- names(x)[mat_arr_idx]
+    rownames(mat_arr_summary) <- names(object)[mat_arr_idx]
     mat_arr_summary <- as.data.frame(mat_arr_summary)
     
     # Remove dim 4 if not needed
@@ -235,12 +242,12 @@ summary.dstm <- function(x, object_name = deparse(substitute(x))) {
   }
   
   # Lists
-  list_idx <- which(sapply(x, function(y) is.list(y)))
+  list_idx <- which(sapply(object, function(y) is.list(y)))
   if ( length(list_idx) > 0 ) {
     cat("\n\nLists:\n")
-    list_summary <- matrix(sapply(x[list_idx], length))
+    list_summary <- matrix(sapply(object[list_idx], length))
     colnames(list_summary) <- c("length")
-    rownames(list_summary) <- names(x)[list_idx]
+    rownames(list_summary) <- names(object)[list_idx]
     print(list_summary)
   }
 }
@@ -249,8 +256,11 @@ summary.dstm <- function(x, object_name = deparse(substitute(x))) {
 #' @description 
 #' Prints a summary for a `dstm` object by calling summary.dstm().
 #' @param x A `dstm` object
+#' @param x_name (optional) Object name to display
+#' @param ... Arguments passed to other methods (necessary for 
+#' S3 generic compatibility)
 #' @seealso summary.dstm
 #' @export
-print.dstm <- function(x, display = deparse(substitute(x))) {
-  summary.dstm(x, object_name = display)
+print.dstm <- function(x, x_name = deparse(substitute(x)), ...) {
+  summary.dstm(x, object_name = x_name)
 }

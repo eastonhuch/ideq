@@ -1,6 +1,7 @@
 #' Dynamic spatio-temporal model with EOFs
 #' @useDynLib ideq
 #' @importFrom Rcpp sourceCpp
+#' @importFrom stats cov
 #' @description 
 #' Fits a dynamic spatio-temporal model using empirical orthogonal functions
 #' (EOFs).
@@ -36,8 +37,9 @@
 #' @param proc_error 
 #' (character string) Process error: 
 #' "IW" (inverse-Wishart) or "Discount" (discount factor).
+#' @param n_samples (numeric scalar) Number of samples to draw
 #' @param sample_sigma2 
-#' (logical) whether to sample the variance of the iid observation error.
+#' (logical) Whether to sample the variance of the iid observation error.
 #' @param verbose 
 #' (logical) Whether to print additional information;
 #' e.g., iteration in sampling algorithm.
@@ -86,25 +88,25 @@
 #' 
 #' @examples
 #' # Load example data
-#' data("standard_ide_data")
+#' data("ide_standard")
 #' 
 #' # Illustrate methods
-#' rw_model <- dstm_eof(standard_ide_data, proc_model="RW", verbose=TRUE)
+#' rw_model <- dstm_eof(ide_standard, proc_model="RW", verbose=TRUE)
 #' summary(rw_model) # print(rw_model) is equivalent
 #' predictions <- predict(rw_model) 
 #' 
 #' # Other model types
-#' dstm_eof(standard_ide_data, proc_model="AR") # Diagonal process matrix
-#' dstm_eof(standard_ide_data, proc_model="Dense") # Dense process matrix
-#' dstm_eof(standard_ide_data, proc_error="Discount") # Discount factor
+#' dstm_eof(ide_standard, proc_model="AR") # Diagonal process matrix
+#' dstm_eof(ide_standard, proc_model="Dense") # Dense process matrix
+#' dstm_eof(ide_standard, proc_error="Discount") # Discount factor
 #' 
 #' # Specify hyperparameters
-#' dstm_eof(standard_ide_data, sample_sigma2=FALSE, params=list(sigma2=0.01))
-#' dstm_eof(standard_ide_data, proc_error="Discount", 
+#' dstm_eof(ide_standard, sample_sigma2=FALSE, params=list(sigma2=0.01))
+#' dstm_eof(ide_standard, proc_error="Discount", 
 #'          params=list(alpha_lambda=201, beta_lambda=20))
-#' dstm_eof(standard_ide_data, P=10, 
+#' dstm_eof(ide_standard, P=10, 
 #'          params=list(m_0=rep(1, 10), C_0=diag(0.01, 10)))
-#' dstm_eof(standard_ide_data, params=list(scale_W=diag(10), df_W=100))
+#' dstm_eof(ide_standard, params=list(scale_W=diag(10), df_W=100))
 #' 
 #' @export
 dstm_eof <- function(Y, proc_model = "Dense", P = 10L, proc_error = "IW",
@@ -300,45 +302,45 @@ dstm_eof <- function(Y, proc_model = "Dense", P = 10L, proc_error = "IW",
 #'
 #' @examples
 #' # Load example data
-#' data("standard_ide_data", "spatially_varying_ide_data", "spatial_locations")
+#' data("ide_standard", "ide_spatially_varying", "ide_locations")
 #' 
 #' # Basic IDE model with one kernel
-#' mod <- dstm_ide(standard_ide_data, spatial_locations)
+#' mod <- dstm_ide(ide_standard, ide_locations)
 #' predict(mod)
 #' summary(mod)
 #' 
 #' # IDE model with spatially varying kernel
-#' dstm_ide(spatially_varying_ide_data, spatial_locations, knot_locs=4)
+#' dstm_ide(ide_spatially_varying, ide_locations, knot_locs=4)
 #' 
 #' # Fix sigma2
-#' dstm_ide(standard_ide_data, spatial_locations, 
+#' dstm_ide(ide_standard, ide_locations, 
 #'          sample_sigma2=FALSE, params=list(sigma2=1))
 #' 
 #' # Set prior on sigma2
-#' dstm_ide(standard_ide_data, spatial_locations, 
+#' dstm_ide(ide_standard, ide_locations, 
 #'          params=list(alpha_sigma2=10, beta_sigma2=11))
 #' 
 #' # Set prior on kernel mean
-#' dstm_ide(standard_ide_data, spatial_locations, 
+#' dstm_ide(ide_standard, ide_locations, 
 #'          params=list(mean_mu_kernel=c(0.2, 0.4),
 #'                      var_mu_kernel=diag(2))) 
 #' 
 #' # Set prior on kernel variance-covariance matrix
-#' dstm_ide(standard_ide_data, spatial_locations, 
+#' dstm_ide(ide_standard, ide_locations, 
 #'          params=list(scale_Sigma_kernel=diag(2), df_Sigma_kernel=100))
 #' 
 #' # Set prior on state vector
 #' J <- 3
 #' P <- (2*J + 1)^2
-#' dstm_ide(standard_ide_data, spatial_locations, J=J,
+#' dstm_ide(ide_standard, ide_locations, J=J,
 #'          params=list(m_0=rep(0.1, P), C_0=diag(0.01, P))) 
 #' 
 #' # Set prior on process error
-#' dstm_ide(standard_ide_data, spatial_locations, J=J,
+#' dstm_ide(ide_standard, ide_locations, J=J,
 #'          params=list(scale_W=diag(P), df_W=100))
 #' 
 #' # Set proposal scaling factors
-#' dstm_ide(standard_ide_data, spatial_locations, 
+#' dstm_ide(ide_standard, ide_locations, 
 #'          params=list(proposal_factor_mu=2,
 #'                      proposal_factor_Sigma=3))
 #' @export

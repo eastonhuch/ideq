@@ -4,11 +4,11 @@
 \alias{predict.dstm}
 \title{Predict Method for DSTM Fits}
 \usage{
-\method{predict}{dstm}(x, K = 1, only_K = FALSE, return_ys = TRUE,
-  return_thetas = FALSE, burnin = NULL)
+\method{predict}{dstm}(object, K = 1, only_K = FALSE,
+  return_ys = TRUE, return_thetas = FALSE, burnin = NULL, ...)
 }
 \arguments{
-\item{x}{A `dstm` object}
+\item{object}{A `dstm` object}
 
 \item{K}{(integer scalar) The number of future time periods for which to generate
 predictions}
@@ -23,7 +23,10 @@ distribution of the observation vector (ys)}
 distribution of the state vector (thetas)}
 
 \item{burnin}{(integer scalar) The number of samples to discard as burn-in.
-If x$burnin exists, this argument will override it.}
+If object$burnin exists, this argument will override it.}
+
+\item{...}{Arguments passed to other methods (necessary for 
+S3 generic compatibility)}
 }
 \description{
 Generates samples from the posterior predictive distribution 

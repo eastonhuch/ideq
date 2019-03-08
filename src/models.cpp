@@ -1,4 +1,4 @@
-#include <math.h>
+#include <cmath>
 #include <RcppArmadillo.h>
 // [[Rcpp::depends(RcppArmadillo)]]
 #include <rgen.h>
@@ -189,7 +189,7 @@ List ide(arma::mat Y, arma::mat locs, arma::colvec m_0, arma::mat C_0,
   C.slice(0) = C_0;
   
   // Create objects for storing sampled mu_kernel and Sigma_kernel
-  float u;
+  double u;
   
   // G
   arma::mat G_proposal, G_current;
@@ -335,7 +335,7 @@ List ide(arma::mat Y, arma::mat locs, arma::colvec m_0, arma::mat C_0,
       
       // Accept according to mh-ratio
       u = R::runif(0, 1);
-      if (std::log(u) < mh_ratio) {
+      if (log(u) < mh_ratio) {
         ++mu_acceptances;
         G_current = G_proposal;
         mu_kernel_current = mu_kernel_proposal;
@@ -397,7 +397,7 @@ List ide(arma::mat Y, arma::mat locs, arma::colvec m_0, arma::mat C_0,
       
       // Accept according to mh-ratio
       u = R::runif(0, 1);
-      if (std::log(u) < mh_ratio) {
+      if (log(u) < mh_ratio) {
         ++Sigma_acceptances;
         G_current = G_proposal;
         Sigma_kernel_current = Sigma_kernel_proposal;
