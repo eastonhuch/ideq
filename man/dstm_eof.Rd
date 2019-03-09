@@ -4,8 +4,8 @@
 \alias{dstm_eof}
 \title{Dynamic spatio-temporal model with EOFs}
 \usage{
-dstm_eof(Y, proc_model = "Dense", P = 10L, proc_error = "IW",
-  n_samples = 10L, sample_sigma2 = TRUE, verbose = FALSE,
+dstm_eof(Y, proc_model = "Dense", P = 4L, proc_error = "IW",
+  n_samples = 1L, sample_sigma2 = TRUE, verbose = FALSE,
   params = NULL)
 }
 \arguments{
@@ -99,20 +99,19 @@ data("ide_standard")
 
 # Illustrate methods
 rw_model <- dstm_eof(ide_standard, proc_model="RW", verbose=TRUE)
-summary(rw_model) # print(rw_model) is equivalent
-predictions <- predict(rw_model) 
+summary(rw_model)
+predict(rw_model) 
 
 # Other model types
 dstm_eof(ide_standard, proc_model="AR") # Diagonal process matrix
 dstm_eof(ide_standard, proc_model="Dense") # Dense process matrix
-dstm_eof(ide_standard, proc_error="Discount") # Discount factor
 
 # Specify hyperparameters
-dstm_eof(ide_standard, sample_sigma2=FALSE, params=list(sigma2=0.01))
-dstm_eof(ide_standard, proc_error="Discount", 
-         params=list(alpha_lambda=201, beta_lambda=20))
-dstm_eof(ide_standard, P=10, 
-         params=list(m_0=rep(1, 10), C_0=diag(0.01, 10)))
-dstm_eof(ide_standard, params=list(scale_W=diag(10), df_W=100))
-
+P <- 5
+dstm_eof(ide_standard, sample_sigma2=FALSE, proc_error="Discount", P=P,
+         params=list(sigma2=0.01, alpha_lambda=201, beta_lambda=20))
+         
+dstm_eof(ide_standard, sample_sigma2=FALSE, P=P,
+         params=list(m_0=rep(1, P), C_0=diag(0.01, P),
+                     scale_W=diag(P), df_W=100))
 }

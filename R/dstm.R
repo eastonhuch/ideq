@@ -92,25 +92,24 @@
 #' 
 #' # Illustrate methods
 #' rw_model <- dstm_eof(ide_standard, proc_model="RW", verbose=TRUE)
-#' summary(rw_model) # print(rw_model) is equivalent
-#' predictions <- predict(rw_model) 
+#' summary(rw_model)
+#' predict(rw_model) 
 #' 
 #' # Other model types
 #' dstm_eof(ide_standard, proc_model="AR") # Diagonal process matrix
 #' dstm_eof(ide_standard, proc_model="Dense") # Dense process matrix
-#' dstm_eof(ide_standard, proc_error="Discount") # Discount factor
 #' 
 #' # Specify hyperparameters
-#' dstm_eof(ide_standard, sample_sigma2=FALSE, params=list(sigma2=0.01))
-#' dstm_eof(ide_standard, proc_error="Discount", 
-#'          params=list(alpha_lambda=201, beta_lambda=20))
-#' dstm_eof(ide_standard, P=10, 
-#'          params=list(m_0=rep(1, 10), C_0=diag(0.01, 10)))
-#' dstm_eof(ide_standard, params=list(scale_W=diag(10), df_W=100))
-#' 
+#' P <- 5
+#' dstm_eof(ide_standard, sample_sigma2=FALSE, proc_error="Discount", P=P,
+#'          params=list(sigma2=0.01, alpha_lambda=201, beta_lambda=20))
+#'          
+#' dstm_eof(ide_standard, sample_sigma2=FALSE, P=P,
+#'          params=list(m_0=rep(1, P), C_0=diag(0.01, P),
+#'                      scale_W=diag(P), df_W=100))
 #' @export
-dstm_eof <- function(Y, proc_model = "Dense", P = 10L, proc_error = "IW",
-                     n_samples = 10L, sample_sigma2 = TRUE, verbose = FALSE,
+dstm_eof <- function(Y, proc_model = "Dense", P = 4L, proc_error = "IW",
+                     n_samples = 1L, sample_sigma2 = TRUE, verbose = FALSE,
                      params = NULL) {
   
   # Observation Model; creates F, m_0, C_0
@@ -316,36 +315,24 @@ dstm_eof <- function(Y, proc_model = "Dense", P = 10L, proc_error = "IW",
 #' dstm_ide(ide_standard, ide_locations, 
 #'          sample_sigma2=FALSE, params=list(sigma2=1))
 #' 
-#' # Set prior on sigma2
+#' # Set proposal scaling factors, number of kernel updates per iteration,
+#' # and prior distribution on kernel parameters
 #' dstm_ide(ide_standard, ide_locations, 
-#'          params=list(alpha_sigma2=10, beta_sigma2=11))
-#' 
-#' # Set prior on kernel mean
-#' dstm_ide(ide_standard, ide_locations, 
-#'          params=list(mean_mu_kernel=c(0.2, 0.4),
-#'                      var_mu_kernel=diag(2))) 
-#' 
-#' # Set prior on kernel variance-covariance matrix
-#' dstm_ide(ide_standard, ide_locations, 
-#'          params=list(scale_Sigma_kernel=diag(2), df_Sigma_kernel=100))
-#' 
-#' # Set prior on state vector
-#' J <- 3
+#'          params=list(proposal_factor_mu=2, proposal_factor_Sigma=3,
+#'                      kernel_updates_per_iter=2,
+#'                      scale_Sigma_kernel=diag(2), df_Sigma_kernel=100,
+#'                      mean_mu_kernel=c(0.2, 0.4), var_mu_kernel=diag(2)))
+#'                      
+#' # Set priors on state vector, process error, and observation error
+#' J <- 1
 #' P <- (2*J + 1)^2
-#' dstm_ide(ide_standard, ide_locations, J=J,
-#'          params=list(m_0=rep(0.1, P), C_0=diag(0.01, P))) 
-#' 
-#' # Set prior on process error
-#' dstm_ide(ide_standard, ide_locations, J=J,
-#'          params=list(scale_W=diag(P), df_W=100))
-#' 
-#' # Set proposal scaling factors
-#' dstm_ide(ide_standard, ide_locations, 
-#'          params=list(proposal_factor_mu=2,
-#'                      proposal_factor_Sigma=3))
+#' dstm_ide(ide_standard, ide_locations,
+#'          params=list(m_0=rep(1, P), C_0=diag(0.01, P),
+#'                      alpha_sigma2=20, beta_sigma2=20,
+#'                      scale_W=diag(P), df_W=100))
 #' @export
-dstm_ide <- function(Y, locs=NULL, knot_locs=NULL, proc_error = "IW", J=3L,
-                     n_samples = 10L, sample_sigma2 = TRUE,
+dstm_ide <- function(Y, locs=NULL, knot_locs=NULL, proc_error = "IW", J=1L,
+                     n_samples = 1L, sample_sigma2 = TRUE,
                      verbose = FALSE, params = NULL) {
   
   # Error checking for J, L, locs, knot_locs

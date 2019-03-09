@@ -5,7 +5,7 @@
 #' @description 
 #' Generates samples from the posterior predictive distribution 
 #' at future time points for 
-#' (1) the observation vector and (2) the state vector
+#' (1) the observation vector and (2) the state vector.
 #' @param object
 #' A `dstm` object
 #' 
@@ -42,22 +42,19 @@
 #' 2. t: The time index
 #' 
 #' 3. n_samples: The sample number
-#' @export
 #' @examples
-#' num_time_points <- 5
-#' spatial_locations <- expand.grid(seq(10), seq(10))
-#' num_spatial_locations <- nrow(spatial_locations)
-#' z <- rnorm(num_time_points * num_spatial_locations)
-#' Y <- matrix(z, nrow=num_spatial_locations, ncol=num_time_points)
+#  Load example data
+#' data("ide_standard", "ide_locations")
 #' 
-#' # ide example
-#' mod_ide <- dstm_ide(Y, spatial_locations)
+#' # IDE example
+#' mod_ide <- dstm_ide(ide_standard, ide_locations)
 #' predict(mod_ide)
 #' predict(mod_ide, K=4, return_thetas=TRUE)
 #' 
-#' # eof example
-#' mod_eof <- dstm_eof(Y)
-#' predict(mod_eof, K=2, only_K=TRUE, burnin=5)
+#' # EOF example
+#' mod_eof <- dstm_eof(ide_standard, n_samples=2)
+#' predict(mod_eof, K=2, only_K=TRUE, burnin=1)
+#' @export
 predict.dstm <- function(object, K = 1, only_K = FALSE, return_ys = TRUE,
                          return_thetas = FALSE, burnin = NULL, ...) {
   # Argument burnin is used if provided
@@ -67,6 +64,8 @@ predict.dstm <- function(object, K = 1, only_K = FALSE, return_ys = TRUE,
     burnin <- if ( is.null(object$burnin) ) 0 else object$burnin
   }
   if (burnin < 0) stop("burnin must be non-negative")
+  n_samples_total <- dim(object[["theta"]])[3]
+  if (burnin >= n_samples_total) stop("burnin must be less than n_samples")
   if (!return_ys && !return_thetas)
     stop("return_ys and/or return_thetas must be true")
   
@@ -83,18 +82,23 @@ predict.dstm <- function(object, K = 1, only_K = FALSE, return_ys = TRUE,
   
   # Create copies of objects needed for sampling
   thetas_prev <- object[["theta"]][,Tp1,idx_post_burnin]
+  thetas_prev <- as.matrix(thetas_prev) # In case it's a vector
   sigma2 <- object[["sigma2"]][idx_post_burnin]
   if (RW) {
-    G <- array(1, dim=c(1, 1, n_samples)) %x% diag(P)
+    G <- diag(P)
   } else {
     G <- object[["G"]][,,idx_post_burnin]
   }
+  # In case G is a matrix instead of an array
+  if (length(dim(G)) == 2) G <- array(1, dim=c(1, 1, 1)) %x% G
   
   if (Discount) {
     lambda <- object[["lambda"]][idx_post_burnin]
     C_T <- object[["C_T"]][,,idx_post_burnin]
+    if (length(dim(C_T)) == 2) C_T <- array(1, dim=c(1, 1, 1)) %x% C_T
   } else {
     W <- object[["W"]][,,idx_post_burnin]
+    if (length(dim(W)) == 2) W <- array(1, dim=c(1, 1, 1)) %x% W
   }
   
   # Step 1: Sample thetas from posterior predictive distribution
@@ -106,14 +110,14 @@ predict.dstm <- function(object, K = 1, only_K = FALSE, return_ys = TRUE,
     W <- calc_W(lambda, C_Tpk)
   }
   
-  thetas[,1,] <- next_thetas(thetas_prev, G, W)
+  thetas[, 1,] <- next_thetas(thetas_prev, G, W)
   if (K > 1) {
     for (k in seq(2, K)) {
       if (Discount) {
         C_Tpk <- update_C(C_Tpk, G)
         W <- calc_W(lambda, C_Tpk)
       }
-      thetas[,k,] <- next_thetas(thetas[,k-1,], G, W)
+      thetas[,k,] <- next_thetas(as.matrix(thetas[,k-1,]), G, W)
     }
   }
 
@@ -155,22 +159,17 @@ predict.dstm <- function(object, K = 1, only_K = FALSE, return_ys = TRUE,
 #' Summary Method for DSTM Fits
 #' @importFrom stats var quantile
 #' @description 
-#' Prints summary information for `dstm` objects
+#' Prints summary information for `dstm` objects.
 #' @param object A `dstm` object
 #' @param object_name The name to be printed in the summary (if desired)
 #' @param ... Arguments passed to other methods (necessary for 
 #' S3 generic compatibility)
 #' @examples
-#' num_time_points <- 5
-#' num_spatial_locations <- 100
-#' z <- rnorm(num_time_points * num_spatial_locations)
-#' Y <- matrix(z, nrow=num_spatial_locations, ncol=num_time_points)
-#' rw_model <- dstm_eof(Y, proc_model="RW") # Random walk model
-#' summary(rw_model)
-#' 
-#' # Identically
-#' print(rw_model)
-#' rw_model
+#' # Load example data
+#' data("ide_standard", "ide_locations")
+#' mod_ide <- dstm_ide(ide_standard, ide_locations)
+#' summary(mod_ide)
+#' @seealso [print.summary()]
 #' @export
 summary.dstm <- function(object, object_name = deparse(substitute(object)), ...) {
   cat("Summary for dstm object \`", object_name, "\`\n", sep = "")
@@ -259,7 +258,7 @@ summary.dstm <- function(object, object_name = deparse(substitute(object)), ...)
 #' @param x_name (optional) Object name to display
 #' @param ... Arguments passed to other methods (necessary for 
 #' S3 generic compatibility)
-#' @seealso summary.dstm
+#' @seealso [summary.dstm()]
 #' @export
 print.dstm <- function(x, x_name = deparse(substitute(x)), ...) {
   summary.dstm(x, object_name = x_name)

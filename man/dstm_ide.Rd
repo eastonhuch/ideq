@@ -5,7 +5,7 @@
 \title{Integrodifference equation (IDE) model}
 \usage{
 dstm_ide(Y, locs = NULL, knot_locs = NULL, proc_error = "IW",
-  J = 3L, n_samples = 10L, sample_sigma2 = TRUE, verbose = FALSE,
+  J = 1L, n_samples = 1L, sample_sigma2 = TRUE, verbose = FALSE,
   params = NULL)
 }
 \arguments{
@@ -142,31 +142,19 @@ dstm_ide(ide_spatially_varying, ide_locations, knot_locs=4)
 dstm_ide(ide_standard, ide_locations, 
          sample_sigma2=FALSE, params=list(sigma2=1))
 
-# Set prior on sigma2
+# Set proposal scaling factors, number of kernel updates per iteration,
+# and prior distribution on kernel parameters
 dstm_ide(ide_standard, ide_locations, 
-         params=list(alpha_sigma2=10, beta_sigma2=11))
-
-# Set prior on kernel mean
-dstm_ide(ide_standard, ide_locations, 
-         params=list(mean_mu_kernel=c(0.2, 0.4),
-                     var_mu_kernel=diag(2))) 
-
-# Set prior on kernel variance-covariance matrix
-dstm_ide(ide_standard, ide_locations, 
-         params=list(scale_Sigma_kernel=diag(2), df_Sigma_kernel=100))
-
-# Set prior on state vector
-J <- 3
+         params=list(proposal_factor_mu=2, proposal_factor_Sigma=3,
+                     kernel_updates_per_iter=2,
+                     scale_Sigma_kernel=diag(2), df_Sigma_kernel=100,
+                     mean_mu_kernel=c(0.2, 0.4), var_mu_kernel=diag(2)))
+                     
+# Set priors on state vector, process error, and observation error
+J <- 1
 P <- (2*J + 1)^2
-dstm_ide(ide_standard, ide_locations, J=J,
-         params=list(m_0=rep(0.1, P), C_0=diag(0.01, P))) 
-
-# Set prior on process error
-dstm_ide(ide_standard, ide_locations, J=J,
-         params=list(scale_W=diag(P), df_W=100))
-
-# Set proposal scaling factors
-dstm_ide(ide_standard, ide_locations, 
-         params=list(proposal_factor_mu=2,
-                     proposal_factor_Sigma=3))
+dstm_ide(ide_standard, ide_locations,
+         params=list(m_0=rep(1, P), C_0=diag(0.01, P),
+                     alpha_sigma2=20, beta_sigma2=20,
+                     scale_W=diag(P), df_W=100))
 }

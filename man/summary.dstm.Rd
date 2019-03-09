@@ -16,17 +16,14 @@
 S3 generic compatibility)}
 }
 \description{
-Prints summary information for `dstm` objects
+Prints summary information for `dstm` objects.
 }
 \examples{
-num_time_points <- 5
-num_spatial_locations <- 100
-z <- rnorm(num_time_points * num_spatial_locations)
-Y <- matrix(z, nrow=num_spatial_locations, ncol=num_time_points)
-rw_model <- dstm_eof(Y, proc_model="RW") # Random walk model
-summary(rw_model)
-
-# Identically
-print(rw_model)
-rw_model
+# Load example data
+data("ide_standard", "ide_locations")
+mod_ide <- dstm_ide(ide_standard, ide_locations)
+summary(mod_ide)
+}
+\seealso{
+[print.summary()]
 }

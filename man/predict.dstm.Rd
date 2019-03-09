@@ -31,7 +31,7 @@ S3 generic compatibility)}
 \description{
 Generates samples from the posterior predictive distribution 
 at future time points for 
-(1) the observation vector and (2) the state vector
+(1) the observation vector and (2) the state vector.
 }
 \details{
 The posterior predictive samples are returned in a matrix or 3-D array,
@@ -45,18 +45,14 @@ The dimensions are always in the following order:
 3. n_samples: The sample number
 }
 \examples{
-num_time_points <- 5
-spatial_locations <- expand.grid(seq(10), seq(10))
-num_spatial_locations <- nrow(spatial_locations)
-z <- rnorm(num_time_points * num_spatial_locations)
-Y <- matrix(z, nrow=num_spatial_locations, ncol=num_time_points)
+data("ide_standard", "ide_locations")
 
-# ide example
-mod_ide <- dstm_ide(Y, spatial_locations)
+# IDE example
+mod_ide <- dstm_ide(ide_standard, ide_locations)
 predict(mod_ide)
 predict(mod_ide, K=4, return_thetas=TRUE)
 
-# eof example
-mod_eof <- dstm_eof(Y)
-predict(mod_eof, K=2, only_K=TRUE, burnin=5)
+# EOF example
+mod_eof <- dstm_eof(ide_standard, n_samples=2)
+predict(mod_eof, K=2, only_K=TRUE, burnin=1)
 }

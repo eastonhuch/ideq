@@ -18,5 +18,5 @@ S3 generic compatibility)}
 Prints a summary for a `dstm` object by calling summary.dstm().
 }
 \seealso{
-summary.dstm
+[summary.dstm()]
 }
