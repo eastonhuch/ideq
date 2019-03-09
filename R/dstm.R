@@ -348,6 +348,7 @@ dstm_ide <- function(Y, locs=NULL, knot_locs=NULL, proc_error = "IW", J=1L,
 
   L <- params[["L"]] %else% 2
   check.numeric.scalar(L)
+  transformed_range <- L/2
   
   smoothing <- params[["smoothing"]] %else% 1
   check.numeric.scalar(smoothing)
@@ -355,10 +356,10 @@ dstm_ide <- function(Y, locs=NULL, knot_locs=NULL, proc_error = "IW", J=1L,
   SV <- is.numeric(knot_locs)
   if (!(SV || is.null(knot_locs))) stop("knot_locs must be numeric or null")
   
-  # Center spatial locations to have range of L/2
+  # Center spatial locations to have range of transformed_range
   locs_ranges <- apply(locs, 2, function(x) diff(range(x)))
   locs_offsets <- apply(locs, 2, function(x) max(x) - diff(range(x))/2)
-  locs_scaled <- scale_all(locs, L/2)
+  locs_scaled <- scale_all(locs, transformed_range)
   
   # Process Model; creates kernel parameters
   locs_dim <- ncol(locs)
@@ -372,10 +373,13 @@ dstm_ide <- function(Y, locs=NULL, knot_locs=NULL, proc_error = "IW", J=1L,
   mean_mu_kernel <- params[["mean_mu_kernel"]] %else% rep(0, locs_dim)
   check.numeric.vector(mean_mu_kernel, locs_dim, dim_name="ncol(locs)")
   mean_mu_kernel <- as.matrix(mean_mu_kernel)
+  mean_mu_kernel <- mean_mu_kernel * (transformed_range) / locs_ranges
   
   # var_mu_kernel
   var_mu_kernel <- params[["var_mu_kernel"]] %else% diag(L/4, locs_dim)
   check.cov.matrix(var_mu_kernel, locs_dim, dim_name="ncol(locs)")
+  D <- diag(1/locs_ranges)
+  var_mu_kernel <- (transformed_range)^2 * D %*% var_mu_kernel %*% D
   
   # proposal_factor_mu
   proposal_factor_mu <- params[["proposal_factor_mu"]] %else% 1
@@ -387,10 +391,11 @@ dstm_ide <- function(Y, locs=NULL, knot_locs=NULL, proc_error = "IW", J=1L,
   check.numeric.scalar(df_Sigma_kernel, x_min=locs_dim-1)
   
   # scale_Sigma_kernel
-  Sigma_kernel_mean <- L/20
+  Sigma_kernel_mean <- transformed_range/10
   scale_Sigma_kernel <- params[["scale_Sigma_kernel"]] %else% 
                           diag((df_Sigma_kernel-locs_dim-1)*Sigma_kernel_mean, locs_dim)
   check.cov.matrix(scale_Sigma_kernel, locs_dim, dim_name="ncol(locs)")
+  scale_Sigma_kernel <- (transformed_range)^2 * D %*% scale_Sigma_kernel %*% D
   
   # proposal_factor_Sigma
   proposal_factor_Sigma <- params[["proposal_factor_Sigma"]] %else%
@@ -405,9 +410,9 @@ dstm_ide <- function(Y, locs=NULL, knot_locs=NULL, proc_error = "IW", J=1L,
   if (SV) {
     # prepare knot_locs
     if (length(knot_locs) > 1) {
-      knot_locs_scaled <- scale_all(knot_locs, L/2, locs_ranges)
+      knot_locs_scaled <- scale_all(knot_locs, transformed_range, locs_ranges)
     } else {
-      knot_locs_scaled <- gen_grid(as.integer(knot_locs), L/2)
+      knot_locs_scaled <- gen_grid(as.integer(knot_locs), transformed_range)
       knot_locs <- knot_locs_scaled
       for (i in seq(2)) {
         knot_locs[,i] <- knot_locs[,i] * locs_ranges[i] + locs_offsets[i]
@@ -467,11 +472,11 @@ dstm_ide <- function(Y, locs=NULL, knot_locs=NULL, proc_error = "IW", J=1L,
     if (SV) {
       for (item_name in c("mu_kernel", "mu_kernel_knots")) {
         results[[item_name]][,i,] <- results[[item_name]][,i,] *
-                                     (locs_ranges[i] / L)
+                                     (locs_ranges[i] / (transformed_range))
       }
     } else {
       results[["mu_kernel"]][i,,] <- results[["mu_kernel"]][i,,] *
-                                     (locs_ranges[i] / L)
+                                     (locs_ranges[i] / (transformed_range))
     }
   }
   
@@ -482,11 +487,11 @@ dstm_ide <- function(Y, locs=NULL, knot_locs=NULL, proc_error = "IW", J=1L,
   for (i in seq(2)) { for (j in seq(2)) {
       results[["Sigma_kernel"]][i,j,,] <- 
         results[["Sigma_kernel"]][i,j,,] *
-        (locs_ranges[i] * locs_ranges[j] / L^2)
+        (locs_ranges[i] * locs_ranges[j] / (transformed_range)^2)
       if (SV) {
         results[["Sigma_kernel_knots"]][i,j,,] <- 
           results[["Sigma_kernel_knots"]][i,j,,] * 
-          (locs_ranges[i] * locs_ranges[j] / L^2)
+          (locs_ranges[i] * locs_ranges[j] / (transformed_range)^2)
       }
   }}
   
