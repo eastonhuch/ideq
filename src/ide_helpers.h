@@ -7,7 +7,7 @@
 using namespace Rcpp;
 
 double kernelLikelihood(const arma::mat & G, const arma::mat & theta, 
-                        const arma::mat W);
+                        const arma::mat & W);
 
 double kernelLikelihoodDiscount(const arma::mat & G, const arma::mat & theta, 
                         const arma::cube & C, const double lambda);

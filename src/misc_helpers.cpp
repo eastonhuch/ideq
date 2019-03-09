@@ -1,11 +1,11 @@
+#include <cmath>
 #include <RcppArmadillo.h>
 // [[Rcpp::depends(RcppArmadillo)]]
-#include <cmath>
 
 using namespace Rcpp;
 
 void makeSymmetric(arma::mat & X) {
-  X = (X + X.t())/2;
+  X = (X + X.t())/2.0;
   return;
 }
 

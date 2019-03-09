@@ -1,12 +1,12 @@
+#include <cmath>
 #include <RcppArmadillo.h>
 // [[Rcpp::depends(RcppArmadillo)]]
-#include <cmath>
 #include "distributions.h"
 
 using namespace Rcpp;
 
 double kernelLikelihood(const arma::mat & G, const arma::mat & theta,
-                        const arma::mat W) {
+                        const arma::mat & W) {
   const int T = theta.n_cols-1;
   arma::mat tmp = arma::zeros(1, 1);
   arma::colvec d;
@@ -60,8 +60,8 @@ arma::mat makeF(const arma::mat & locs, const arma::mat & w, const double L) {
   const int k = Jmat.n_cols;
   arma::mat Phi(Jmat.n_rows, 2*k + 1);
   Phi.col(0).fill(1);
-  Phi.cols(1, k) = std::sqrt(2.0) * arma::cos(Jmat);
-  Phi.cols(k + 1, 2*k) = std::sqrt(2.0) * arma::sin(Jmat);
+  Phi.cols(1, k) = sqrt(2.0) * arma::cos(Jmat);
+  Phi.cols(k + 1, 2*k) = sqrt(2.0) * arma::sin(Jmat);
   Phi /= L;
   return Phi;
 }
@@ -105,8 +105,8 @@ void makeB(arma::mat & B, const arma::mat & mu, const arma::cube & Sigma,
   // B
   const int k = Jmat1.n_cols;
   B.col(0).fill(1);
-  B.cols(1, k) = std::sqrt(2.0) * Jmat2 % arma::cos(Jmat1);
-  B.cols(k+1, 2*k) = std::sqrt(2.0) * Jmat2 % arma::sin(Jmat1);
+  B.cols(1, k) = sqrt(2.0) * Jmat2 % arma::cos(Jmat1);
+  B.cols(k+1, 2*k) = sqrt(2.0) * Jmat2 % arma::sin(Jmat1);
   B /= L;
   return;
 }

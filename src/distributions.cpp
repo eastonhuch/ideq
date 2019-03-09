@@ -1,13 +1,13 @@
+#include <cmath>
 #include <RcppArmadillo.h>
 // [[Rcpp::depends(RcppArmadillo)]]
-#include <cmath>
 #include "misc_helpers.h"
 
 using namespace Rcpp;
 
 double ldiwishart(const arma::cube & x, const double df,
                   const arma::cube & scale) {
-  const double p = x.n_cols;
+  const double P = x.n_cols;
   double d = 0;
   
   if (x.n_slices != scale.n_slices)
@@ -15,9 +15,10 @@ double ldiwishart(const arma::cube & x, const double df,
   
   for (unsigned int i=0; i<x.n_slices; ++i) {
     d += log(arma::det(scale.slice(i))) * df/2.0;
-    d -= log(arma::det(x.slice(i))) * (df+p+1.0)/2.0;
+    d -= log(arma::det(x.slice(i))) * (df+P+1.0)/2.0;
     d -= arma::trace(arma::solve(x.slice(i), scale.slice(i))) / 2.0;
   }
+  
   return d;
 }
 
@@ -34,15 +35,15 @@ double ldmvnorm(const arma::mat & x, const arma::mat & mu, const arma::mat & Sig
   
   arma::colvec d = arma::vectorise(x - mu);
   arma::mat tmp = d.t() * arma::solve(Sigma, d);
-  return -arma::as_scalar(tmp)/2;
+  return -arma::as_scalar(tmp)/2.0;
 }
 
 double rigamma(const double a, const double scl) {
-  return (1 / R::rgamma(a, 1/scl));
+  return (1.0 / R::rgamma(a, 1.0/scl));
 }
 
 arma::colvec rmvnorm(const arma::colvec & mean, const arma::mat & Sigma) {
-  int n = mean.n_elem;
+  const int n = mean.n_elem;
   arma::colvec z(n);
   for (int i = 0; i < n; ++i) {
     z.at(i) = R::rnorm(0.0, 1.0);
