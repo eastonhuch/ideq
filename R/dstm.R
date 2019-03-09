@@ -100,7 +100,7 @@
 #' dstm_eof(ide_standard, proc_model="Dense") # Dense process matrix
 #' 
 #' # Specify hyperparameters
-#' P <- 5
+#' P <- 4
 #' dstm_eof(ide_standard, sample_sigma2=FALSE, proc_error="Discount", P=P,
 #'          params=list(sigma2=0.01, alpha_lambda=201, beta_lambda=20))
 #'          
@@ -126,19 +126,20 @@ dstm_eof <- function(Y, proc_model = "Dense", P = 4L, proc_error = "IW",
   check.numeric.matrix(mu_G, P)
   
   # Sigma_G
-  if (proc_model == "AR") {
-    Sigma_G <- params[["Sigma_G"]] %else% diag(1e-2, P)
-    check.dim(Sigma_G, P, "Sigma_G")
-    check.cov.matrix(Sigma_G, P)
-  } else if (proc_model == "Dense") {
-    Sigma_G <- params[["Sigma_G"]] %else% diag(1e-2, P^2)
-    check.dim(Sigma_G, P^2, "Sigma_G", "P^2")
-    check.cov.matrix(Sigma_G, P^2)
+  if (proc_model != "RW") {
+    if (proc_model == "AR") {
+      Sigma_G <- params[["Sigma_G"]] %else% diag(1e-2, P)
+      check.dim(Sigma_G, P, "Sigma_G")
+      check.cov.matrix(Sigma_G, P)
+    } else if (proc_model == "Dense") {
+      Sigma_G <- params[["Sigma_G"]] %else% diag(1e-2, P^2)
+      check.dim(Sigma_G, P^2, "Sigma_G", "P^2")
+      check.cov.matrix(Sigma_G, P^2)
+    }
+    # Sigma_G_inv
+    Sigma_G_inv <- chol_inv(Sigma_G)
   }
     
-  # Sigma_G_inv
-  Sigma_G_inv <- chol_inv(Sigma_G)
-  
   # Process remaining params
   new_params <- process_common_params(params, proc_error, P, sample_sigma2)
   scalar_params <- c(alpha_lambda=new_params[["alpha_lambda"]], 

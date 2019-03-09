@@ -1,4 +1,5 @@
-# Functions for dstm.R
+# Utility functions for dstm.R
+
 # ifelse for arguments
 `%else%` <- function(a, b) if (is.null(a) || is.na(a)) b else a
 
