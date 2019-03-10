@@ -104,7 +104,7 @@
 #' dstm_eof(ide_standard, sample_sigma2=FALSE, proc_error="Discount", P=P,
 #'          params=list(sigma2=0.01, alpha_lambda=201, beta_lambda=20))
 #'          
-#' dstm_eof(ide_standard, sample_sigma2=FALSE, P=P,
+#' dstm_eof(ide_standard, P=P,
 #'          params=list(m_0=rep(1, P), C_0=diag(0.01, P),
 #'                      scale_W=diag(P), df_W=100))
 #' @export

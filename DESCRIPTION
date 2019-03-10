@@ -1,7 +1,9 @@
 Package: ideq
 Title: Bayesian Dynamic Spatio-Temporal Models, Including the Integrodifference Equation Model
 Version: 0.0.0.9000
-Authors@R: person("Easton", "Huch", email = "easton.huch@gmail.com", role = c("aut", "cre"))
+Authors@R: 
+  c(person("Easton", "Huch", email = "easton.huch@gmail.com", role = c("aut", "cre")),
+    person("Robert", "Richardson", email = "richardson@stat.byu.edu", rol = ("ths")))
 Description: In contrast to other methods of modeling spatio-temporal data,
   dynamic spatio-temporal models (DSTMs) directly model the dynamic
   data-generating process.
@@ -29,3 +31,4 @@ Imports:
   matrixcalc,
   pdist,
   mvtnorm
+BugReports: https://github.com/eastonhuch/ideq/issues
