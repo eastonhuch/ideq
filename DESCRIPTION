@@ -17,7 +17,7 @@ Description: In contrast to other methods of modeling spatio-temporal data,
   evolution is governed by a (typically Gaussian) redistribution kernel.
   Both types have a variety of options for specifying the model components,
   including the process matrix, process error, and observation error.
-Depends: R (>= 3.4.0)
+Depends: R (>= 3.5.0)
 License: GPL-2
 Encoding: UTF-8
 LazyData: true
