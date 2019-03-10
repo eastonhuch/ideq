@@ -1,8 +1,20 @@
 Package: ideq
-Title: Integrodifference Equation Models
+Title: Bayesian Dynamic Spatio-Temporal Models, Including the Integrodifference Equation Model
 Version: 0.0.0.9000
 Authors@R: person("Easton", "Huch", email = "easton.huch@gmail.com", role = c("aut", "cre"))
-Description: ideq allows you to fit integrodifference equation models without getting bogged down in the details.
+Description: In contrast to other methods of modeling spatio-temporal data,
+  dynamic spatio-temporal models (DSTMs) directly model the dynamic
+  data-generating process.
+  `ideq` supports two main classes of DSTMs:
+  (1) empirical orthogonal function (EOF) models and
+  (2) integrodifference equation (IDE) models.
+  EOF models do not directly use any spatial information;
+  instead, they make use of observed relationships in the data
+  (the principal components) to model the underlying process.
+  In contrast, IDE models are based on diffusion dynamics and the process
+  evolution is governed by a (typically Gaussian) redistribution kernel.
+  Both types have a variety of options for specifying the model components,
+  including the process matrix, process error, and observation error.
 Depends: R (>= 3.4.0)
 License: GPL-2
 Encoding: UTF-8

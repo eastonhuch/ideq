@@ -1,7 +1,7 @@
 # Utility functions for dstm.R
 
 # ifelse for arguments
-`%else%` <- function(a, b) if (is.null(a) || is.na(a)) b else a
+`%else%` <- function(a, b) if ( is.null(a) || all(is.na(a)) ) b else a
 
 # check for NAs
 check.na <- function(x, x_name=deparse(substitute(x))) {
