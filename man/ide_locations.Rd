@@ -6,7 +6,7 @@
 \title{Spatial locations for IDE data sets}
 \format{A numeric matrix with 400 rows and 2 columns}
 \source{
-Randomly generated as part of Easton Huch's MS project at BYU
+Generated as part of Easton Huch's MS project at BYU
 }
 \usage{
 ide_locations

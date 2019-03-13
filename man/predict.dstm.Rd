@@ -38,11 +38,11 @@ The posterior predictive samples are returned in a matrix or 3-D array,
 depending on whether samples from multiple time points are requested.
 The dimensions are always in the following order:
 
-1. p: The index of each parameter within the state vector.
+1. The index of the value within the state or observation vector.
 
-2. t: The time index
+2. The time period
 
-3. n_samples: The sample number
+3. The sample number
 }
 \examples{
 data("ide_standard", "ide_locations")

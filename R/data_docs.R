@@ -38,5 +38,5 @@
 #' correspond to these spatial locations
 #' 
 #' @format A numeric matrix with 400 rows and 2 columns
-#' @source Randomly generated as part of Easton Huch's MS project at BYU
+#' @source Generated as part of Easton Huch's MS project at BYU
 "ide_locations"

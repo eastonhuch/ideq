@@ -52,6 +52,11 @@ the form of the process error,
 and whether to sample the observation error.
 Users can specify prior distributions for all sampled quantities using the
 `params` argument.
+
+Each model type mentioned above is a dynamic linear model (DLM),
+and the state vectors can be estimated using the forward filtering
+backward sampling algorithm.
+The other parameters are estimated with conditionally conjugate updates.
 }
 \details{
 This section explains how to specify custom hyperparameters using the `params` argument.
@@ -70,11 +75,11 @@ alpha_sigma2, beta_sigma2: (numeric scalars) The inverse-Gamma parameters
 (\eqn{\sigma^2}).
 
 sigma2: (numeric scalar) The value to use for the observation error 
-(\eqn{\sigma^2}) if sample_sigma2 = FALSE.
+(\eqn{\sigma^2}) if `sample_sigma2` = FALSE.
 
 mu_G: (numeric matrix) The prior mean for the process matrix G.
-If proc_model = "AR", then mu_G must be a diagonal matrix.
-If proc_model = "Dense", then mu_G has no constraints.
+If `proc_model` = "AR", then `mu_G` must be a diagonal matrix.
+If `proc_model` = "Dense", then `mu_G` has no constraints.
 
 Sigma_G: (numeric matrix) The prior variance-covariance matrix for the
 process matrix. If proc_model = "AR", then Sigma_G should be P by 
@@ -88,10 +93,10 @@ alpha_lambda, beta_lambda: (numeric scalars) The inverse-Gamma parameters
 where \eqn{\delta} is the discount factor.
 
 scale_W: (numeric matrix) The scale matrix for the inverse-Wishart prior
-distribution on the variance-covariance matrix of the process error (W).
+distribution on the variance-covariance matrix of the process error (`W`).
 
 df_W: (numeric scalar) The degees of freedom for the inverse-Wishart prior
-distribution on the variance-covariance matrix of the process error (W).
+distribution on the variance-covariance matrix of the process error (`W`).
 }
 \examples{
 # Load example data
@@ -114,4 +119,15 @@ dstm_eof(ide_standard, sample_sigma2=FALSE, proc_error="Discount", P=P,
 dstm_eof(ide_standard, P=P,
          params=list(m_0=rep(1, P), C_0=diag(0.01, P),
                      scale_W=diag(P), df_W=100))
+}
+\references{
+Fruhwirth-Schnatter, S. (1994), 
+\dQuote{Data Augmentation and Dynamic Linear Models,}
+Journal of Time Series Analysis, 15, 183–202.
+
+Petris, G., Petrone, S., and Campagnoli, P. (2009), 
+Dynamic Linear Models with R, useR!, Springer-Verlag, New York.
+}
+\seealso{
+[dstm_ide]
 }

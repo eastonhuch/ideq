@@ -25,6 +25,11 @@
 #' Users can specify prior distributions for all sampled quantities using the
 #' `params` argument.
 #' 
+#' Each model type mentioned above is a dynamic linear model (DLM),
+#' and the state vectors can be estimated using the forward filtering
+#' backward sampling algorithm.
+#' The other parameters are estimated with conditionally conjugate updates.
+#' 
 #' @param Y 
 #' (numeric matrix) S by T data matrix containing the response variable
 #' at S spatial locations and T time points.
@@ -63,11 +68,11 @@
 #' (\eqn{\sigma^2}).
 #' 
 #' sigma2: (numeric scalar) The value to use for the observation error 
-#' (\eqn{\sigma^2}) if sample_sigma2 = FALSE.
+#' (\eqn{\sigma^2}) if `sample_sigma2` = FALSE.
 #' 
 #' mu_G: (numeric matrix) The prior mean for the process matrix G.
-#' If proc_model = "AR", then mu_G must be a diagonal matrix.
-#' If proc_model = "Dense", then mu_G has no constraints.
+#' If `proc_model` = "AR", then `mu_G` must be a diagonal matrix.
+#' If `proc_model` = "Dense", then `mu_G` has no constraints.
 #' 
 #' Sigma_G: (numeric matrix) The prior variance-covariance matrix for the
 #' process matrix. If proc_model = "AR", then Sigma_G should be P by 
@@ -81,10 +86,20 @@
 #' where \eqn{\delta} is the discount factor.
 #' 
 #' scale_W: (numeric matrix) The scale matrix for the inverse-Wishart prior
-#' distribution on the variance-covariance matrix of the process error (W).
+#' distribution on the variance-covariance matrix of the process error (`W`).
 #' 
 #' df_W: (numeric scalar) The degees of freedom for the inverse-Wishart prior
-#' distribution on the variance-covariance matrix of the process error (W).
+#' distribution on the variance-covariance matrix of the process error (`W`).
+#' 
+#' @seealso [dstm_ide]
+#' 
+#' @references 
+#' Fruhwirth-Schnatter, S. (1994), 
+#' \dQuote{Data Augmentation and Dynamic Linear Models,}
+#' Journal of Time Series Analysis, 15, 183–202.
+#' 
+#' Petris, G., Petrone, S., and Campagnoli, P. (2009), 
+#' Dynamic Linear Models with R, useR!, Springer-Verlag, New York. 
 #' 
 #' @examples
 #' # Load example data
@@ -187,7 +202,7 @@ dstm_eof <- function(Y, proc_model = "Dense", P = 4L, proc_error = "IW",
 #' an integrodifference equation (IDE) model.
 #' It estimates a redistribution kernel---a
 #' probability distribution controlling diffusion across time and space.
-#' Currently, only normal redistribution kernels are supported.
+#' Currently, only Gaussian redistribution kernels are supported.
 #' 
 #' The process model is decomposed with an orthonormal basis function expansion
 #' (a Fourier series).
@@ -221,7 +236,7 @@ dstm_eof <- function(Y, proc_model = "Dense", P = 4L, proc_error = "IW",
 #' "IW" is recommended because it is more computationally stable.
 #' @param J 
 #' (integer) Extent of the Fourier approximation.
-#' The size of the state space is (2*J + 1)^2.
+#' The size of the state space is (2*`J` + 1)^2.
 #' @param n_samples 
 #' (integer) Number of posterior samples to draw.
 #' @param sample_sigma2 
@@ -249,7 +264,7 @@ dstm_eof <- function(Y, proc_model = "Dense", P = 4L, proc_error = "IW",
 #' (\eqn{\sigma^2}).
 #' 
 #' sigma2: (numeric scalar) The value to use for the observation error 
-#' (\eqn{\sigma^2}) if sample_sigma2 = FALSE.
+#' (\eqn{\sigma^2}) if `sample_sigma2` = FALSE.
 #' 
 #' alpha_lambda, beta_lambda: (numeric scalars) The inverse-Gamma parameters 
 #' (scale parameterization) of the prior distribution on 
@@ -257,49 +272,73 @@ dstm_eof <- function(Y, proc_model = "Dense", P = 4L, proc_error = "IW",
 #' where \eqn{\delta} is the discount factor.
 #' 
 #' scale_W: (numeric matrix) The scale matrix for the inverse-Wishart prior
-#' distribution on the variance-covariance matrix of the process error (W).
+#' distribution on the variance-covariance matrix of the process error (`W`).
 #' 
 #' df_W: (numeric scalar) The degees of freedom for the inverse-Wishart prior
-#' distribution on the variance-covariance matrix of the process error (W).
+#' distribution on the variance-covariance matrix of the process error (`W`).
 #' 
 #' L: (numeric scalar) The period of the Fourier series approximation.
 #' The spatial locations and knot locations are rescaled
-#' to range from -L/4 to L/4 because the Fourier decomposition assumes that
+#' to range from -`L`/4 to `L`/4 because the Fourier decomposition assumes that
 #' the spatial surface is periodic.
+#' Regardless of the value of `L`, 
+#' kernel parameter estimates are back-transformed to the original scale.
 #' 
 #' smoothing: (numeric scalar) Controls the degree of smoothing in the 
+#' process convolution for models with spatially varying kernel parameters.
+#' The values in the process convolution matrix are proportional to
+#' exp(d/`smoothing`) where d is the distance between spatial locations
+#' before rescaling with `L`
 #' 
 #' mean_mu_kernel: (numeric vector) The mean of the normal prior distribution
-#' on mu_kernel, the mean of the redistribution kernel.
-#' In the spatially varying case, the prior distribution for mu_kernel
+#' on `mu_kernel`, the mean of the redistribution kernel.
+#' In the spatially varying case, the prior distribution for `mu_kernel`
 #' is assumed to be the same at every knot location.
 #' 
 #' var_mu_kernel: (numeric matrix) The variance of the normal prior distribution
-#' on mu_kernel, the mean of the redistribution kernel.
+#' on `mu_kernel`, the mean of the redistribution kernel.
 #' 
 #' scale_Sigma_kernel: (numeric matrix) The scale matrix for the 
-#' inverse-Wishart prior distribution on Sigma_kernel,
+#' inverse-Wishart prior distribution on `Sigma_kernel`,
 #' the variance-covariance matrix of the redistribution kernel.
 #' 
 #' df_Sigma_kernel: (numeric scalar) The degrees of freedom for the 
-#' inverse-Wishart prior distribution on Sigma_kernel,
+#' inverse-Wishart prior distribution on `Sigma_kernel`,
 #' the variance-covariance matrix of the redistribution kernel.
 #' 
 #' proposal_factor_mu: (numeric scalar) Controls the variance of the proposal distribution for
-#' mu. The proposals have a variance of proposal_factor_mu^2 * var_mu_kernel.
-#' proposal_factor_mu must generally be set lower for spatially varying models.
+#' `mu_kernel`. The proposals have a variance of `proposal_factor_mu`^2 * `var_mu_kernel`.
+#' `proposal_factor_mu` must generally be set lower for spatially varying models.
 #' 
 #' proposal_factor_Sigma: (numeric scalar) Controls the variance of the proposal distribution
-#' for Sigma. As is the case with proposal_factor_mu, a higher value
+#' for `Sigma_kernel`. As is the case with `proposal_factor_mu`, a higher value
 #' corresponds to a higher variance.
-#' The degrees of freedom for the proposal distribution for Sigma is 
-#' ncol(locs) + df_Sigma_kernel / proposal_factor_Sigma.
-#' proposal_factor_Sigma must generally be set lower for spatially varying 
+#' The degrees of freedom for the proposal distribution for `Sigma_kernel` is 
+#' ncol(`locs`) + `df_Sigma_kernel` / `proposal_factor_Sigma`.
+#' `proposal_factor_Sigma` must generally be set lower for spatially varying 
 #' models.
 #' 
 #' kernel_samples_per_iter: (numeric scalar) Number of times to update the kernel
 #' parameters per iteration of the sampling loop.
-#'
+#' 
+#' @seealso [dstm_eof]
+#' 
+#' @references 
+#' Fruhwirth-Schnatter, S. (1994), 
+#' \dQuote{Data Augmentation and Dynamic Linear Models,} 
+#' Journal of Time Series Analysis, 15, 183–202.
+#' 
+#' Petris, G., Petrone, S., and Campagnoli, P. (2009), 
+#' Dynamic Linear Models with R, useR!, Springer-Verlag, New York. 
+#' 
+#' Wikle, C. K., and Cressie, N. (1999), 
+#' \dQuote{A dimension-reduced approach to space-time Kalman filtering,} 
+#' Biometrika, 86, 815–829.
+#' 
+#' Wikle, C. K. (2002), 
+#' \dQuote{A kernel-based spectral model for non-Gaussian spatio-temporal processes,}
+#' Statistical Modelling, 2, 299–314.
+#' 
 #' @examples
 #' # Load example data
 #' data("ide_standard", "ide_spatially_varying", "ide_locations")
