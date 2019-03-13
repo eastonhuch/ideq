@@ -1,6 +1,6 @@
 Package: ideq
 Title: Bayesian Dynamic Spatio-Temporal Models, Including the Integrodifference Equation Model
-Version: 0.0.0.9000
+Version: 0.1
 Authors@R: 
   c(person("Easton", "Huch", email = "easton.huch@gmail.com", role = c("aut", "cre")),
     person("Robert", "Richardson", email = "richardson@stat.byu.edu", rol = ("ths")))
