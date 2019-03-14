@@ -17,6 +17,9 @@ Description: In contrast to other methods of modeling spatio-temporal data,
   evolution is governed by a (typically Gaussian) redistribution kernel.
   Both types have a variety of options for specifying the model components,
   including the process matrix, process error, and observation error.
+  The classic reference for these types of models is
+  Cressie, N., and Wikle, C. K. (2011), Statistics for spatio-temporal data,
+  New York: John Wiley and Sons. ISBN-13: 978-0471692744.
 Depends: R (>= 3.5.0)
 License: GPL-2
 Encoding: UTF-8

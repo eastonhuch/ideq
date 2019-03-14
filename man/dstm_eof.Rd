@@ -121,12 +121,18 @@ dstm_eof(ide_standard, P=P,
                      scale_W=diag(P), df_W=100))
 }
 \references{
+Cressie, N., and Wikle, C. K. (2011), Statistics for spatio-temporal data,
+New York: John Wiley and Sons. ISBN-13: 978-0471692744.
+
 Fruhwirth-Schnatter, S. (1994), 
 \dQuote{Data Augmentation and Dynamic Linear Models,}
 Journal of Time Series Analysis, 15, 183–202.
+<doi:10.1111/j.1467-9892.1994.tb00184.x>
 
 Petris, G., Petrone, S., and Campagnoli, P. (2009), 
-Dynamic Linear Models with R, useR!, Springer-Verlag, New York.
+Dynamic Linear Models with R, useR!, Springer-Verlag, New York. 
+ISBN-13: 978-0387772370.
+<doi:10.1007/ b135794>.
 }
 \seealso{
 [dstm_ide]

@@ -94,12 +94,18 @@
 #' @seealso [dstm_ide]
 #' 
 #' @references 
+#' Cressie, N., and Wikle, C. K. (2011), Statistics for spatio-temporal data,
+#' New York: John Wiley and Sons. ISBN-13: 978-0471692744.
+#' 
 #' Fruhwirth-Schnatter, S. (1994), 
 #' \dQuote{Data Augmentation and Dynamic Linear Models,}
 #' Journal of Time Series Analysis, 15, 183–202.
+#' <doi:10.1111/j.1467-9892.1994.tb00184.x>
 #' 
 #' Petris, G., Petrone, S., and Campagnoli, P. (2009), 
 #' Dynamic Linear Models with R, useR!, Springer-Verlag, New York. 
+#' ISBN-13: 978-0387772370.
+#' <doi:10.1007/ b135794>.
 #' 
 #' @examples
 #' # Load example data
@@ -324,20 +330,28 @@ dstm_eof <- function(Y, proc_model = "Dense", P = 4L, proc_error = "IW",
 #' @seealso [dstm_eof]
 #' 
 #' @references 
+#' Cressie, N., and Wikle, C. K. (2011), Statistics for spatio-temporal data,
+#' New York: John Wiley and Sons.
+#' 
 #' Fruhwirth-Schnatter, S. (1994), 
-#' \dQuote{Data Augmentation and Dynamic Linear Models,} 
+#' \dQuote{Data Augmentation and Dynamic Linear Models,}
 #' Journal of Time Series Analysis, 15, 183–202.
+#' <doi:10.1111/j.1467-9892.1994.tb00184.x>
 #' 
 #' Petris, G., Petrone, S., and Campagnoli, P. (2009), 
 #' Dynamic Linear Models with R, useR!, Springer-Verlag, New York. 
+#' ISBN-13: 978-0387772370.
+#' <doi:10.1007/ b135794>.
 #' 
 #' Wikle, C. K., and Cressie, N. (1999), 
 #' \dQuote{A dimension-reduced approach to space-time Kalman filtering,} 
 #' Biometrika, 86, 815–829.
+#' <https://www.jstor.org/stable/2673587>.
 #' 
 #' Wikle, C. K. (2002), 
 #' \dQuote{A kernel-based spectral model for non-Gaussian spatio-temporal processes,}
 #' Statistical Modelling, 2, 299–314.
+#' <doi:10.1191/1471082x02st036oa>.
 #' 
 #' @examples
 #' # Load example data
@@ -464,7 +478,7 @@ dstm_ide <- function(Y, locs=NULL, knot_locs=NULL, proc_error = "IW", J=1L,
     var_mu_kernel <- var_mu_kernel %x% diag(n_knots)
     
     # Create K matrix
-    K <- pdist::pdist(knot_locs_scaled, locs_scaled)
+    K <- pdist::pdist(knot_locs, locs)
     K <- as.matrix(K)
     K <- exp(-K / smoothing)
     K <- apply(K, 2, function(x) x / sum(x))

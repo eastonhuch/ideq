@@ -165,20 +165,28 @@ dstm_ide(ide_standard, ide_locations,
                      scale_W=diag(P), df_W=100))
 }
 \references{
+Cressie, N., and Wikle, C. K. (2011), Statistics for spatio-temporal data,
+New York: John Wiley and Sons.
+
 Fruhwirth-Schnatter, S. (1994), 
-\dQuote{Data Augmentation and Dynamic Linear Models,} 
+\dQuote{Data Augmentation and Dynamic Linear Models,}
 Journal of Time Series Analysis, 15, 183–202.
+<doi:10.1111/j.1467-9892.1994.tb00184.x>
 
 Petris, G., Petrone, S., and Campagnoli, P. (2009), 
 Dynamic Linear Models with R, useR!, Springer-Verlag, New York. 
+ISBN-13: 978-0387772370.
+<doi:10.1007/ b135794>.
 
 Wikle, C. K., and Cressie, N. (1999), 
 \dQuote{A dimension-reduced approach to space-time Kalman filtering,} 
 Biometrika, 86, 815–829.
+<https://www.jstor.org/stable/2673587>.
 
 Wikle, C. K. (2002), 
 \dQuote{A kernel-based spectral model for non-Gaussian spatio-temporal processes,}
 Statistical Modelling, 2, 299–314.
+<doi:10.1191/1471082x02st036oa>.
 }
 \seealso{
 [dstm_eof]
