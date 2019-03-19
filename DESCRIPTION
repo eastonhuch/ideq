@@ -7,7 +7,7 @@ Authors@R:
 Description: In contrast to other methods of modeling spatio-temporal data,
   dynamic spatio-temporal models (DSTMs) directly model the dynamic
   data-generating process.
-  `ideq` supports two main classes of DSTMs:
+  'ideq' supports two main classes of DSTMs:
   (1) empirical orthogonal function (EOF) models and
   (2) integrodifference equation (IDE) models.
   EOF models do not directly use any spatial information;
@@ -17,9 +17,12 @@ Description: In contrast to other methods of modeling spatio-temporal data,
   evolution is governed by a (typically Gaussian) redistribution kernel.
   Both types have a variety of options for specifying the model components,
   including the process matrix, process error, and observation error.
-  The classic reference for these types of models is
-  Cressie, N., and Wikle, C. K. (2011), Statistics for spatio-temporal data,
-  New York: John Wiley and Sons. ISBN-13: 978-0471692744.
+  The classic reference for DSTMs is
+  Noel Cressie and Christopher K. Wikle (2011, ISBN:978-0471692744).
+  For IDE models specifically, see
+  Christopher K. Wikle and Noel Cressie (1999, <https://www.jstor.org/stable/2673587>)
+  and 
+  Christopher K. Wikle (2002, <doi:10.1191/1471082x02st036oa>).
 Depends: R (>= 3.5.0)
 License: GPL-2
 Encoding: UTF-8
