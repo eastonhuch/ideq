@@ -224,7 +224,7 @@ summary.dstm <- function(object, object_name = deparse(substitute(object)), ...)
     mat_arr_summary <- matrix(NA, nrow = length(mat_arr_idx), ncol = 5)
     counter <- 1
     for (i in mat_arr_idx) {
-      mat_arr_summary[counter, 1] <- class(object[[i]])
+      mat_arr_summary[counter, 1] <- class(object[[i]])[1]
       dims_i <- dim(object[[i]])
       mat_arr_summary[counter, 2:(1 + length(dims_i))] <- dims_i
       counter <- counter + 1

@@ -389,7 +389,7 @@ dstm_ide <- function(Y, locs=NULL, knot_locs=NULL, proc_error = "IW", J=1L,
   # Error checking for J, L, locs, knot_locs
   if (is.null(locs)) stop("locs must be specified for IDE models")
   if (class(locs) == "data.frame") locs <- as.matrix(locs)
-  if (class(locs) != "matrix") stop("locs must be data.frame or matrix")
+  if (! "matrix" %in% class(locs)) stop("locs must be data.frame or matrix")
   if (ncol(locs) != 2) stop("locs must have 2 columns")
 
   J <- as.integer(J)
