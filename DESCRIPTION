@@ -36,5 +36,5 @@ Imports:
   Rcpp,
   matrixcalc,
   pdist,
-  mvtnorm
+  MASS
 BugReports: https://github.com/eastonhuch/ideq/issues

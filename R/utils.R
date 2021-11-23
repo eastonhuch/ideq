@@ -155,5 +155,5 @@ calc_W <- function(lambda, C_T) {
 next_thetas <- function(thetas_prev, G, W) {
   n_samples <- ncol(thetas_prev)
   E_t <- sapply(seq(n_samples), function(i) G[,,i] %*% thetas_prev[,i])
-  sapply(seq(n_samples), function(i) mvtnorm::rmvnorm(1, E_t[,i], W[,,i]))
+  sapply(seq(n_samples), function(i) MASS::mvrnorm(1, E_t[,i], W[,,i]))
 }
