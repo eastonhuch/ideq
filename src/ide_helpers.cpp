@@ -36,8 +36,8 @@ double kernelLikelihoodDiscount(const arma::mat & G, const arma::mat & theta,
 
 arma::mat makeW(const int J, const double L) {
   // NOTE: function is assumed to have period of L
-  arma::colvec freqs1 = 2*PI/L * arma::regspace(1, J);
-  arma::colvec freqs2 = 2*PI/L * arma::regspace(-J,J);
+  arma::colvec freqs1 = 2*M_PI/L * arma::regspace(1, J);
+  arma::colvec freqs2 = 2*M_PI/L * arma::regspace(-J,J);
   arma::mat w(2*J*(J+1), 2);
   
   // Create w
